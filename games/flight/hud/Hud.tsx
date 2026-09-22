@@ -23,6 +23,8 @@ export type HudState = {
   banner: Banner;
   status: GameStatus;
   special: string | null;
+  /** 체감 속도 km/h */
+  speed: number;
 };
 
 export function ShapeIcon({ shape, className, style }: { shape: "circle" | "square" | "triangle"; className?: string; style?: React.CSSProperties }) {
@@ -66,12 +68,16 @@ export function Hud({
         </div>
       </div>
 
-      {/* 우상단: 거리·점수 */}
+      {/* 우상단: 거리·점수·속도 */}
       <div className="absolute right-3 top-3 text-right">
-        <p className="num text-xl font-black text-aqua drop-shadow-[0_0_10px_rgba(61,217,235,0.5)]">
-          {Math.floor(hud.meters).toLocaleString()}m
+        <p className="arcade text-lg text-aqua drop-shadow-[0_0_10px_rgba(61,217,235,0.5)]">
+          {Math.floor(hud.meters).toLocaleString()}
+          <span className="ml-1 text-[10px]">M</span>
         </p>
-        <p className="num text-sm font-bold text-neon">{Math.round(hud.score).toLocaleString()}</p>
+        <p className="arcade mt-1 text-[11px] text-neon">{Math.round(hud.score).toLocaleString()}</p>
+        <p className="arcade mt-1.5 text-[10px] text-mute">
+          <span style={{ color: hud.speed > 60 ? "#FFB020" : undefined }}>{hud.speed}</span> KM/H
+        </p>
       </div>
 
       {/* 중앙 상단: 콤보 */}
