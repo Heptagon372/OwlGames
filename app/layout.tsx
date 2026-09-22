@@ -16,6 +16,15 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
+// 아케이드 HUD용 (영문·숫자 전용 — 한글은 Pretendard)
+// 외부 에셋: Orbitron, SIL Open Font License 1.1 — public/assets/CREDITS.md
+const arcade = localFont({
+  src: "../public/assets/orbitron/orbitron-variable.ttf",
+  variable: "--font-orbitron",
+  weight: "400 900",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: {
     default: "아울게임즈 OWL GAMES",
@@ -34,7 +43,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" className={`${pretendard.variable} ${jetbrains.variable}`}>
+    <html lang="ko" className={`${pretendard.variable} ${jetbrains.variable} ${arcade.variable}`}>
       <body className="antialiased">
         <div className="night-sky" aria-hidden />
         {children}

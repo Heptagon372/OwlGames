@@ -76,6 +76,11 @@ npm run build          # 프로덕션 빌드
 
 DB 검증 스크립트는 `supabase/tests/`에 있습니다 (레벨 곡선, 추첨 10만회 시뮬레이션).
 
+## 외부 에셋
+
+아울러닝의 벽 텍스처·파티클·조명 마스크는 **Kenney의 CC0 에셋**, HUD 폰트는 **Orbitron(OFL)** 입니다.
+출처·커밋·라이선스는 [`public/assets/CREDITS.md`](public/assets/CREDITS.md)에 정리돼 있고, 각 팩의 라이선스 원문도 함께 보관합니다.
+
 ## 디렉토리
 
 ```
@@ -85,6 +90,7 @@ games/        # core(루프·캔버스·세션) + typer / flight(아울러닝) /
               #   flight/: config(튜닝 상수) · engine(물리·에너지·청크·점수·렌더) · chunks(레벨 프리팹) · hud
 data/         # 타이퍼 단어, 피싱 카드
 lib/          # supabase 클라이언트, 랭크·설정·포맷, 조회·RPC 래퍼, 데모 데이터
+public/assets/ # 외부 CC0 에셋 (Kenney 파티클·텍스처·라이트 마스크, Orbitron 폰트)
 supabase/     # migrations, tests
 ```
 

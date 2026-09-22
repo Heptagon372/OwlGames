@@ -23,7 +23,10 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
   HUD(DOM, `hud/`)를 분리해 두었고, 같은 물리 함수를 청크 검증기(`chunks/verify.ts`)와 봇(`engine/bot.ts`)이 공유한다.
   레벨을 추가하면 `npm run verify:chunks`가 S·M·L 모두에게 통과 경로가 있는지 확인한다.
 - 모바일 우선. 버튼 최소 터치 영역 44px(`components/ui/Button.tsx`의 size 토큰이 보장).
-- 이미지 에셋 없이 SVG·도형·이모지로 그린다 (`components/brand/OwlMark.tsx`, `RankBadge.tsx`, `GachaMachine.tsx`).
+- 플랫폼 UI는 이미지 에셋 없이 SVG·도형으로 그린다 (`components/brand/OwlMark.tsx`, `RankBadge.tsx`, `GachaMachine.tsx`).
+- **아울러닝만 외부 CC0 에셋을 쓴다** — `games/flight/engine/assets.ts`가 `public/assets/`의 Kenney 텍스처를
+  로드해 틴팅/패턴으로 캔버스에 얹는다. 로딩 전에는 항상 도형 폴백으로 그려야 한다(에셋 없이도 게임이 돈다).
+  새 에셋을 추가하면 `public/assets/CREDITS.md`에 출처·커밋·라이선스를 반드시 적을 것.
 
 ## 디자인 시스템 (§13)
 

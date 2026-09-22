@@ -6,12 +6,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { RotateCw } from "lucide-react";
 import { CFG, COLOR_INFO, comboMult, type Color } from "./config";
 import { createGame, currentRaw, finalStats, update, type Game, type Input } from "./engine/game";
+import { preloadTextures } from "./engine/assets";
+import { createFx, updateFx } from "./engine/fx";
 import { startFixedLoop } from "./engine/loop";
 import { render } from "./engine/render";
 import { Hud, type HudState } from "./hud/Hud";
 import type { GameComponentProps } from "../core/types";
 
 const END_DELAY = 1.1; // 사망 원인을 1초 이상 보여준 뒤 결과로 (기획서 §12)
+
+/** 스크롤 속도(px/s) → 체감 속도 km/h (1m = 24px) */
+function speedKmh(g: Game): number {
+  return Math.round((g.scroll / CFG.physics.pxPerMeter) * 3.6);
+}
 
 function snapshot(g: Game): HudState {
   return {
@@ -31,6 +38,7 @@ function snapshot(g: Game): HudState {
     banner: g.banner,
     status: g.status,
     special: g.special?.label ?? null,
+    speed: speedKmh(g),
   };
 }
 
@@ -71,8 +79,11 @@ export function FlightGame({ onEnd }: GameComponentProps) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    preloadTextures();
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const g = createGame();
+    const fx = createFx();
+    let lastDraw = performance.now();
     gameRef.current = g;
     endedRef.current = false;
 
@@ -109,11 +120,16 @@ export function FlightGame({ onEnd }: GameComponentProps) {
         }
       },
       () => {
+        const now = performance.now();
+        const fxDt = Math.min(0.05, (now - lastDraw) / 1000);
+        lastDraw = now;
+        updateFx(fx, g, fxDt, reduced);
+
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.fillStyle = "#06090f";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.setTransform(dpr * scale, 0, 0, dpr * scale, offX * dpr, offY * dpr);
-        render(ctx, g, reduced);
+        render(ctx, g, fx, reduced);
       },
     );
 

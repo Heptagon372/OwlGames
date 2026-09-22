@@ -127,6 +127,7 @@ export function update(g: Game, dt: number, input: Input): void {
   if (phase > g.phaseMax) {
     g.phaseMax = phase;
     const hint = phaseHint(phase);
+    g.shake = Math.max(g.shake, 0.22); // 속도가 한 단계 붙는 느낌
     if (hint) g.banner = { text: `PHASE ${phase}`, sub: hint, until: g.time + 3 };
   }
 
@@ -244,11 +245,13 @@ export function update(g: Game, dt: number, input: Input): void {
       s.minDist = Math.min(s.minDist ?? Infinity, minD);
       if (minD === 0) {
         if (s.e.t === "wall" && g.size === "L") {
-          // L 전용 파괴 벽
+          // L 전용 파괴 벽 — 벽돌이 부서진다
           s.gone = true;
           g.score.itemScore += CFG.score.breakWall;
-          g.shake = 0.25;
-          burst(g, OWL_X + 20, g.y, "#FFB020", 18);
+          g.shake = 0.32;
+          g.banner = { text: "💥 SMASH!", sub: `+${CFG.score.breakWall}점`, until: g.time + 1 };
+          burst(g, OWL_X + 20, g.y, "#B06A3C", 24);
+          burst(g, OWL_X + 20, g.y, "#FFD27A", 10);
         } else if (g.iFrame > 0) {
           // 무적 중
         } else if (g.shield) {
