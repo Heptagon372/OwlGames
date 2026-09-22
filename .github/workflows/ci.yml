@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      # Next가 생성하는 라우트 타입이 필요하므로 typegen 후 tsc
+      - run: npm run typecheck
+      - run: npm test
+      # Supabase 환경변수 없이 빌드 = 데모 모드로 빌드된다
+      - run: npm run build
