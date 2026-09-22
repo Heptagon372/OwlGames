@@ -19,6 +19,8 @@ jobs:
       - run: npm run lint
       # Next가 생성하는 라우트 타입이 필요하므로 typegen 후 tsc
       - run: npm run typecheck
+      # 아울러닝 청크가 물리적으로 통과 가능한지 시뮬레이션으로 검증 (기획서 §16-2)
+      - run: npm run verify:chunks
       - run: npm test
       # Supabase 환경변수 없이 빌드 = 데모 모드로 빌드된다
       - run: npm run build

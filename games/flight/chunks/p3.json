@@ -1,0 +1,168 @@
+[
+  {
+    "id": "p3-breather-drift",
+    "width": 1100,
+    "phase": 3,
+    "difficulty": 2,
+    "tags": ["breather", "item"],
+    "entryY": 300,
+    "exitY": 300,
+    "entities": [
+      { "t": "wire", "x": 340, "y": 190, "w": 320 },
+      { "t": "item", "x": 640, "y": 350, "kind": "feather" },
+      { "t": "item", "x": 900, "y": 280, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p3-long-glide",
+    "width": 1160,
+    "phase": 3,
+    "difficulty": 2,
+    "tags": ["breather", "item"],
+    "entryY": 280,
+    "exitY": 320,
+    "entities": [
+      { "t": "wire", "x": 260, "y": 170, "w": 360 },
+      { "t": "item", "x": 680, "y": 360, "kind": "feather" },
+      { "t": "item", "x": 940, "y": 300, "kind": "star" }
+    ]
+  },
+  {
+    "id": "p3-triple-gate",
+    "width": 1400,
+    "phase": 3,
+    "difficulty": 3,
+    "tags": ["gate", "item"],
+    "entryY": 280,
+    "exitY": 280,
+    "entities": [
+      { "t": "gate", "x": 300, "y": 0, "h": 540, "color": "R" },
+      { "t": "wire", "x": 500, "y": 420, "w": 300 },
+      { "t": "gate", "x": 700, "y": 0, "h": 540, "color": "P" },
+      { "t": "item", "x": 900, "y": 180, "kind": "star" },
+      { "t": "gate", "x": 1100, "y": 0, "h": 540, "color": "B" },
+      { "t": "item", "x": 1240, "y": 400, "kind": "efficiency" }
+    ]
+  },
+  {
+    "id": "p3-rainbow-dash",
+    "width": 1400,
+    "phase": 3,
+    "difficulty": 3,
+    "tags": ["gate", "item"],
+    "entryY": 220,
+    "exitY": 280,
+    "entities": [
+      { "t": "gate", "x": 340, "y": 0, "h": 270, "color": "P" },
+      { "t": "gate", "x": 340, "y": 270, "h": 270, "color": "R" },
+      { "t": "item", "x": 560, "y": 90, "kind": "rainbow" },
+      { "t": "gate", "x": 820, "y": 0, "h": 540, "color": "B" },
+      { "t": "gate", "x": 1180, "y": 0, "h": 540, "color": "R" }
+    ]
+  },
+  {
+    "id": "p3-comb-climb",
+    "width": 1360,
+    "phase": 3,
+    "difficulty": 3,
+    "tags": ["item"],
+    "entryY": 380,
+    "exitY": 190,
+    "entities": [
+      { "t": "pillar", "x": 240, "gapY": 400, "gapH": 190 },
+      { "t": "pillar", "x": 660, "gapY": 290, "gapH": 180 },
+      { "t": "item", "x": 900, "y": 380, "kind": "star" },
+      { "t": "pillar", "x": 1080, "gapY": 190, "gapH": 180 },
+      { "t": "item", "x": 460, "y": 300, "kind": "shrink" }
+    ]
+  },
+  {
+    "id": "p3-bug-lane",
+    "width": 1200,
+    "phase": 3,
+    "difficulty": 4,
+    "tags": ["moving", "gate"],
+    "entryY": 260,
+    "exitY": 300,
+    "entities": [
+      { "t": "bug", "x": 480, "y0": 180, "y1": 380, "period": 2.4 },
+      { "t": "gate", "x": 860, "y": 0, "h": 540, "color": "P" }
+    ]
+  },
+  {
+    "id": "p3-bug-gate-mix",
+    "width": 1340,
+    "phase": 3,
+    "difficulty": 4,
+    "tags": ["moving", "gate", "item"],
+    "entryY": 300,
+    "exitY": 240,
+    "entities": [
+      { "t": "pillar", "x": 260, "gapY": 300, "gapH": 190 },
+      { "t": "bug", "x": 700, "y0": 200, "y1": 380, "period": 3 },
+      { "t": "item", "x": 880, "y": 160, "kind": "star" },
+      { "t": "gate", "x": 1060, "y": 0, "h": 270, "color": "B" },
+      { "t": "gate", "x": 1060, "y": 270, "h": 270, "color": "P" }
+    ]
+  },
+  {
+    "id": "p3-wall-run",
+    "width": 1320,
+    "phase": 3,
+    "difficulty": 4,
+    "tags": ["item"],
+    "entryY": 300,
+    "exitY": 200,
+    "entities": [
+      { "t": "wall", "x": 420, "y": 280, "h": 260, "breakBy": "L" },
+      { "t": "item", "x": 600, "y": 140, "kind": "efficiency" },
+      { "t": "pillar", "x": 800, "gapY": 220, "gapH": 185 },
+      { "t": "item", "x": 1120, "y": 300, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p3-double-bug",
+    "width": 1300,
+    "phase": 3,
+    "difficulty": 5,
+    "tags": ["moving", "item"],
+    "entryY": 240,
+    "exitY": 300,
+    "entities": [
+      { "t": "bug", "x": 400, "y0": 120, "y1": 320, "period": 2 },
+      { "t": "bug", "x": 820, "y0": 260, "y1": 460, "period": 2.6 },
+      { "t": "item", "x": 1100, "y": 420, "kind": "efficiency" }
+    ]
+  },
+  {
+    "id": "p3-narrow-bug",
+    "width": 1380,
+    "phase": 3,
+    "difficulty": 5,
+    "tags": ["narrow", "moving", "item"],
+    "entryY": 260,
+    "exitY": 300,
+    "entities": [
+      { "t": "narrow", "x": 520, "y": 240, "h": 56, "w": 280, "size": "S" },
+      { "t": "item", "x": 600, "y": 268, "kind": "bigFeather" },
+      { "t": "bug", "x": 1000, "y0": 240, "y1": 420, "period": 2.2 },
+      { "t": "item", "x": 1200, "y": 200, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p3-bug-tunnel",
+    "width": 1280,
+    "phase": 3,
+    "difficulty": 5,
+    "tags": ["moving", "item"],
+    "entryY": 220,
+    "exitY": 340,
+    "entities": [
+      { "t": "wire", "x": 200, "y": 150, "w": 420 },
+      { "t": "bug", "x": 760, "y0": 180, "y1": 400, "period": 2.8 },
+      { "t": "item", "x": 790, "y": 300, "kind": "gem" },
+      { "t": "pillar", "x": 1020, "gapY": 360, "gapH": 185 },
+      { "t": "item", "x": 1180, "y": 420, "kind": "shrink" }
+    ]
+  }
+]

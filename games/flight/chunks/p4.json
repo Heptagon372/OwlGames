@@ -1,0 +1,177 @@
+[
+  {
+    "id": "p4-breather-lull",
+    "width": 1080,
+    "phase": 4,
+    "difficulty": 2,
+    "tags": ["breather", "item"],
+    "entryY": 300,
+    "exitY": 300,
+    "entities": [
+      { "t": "wire", "x": 360, "y": 200, "w": 280 },
+      { "t": "item", "x": 680, "y": 340, "kind": "feather" },
+      { "t": "item", "x": 900, "y": 280, "kind": "star" }
+    ]
+  },
+  {
+    "id": "p4-eye-of-storm",
+    "width": 1120,
+    "phase": 4,
+    "difficulty": 2,
+    "tags": ["breather", "item"],
+    "entryY": 280,
+    "exitY": 300,
+    "entities": [
+      { "t": "pillar", "x": 320, "gapY": 280, "gapH": 320 },
+      { "t": "item", "x": 620, "y": 360, "kind": "feather" },
+      { "t": "pillar", "x": 800, "gapY": 300, "gapH": 300 }
+    ]
+  },
+  {
+    "id": "p4-last-light",
+    "width": 1300,
+    "phase": 4,
+    "difficulty": 3,
+    "tags": ["gate", "item"],
+    "entryY": 320,
+    "exitY": 300,
+    "entities": [
+      { "t": "gate", "x": 340, "y": 0, "h": 540, "color": "R" },
+      { "t": "pillar", "x": 700, "gapY": 320, "gapH": 180 },
+      { "t": "item", "x": 980, "y": 200, "kind": "bigFeather" },
+      { "t": "gate", "x": 1140, "y": 0, "h": 540, "color": "B" }
+    ]
+  },
+  {
+    "id": "p4-color-run",
+    "width": 1440,
+    "phase": 4,
+    "difficulty": 4,
+    "tags": ["gate", "item"],
+    "entryY": 270,
+    "exitY": 270,
+    "entities": [
+      { "t": "gate", "x": 300, "y": 0, "h": 270, "color": "R" },
+      { "t": "gate", "x": 300, "y": 270, "h": 270, "color": "B" },
+      { "t": "gate", "x": 700, "y": 0, "h": 540, "color": "P" },
+      { "t": "item", "x": 880, "y": 100, "kind": "rainbow" },
+      { "t": "gate", "x": 1080, "y": 0, "h": 540, "color": "R" }
+    ]
+  },
+  {
+    "id": "p4-wall-maze",
+    "width": 1440,
+    "phase": 4,
+    "difficulty": 4,
+    "tags": ["item"],
+    "entryY": 300,
+    "exitY": 260,
+    "entities": [
+      { "t": "item", "x": 180, "y": 300, "kind": "grow" },
+      { "t": "wall", "x": 360, "y": 0, "h": 280, "breakBy": "L" },
+      { "t": "item", "x": 366, "y": 305, "kind": "gem" },
+      { "t": "wall", "x": 900, "y": 300, "h": 240, "breakBy": "L" },
+      { "t": "item", "x": 1200, "y": 400, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p4-triple-color",
+    "width": 1500,
+    "phase": 4,
+    "difficulty": 4,
+    "tags": ["gate", "item"],
+    "entryY": 280,
+    "exitY": 230,
+    "entities": [
+      { "t": "gate", "x": 280, "y": 0, "h": 540, "color": "B" },
+      { "t": "pillar", "x": 560, "gapY": 300, "gapH": 170 },
+      { "t": "gate", "x": 820, "y": 0, "h": 270, "color": "P" },
+      { "t": "gate", "x": 820, "y": 270, "h": 270, "color": "R" },
+      { "t": "item", "x": 980, "y": 400, "kind": "star" },
+      { "t": "pillar", "x": 1100, "gapY": 230, "gapH": 165 },
+      { "t": "item", "x": 1240, "y": 120, "kind": "shield" },
+      { "t": "gate", "x": 1380, "y": 0, "h": 540, "color": "R" }
+    ]
+  },
+  {
+    "id": "p4-gem-dive",
+    "width": 1380,
+    "phase": 4,
+    "difficulty": 4,
+    "tags": ["item"],
+    "entryY": 220,
+    "exitY": 360,
+    "entities": [
+      { "t": "wire", "x": 160, "y": 120, "w": 400 },
+      { "t": "pillar", "x": 680, "gapY": 200, "gapH": 170 },
+      { "t": "item", "x": 690, "y": 145, "kind": "gem" },
+      { "t": "wire", "x": 900, "y": 300, "w": 300 },
+      { "t": "item", "x": 1100, "y": 420, "kind": "shrink" }
+    ]
+  },
+  {
+    "id": "p4-moving-gates",
+    "width": 1480,
+    "phase": 4,
+    "difficulty": 5,
+    "tags": ["gate", "moving", "item"],
+    "entryY": 260,
+    "exitY": 260,
+    "entities": [
+      { "t": "gate", "x": 320, "y": 0, "h": 270, "color": "R" },
+      { "t": "gate", "x": 320, "y": 270, "h": 270, "color": "P" },
+      { "t": "bug", "x": 680, "y0": 180, "y1": 400, "period": 2 },
+      { "t": "item", "x": 880, "y": 140, "kind": "star" },
+      { "t": "gate", "x": 1020, "y": 0, "h": 540, "color": "B" },
+      { "t": "bug", "x": 1240, "y0": 240, "y1": 420, "period": 1.6 }
+    ]
+  },
+  {
+    "id": "p4-needle-comb",
+    "width": 1500,
+    "phase": 4,
+    "difficulty": 5,
+    "tags": ["item"],
+    "entryY": 260,
+    "exitY": 310,
+    "entities": [
+      { "t": "pillar", "x": 220, "gapY": 240, "gapH": 170 },
+      { "t": "item", "x": 420, "y": 420, "kind": "shrink" },
+      { "t": "pillar", "x": 600, "gapY": 330, "gapH": 165 },
+      { "t": "item", "x": 800, "y": 440, "kind": "feather" },
+      { "t": "pillar", "x": 980, "gapY": 230, "gapH": 170 },
+      { "t": "pillar", "x": 1340, "gapY": 310, "gapH": 175 }
+    ]
+  },
+  {
+    "id": "p4-tube-gauntlet",
+    "width": 1460,
+    "phase": 4,
+    "difficulty": 5,
+    "tags": ["narrow", "moving", "item"],
+    "entryY": 240,
+    "exitY": 280,
+    "entities": [
+      { "t": "narrow", "x": 460, "y": 220, "h": 52, "w": 300, "size": "S" },
+      { "t": "item", "x": 540, "y": 246, "kind": "gem" },
+      { "t": "bug", "x": 980, "y0": 200, "y1": 420, "period": 2.4 },
+      { "t": "item", "x": 1300, "y": 180, "kind": "grow" }
+    ]
+  },
+  {
+    "id": "p4-bug-storm",
+    "width": 1420,
+    "phase": 4,
+    "difficulty": 5,
+    "tags": ["moving", "item"],
+    "entryY": 300,
+    "exitY": 300,
+    "entities": [
+      { "t": "bug", "x": 340, "y0": 200, "y1": 420, "period": 1.8 },
+      { "t": "item", "x": 520, "y": 160, "kind": "efficiency" },
+      { "t": "bug", "x": 700, "y0": 120, "y1": 340, "period": 2.2 },
+      { "t": "bug", "x": 1060, "y0": 260, "y1": 480, "period": 1.6 },
+      { "t": "item", "x": 1260, "y": 380, "kind": "shield" }
+    ]
+  }
+]
