@@ -3,7 +3,8 @@
 S.OWL 동아리 부스 행사용 웹 미니게임 플랫폼.
 게임 플레이 → 포인트 → 레벨·랭크 상승 → 뽑기 티켓 → **S.OWL 부스 방문** → 부스에서 뽑기.
 
-설계 근거는 [`OWLGAMES_SPEC.md`](OWLGAMES_SPEC.md), 구현하며 내린 결정은 [`DECISIONS.md`](DECISIONS.md)에 있습니다.
+설계 근거는 [`OWLGAMES_SPEC.md`](OWLGAMES_SPEC.md)(플랫폼)와 [`OWLRUNNING_GDD.md`](OWLRUNNING_GDD.md)(아울러닝 게임 기획),
+구현하며 내린 결정은 [`DECISIONS.md`](DECISIONS.md)에 있습니다.
 
 ## 스택
 
@@ -55,7 +56,7 @@ npm run dev
 | `/auth/signup` `/auth/login` | 비로그인 | 이름·학번·비밀번호 |
 | `/pending` | 미인증 | 학번 인증 대기 (승인되면 Realtime으로 자동 이동) |
 | `/lobby` | 인증 유저 | 랭크·경험치·티켓 배너·게임 3종·미니 랭킹 |
-| `/game/typer` `/game/flight` `/game/phish` | 인증 유저 | 게임 → 결과 모달 |
+| `/game/typer` `/game/flight` `/game/phish` | 인증 유저 | 나이트 타이퍼 · 아울러닝 · 피싱 헌터 → 결과 모달 |
 | `/rank` `/ticket` `/me` | 인증 유저 | 랭킹 · 코드 발급 · 내 기록 |
 | `/booth` | staff+ | 부스 키오스크 (코드 조회 · 추첨 · 수령 · 가입 승인) |
 | `/board` | 공개 | 부스 전광판 (랭킹 · 통계 · 재고 · 티커) |
@@ -65,10 +66,12 @@ npm run dev
 
 ```bash
 npm run dev        # 개발 서버
-npm run lint       # eslint
-npm run typecheck  # next typegen → tsc --noEmit
-npm test           # vitest (레벨 곡선·랭크·데이터 검증)
-npm run build      # 프로덕션 빌드
+npm run lint           # eslint
+npm run typecheck      # next typegen → tsc --noEmit
+npm test               # vitest 전체
+npm run verify:chunks  # 아울러닝 청크가 통과 가능한지 물리 시뮬로 검증
+npm run sim:flight     # 아울러닝 자동 봇 시뮬레이션 (SIM_RUNS=1000 으로 늘려 튜닝)
+npm run build          # 프로덕션 빌드
 ```
 
 DB 검증 스크립트는 `supabase/tests/`에 있습니다 (레벨 곡선, 추첨 10만회 시뮬레이션).
@@ -78,7 +81,8 @@ DB 검증 스크립트는 `supabase/tests/`에 있습니다 (레벨 곡선, 추�
 ```
 app/          # 라우트 (route group (player)에 로비·랭킹·티켓·내기록)
 components/   # UI · 랭크 뱃지 · 경험치 바 · 뽑기 기계 · 전광판 · 부스 · 관리자
-games/        # core(루프·캔버스·세션) + typer / flight / phish
+games/        # core(루프·캔버스·세션) + typer / flight(아울러닝) / phish
+              #   flight/: config(튜닝 상수) · engine(물리·에너지·청크·점수·렌더) · chunks(레벨 프리팹) · hud
 data/         # 타이퍼 단어, 피싱 카드
 lib/          # supabase 클라이언트, 랭크·설정·포맷, 조회·RPC 래퍼, 데모 데이터
 supabase/     # migrations, tests

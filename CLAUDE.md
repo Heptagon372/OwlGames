@@ -1,6 +1,7 @@
 # 아울게임즈 (OWL GAMES)
 
-S.OWL 부스 행사용 웹 미니게임 플랫폼. 설계 문서는 [`OWLGAMES_SPEC.md`](OWLGAMES_SPEC.md)가 원본이고,
+S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAMES_SPEC.md`](OWLGAMES_SPEC.md),
+아울러닝(=`flight`) 게임 설계는 [`OWLRUNNING_GDD.md`](OWLRUNNING_GDD.md)가 원본이고,
 명세에 없어서 판단한 것들은 [`DECISIONS.md`](DECISIONS.md)에 기록한다. **새 결정은 반드시 DECISIONS.md에 추가할 것.**
 
 ## 스택 / 실행
@@ -18,6 +19,9 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 설계 문서는 [`OWLGAMES_S
 - `lib/rank.ts`는 DB 함수(`level_from_points` 등)와 **같은 수식**이어야 한다. 바꾸면 양쪽 + `tests/rank.test.ts`를 함께 고친다.
 - 게임은 Canvas 2D + rAF 직접 구현(엔진 금지). 공통 루프·캔버스 헬퍼는 `games/core/`.
   피싱 헌터만 한글 가독성·접근성 때문에 카드 UI를 DOM으로 그린다.
+- **아울러닝(`games/flight/`)은 고정 타임스텝(1/60) + 청크 기반 레벨**이다. 로직(`engine/`)과 렌더(`engine/render.ts`),
+  HUD(DOM, `hud/`)를 분리해 두었고, 같은 물리 함수를 청크 검증기(`chunks/verify.ts`)와 봇(`engine/bot.ts`)이 공유한다.
+  레벨을 추가하면 `npm run verify:chunks`가 S·M·L 모두에게 통과 경로가 있는지 확인한다.
 - 모바일 우선. 버튼 최소 터치 영역 44px(`components/ui/Button.tsx`의 size 토큰이 보장).
 - 이미지 에셋 없이 SVG·도형·이모지로 그린다 (`components/brand/OwlMark.tsx`, `RankBadge.tsx`, `GachaMachine.tsx`).
 
@@ -37,6 +41,8 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 설계 문서는 [`OWLGAMES_S
 |---|---|
 | 레벨 곡선·랭크 구간 | `lib/rank.ts` + `supabase/migrations/*.sql` + `tests/rank.test.ts` |
 | 게임 밸런스(K값·제한시간) | `app_config.game_k` / `game_limits` (DB), 표시는 `lib/config.ts` |
+| 아울러닝 물리·에너지·점수 튜닝 | `games/flight/config.ts`의 `CFG` 한 곳 (매직넘버 금지) |
+| 아울러닝 레벨 디자인 | `games/flight/chunks/p0~p4.json` → `npm run verify:chunks`로 통과 가능성 검증 |
 | 뽑기 확률·상품 | `app_config.gacha_table`, `prizes` 테이블 (관리자 화면에서 재고 수정) |
 | 단어·피싱 카드 추가 | `data/typer-words.ts`, `data/phish-cards.ts` (형식은 `tests/data.test.ts`가 검증) |
 | 부스 위치 안내 | `app_config.booth_location` |
