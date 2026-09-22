@@ -14,14 +14,45 @@ import type { GameId, SubmitResult } from "@/lib/types";
 
 const BAR_MS = 1400;
 
+/** 게임별 상세 기록 (아울러닝 §12 결과 화면) */
+function gameStats(game: GameId, meta: Record<string, unknown> | null): { label: string; value: string }[] {
+  if (!meta) return [];
+  const n = (k: string) => (typeof meta[k] === "number" ? (meta[k] as number) : 0);
+  if (game === "flight") {
+    const stats = [
+      { label: "거리", value: `${formatNumber(n("distance_m"))} m` },
+      { label: "최고 콤보", value: formatNumber(n("combo_max")) },
+      { label: "NEAR MISS", value: formatNumber(n("near_miss")) },
+      { label: "아이템", value: `${formatNumber(n("items"))}개` },
+      { label: "도달 페이즈", value: `P${n("phase_max")}` },
+    ];
+    if (n("special_cleared") > 0) stats.push({ label: "특수 구간", value: `${n("special_cleared")}회 완주` });
+    return stats;
+  }
+  if (game === "typer") {
+    return [
+      { label: "파괴", value: `${formatNumber(n("hits"))}개` },
+      { label: "놓침", value: `${formatNumber(n("misses"))}개` },
+      { label: "최고 콤보", value: formatNumber(n("max_combo")) },
+    ];
+  }
+  return [
+    { label: "정답", value: `${formatNumber(n("correct"))}개` },
+    { label: "오답", value: `${formatNumber(n("wrong"))}개` },
+    { label: "최고 연속", value: formatNumber(n("max_streak")) },
+  ];
+}
+
 /** 결과 모달 (§7 공통) — 원점수 · 포인트 · 경험치 바 · 레벨업/랭크업 연출 · 티켓 알림 */
 export function ResultModal({
   game,
   result,
+  meta,
   onRetry,
 }: {
   game: GameId;
   result: SubmitResult;
+  meta?: Record<string, unknown> | null;
   onRetry: () => void;
 }) {
   const rankUp = result.rank_after > result.rank_before;
@@ -50,7 +81,8 @@ export function ResultModal({
     return () => clearTimeout(t);
   }, [rankUp]);
 
-  const meta = GAMES[game];
+  const gameMeta = GAMES[game];
+  const stats = gameStats(game, meta ?? null);
   const before = result.total_points - result.points;
 
   if (result.status === "rejected") {
@@ -75,14 +107,14 @@ export function ResultModal({
 
   return (
     <>
-      <Modal open title={`${meta.emoji} ${meta.title} 결과`} dismissible={false}>
+      <Modal open title={`${gameMeta.emoji} ${gameMeta.title} 결과`} dismissible={false}>
         <div className="grid gap-4">
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-tile border border-line bg-night/60 p-4 text-center">
               <p className="text-xs text-mute">원점수</p>
               <p className="num mt-1 text-2xl font-black">
                 {formatNumber(result.raw_score)}
-                <span className="ml-1 text-sm text-mute">{meta.scoreUnit}</span>
+                <span className="ml-1 text-sm text-mute">{gameMeta.scoreUnit}</span>
               </p>
             </div>
             <div className="rounded-tile border border-neon/40 bg-neon/10 p-4 text-center">
@@ -90,6 +122,17 @@ export function ResultModal({
               <p className="num mt-1 text-2xl font-black text-neon">+{formatNumber(points)}P</p>
             </div>
           </div>
+
+          {stats.length > 0 && (
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-tile border border-line bg-night/60 px-4 py-3 text-sm">
+              {stats.map((s) => (
+                <div key={s.label} className="flex items-center justify-between gap-2">
+                  <dt className="text-mute">{s.label}</dt>
+                  <dd className="num font-bold">{s.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
 
           <div className="rounded-tile border border-line bg-night/60 p-4">
             <div className="mb-3 flex items-center gap-3">
