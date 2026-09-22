@@ -20,15 +20,15 @@ const Loading = () => (
 
 const GAME_COMPONENTS: Record<GameId, React.ComponentType<GameComponentProps>> = {
   typer: dynamic(() => import("./typer/TyperGame").then((m) => m.TyperGame), { ssr: false, loading: Loading }),
-  flight: dynamic(() => import("./flight/FlightGame").then((m) => m.FlightGame), { ssr: false, loading: Loading }),
+  flight: dynamic(() => import("./flight").then((m) => m.FlightGame), { ssr: false, loading: Loading }),
   phish: dynamic(() => import("./phish/PhishGame").then((m) => m.PhishGame), { ssr: false, loading: Loading }),
 };
 
 /** 인트로 → 카운트다운 → 플레이 → 제출 → 결과 */
 export function GameShell({ game }: { game: GameId }) {
-  const meta = GAMES[game];
+  const gameMeta = GAMES[game];
   const router = useRouter();
-  const { phase, result, error, start, finish, reset } = useGameSession(game);
+  const { phase, result, meta, error, start, finish, reset } = useGameSession(game);
   const [count, setCount] = useState<number | null>(null);
   const GameComponent = GAME_COMPONENTS[game];
 
@@ -62,7 +62,7 @@ export function GameShell({ game }: { game: GameId }) {
           로비
         </Link>
         <p className="font-mono text-xs tracking-widest text-aqua">
-          {meta.emoji} {meta.title}
+          {gameMeta.emoji} {gameMeta.title}
         </p>
         <span className="w-16" />
       </div>
@@ -71,11 +71,11 @@ export function GameShell({ game }: { game: GameId }) {
         {phase === "intro" || phase === "starting" ? (
           <div className="grid h-full place-items-center overflow-y-auto p-5">
             <Card className="w-full max-w-sm text-center">
-              <div className="text-6xl">{meta.emoji}</div>
-              <h1 className="mt-3 text-2xl font-black">{meta.title}</h1>
-              <p className="mt-1 text-sm text-mute">{meta.tagline}</p>
+              <div className="text-6xl">{gameMeta.emoji}</div>
+              <h1 className="mt-3 text-2xl font-black">{gameMeta.title}</h1>
+              <p className="mt-1 text-sm text-mute">{gameMeta.tagline}</p>
               <ul className="mt-5 grid gap-2 text-left">
-                {meta.rules.map((r) => (
+                {gameMeta.rules.map((r) => (
                   <li key={r} className="flex gap-2 rounded-tile border border-line bg-night/60 px-3 py-2.5 text-sm">
                     <span className="text-neon">▸</span>
                     <span className="text-mute">{r}</span>
@@ -83,7 +83,7 @@ export function GameShell({ game }: { game: GameId }) {
                 ))}
               </ul>
               <p className="num mt-4 text-xs text-dim">
-                {game === "flight" ? `최대 ${meta.duration}초` : `${meta.duration}초`} · 한 판 30~300P
+                {game === "flight" ? `최대 ${gameMeta.duration}초` : `${gameMeta.duration}초`} · 한 판 30~300P
               </p>
               <Button size="lg" block className="mt-5" onClick={start} disabled={phase === "starting"}>
                 <Play className="size-5" />
@@ -130,7 +130,7 @@ export function GameShell({ game }: { game: GameId }) {
         )}
       </div>
 
-      {phase === "result" && result && <ResultModal game={game} result={result} onRetry={start} />}
+      {phase === "result" && result && <ResultModal game={game} result={result} meta={meta} onRetry={start} />}
     </div>
   );
 }

@@ -1,0 +1,145 @@
+[
+  {
+    "id": "p0-open-sky",
+    "width": 960,
+    "phase": 0,
+    "difficulty": 1,
+    "tags": ["breather", "item"],
+    "entryY": 300,
+    "exitY": 300,
+    "entities": [
+      { "t": "wire", "x": 360, "y": 180, "w": 220 },
+      { "t": "item", "x": 620, "y": 260, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p0-feather-trail",
+    "width": 1000,
+    "phase": 0,
+    "difficulty": 1,
+    "tags": ["breather", "item"],
+    "entryY": 300,
+    "exitY": 300,
+    "entities": [
+      { "t": "wire", "x": 200, "y": 150, "w": 200 },
+      { "t": "item", "x": 440, "y": 330, "kind": "feather" },
+      { "t": "item", "x": 600, "y": 300, "kind": "feather" },
+      { "t": "item", "x": 760, "y": 270, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p0-wire-canopy",
+    "width": 1040,
+    "phase": 0,
+    "difficulty": 1,
+    "tags": ["item"],
+    "entryY": 260,
+    "exitY": 300,
+    "entities": [
+      { "t": "wire", "x": 280, "y": 190, "w": 320 },
+      { "t": "wire", "x": 700, "y": 140, "w": 260 },
+      { "t": "item", "x": 560, "y": 300, "kind": "feather" },
+      { "t": "item", "x": 960, "y": 280, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p0-first-pillar",
+    "width": 1120,
+    "phase": 0,
+    "difficulty": 2,
+    "tags": ["item"],
+    "entryY": 150,
+    "exitY": 260,
+    "entities": [
+      { "t": "pillar", "x": 90, "gapY": 330, "gapH": 420 },
+      { "t": "wire", "x": 520, "y": 120, "w": 240 },
+      { "t": "item", "x": 760, "y": 420, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p0-high-low",
+    "width": 1200,
+    "phase": 0,
+    "difficulty": 2,
+    "tags": ["item"],
+    "entryY": 300,
+    "exitY": 260,
+    "entities": [
+      { "t": "wire", "x": 240, "y": 230, "w": 320 },
+      { "t": "wire", "x": 720, "y": 380, "w": 300 },
+      { "t": "item", "x": 880, "y": 330, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p0-under-bridge",
+    "width": 1280,
+    "phase": 0,
+    "difficulty": 2,
+    "tags": ["item"],
+    "entryY": 320,
+    "exitY": 320,
+    "entities": [
+      { "t": "wire", "x": 400, "y": 300, "w": 520 },
+      { "t": "item", "x": 620, "y": 250, "kind": "feather" },
+      { "t": "item", "x": 1080, "y": 340, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p0-arch-and-rope",
+    "width": 1240,
+    "phase": 0,
+    "difficulty": 2,
+    "tags": ["item"],
+    "entryY": 250,
+    "exitY": 300,
+    "entities": [
+      { "t": "pillar", "x": 70, "gapY": 390, "gapH": 300 },
+      { "t": "wire", "x": 560, "y": 330, "w": 360 },
+      { "t": "item", "x": 980, "y": 300, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p0-high-road",
+    "width": 1160,
+    "phase": 0,
+    "difficulty": 2,
+    "tags": ["item"],
+    "entryY": 200,
+    "exitY": 240,
+    "entities": [
+      { "t": "wire", "x": 300, "y": 420, "w": 420 },
+      { "t": "wire", "x": 800, "y": 455, "w": 280 },
+      { "t": "item", "x": 600, "y": 380, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p0-pillar-window",
+    "width": 1100,
+    "phase": 0,
+    "difficulty": 2,
+    "tags": ["item"],
+    "entryY": 180,
+    "exitY": 240,
+    "entities": [
+      { "t": "pillar", "x": 85, "gapY": 330, "gapH": 420 },
+      { "t": "wire", "x": 520, "y": 160, "w": 300 },
+      { "t": "item", "x": 880, "y": 300, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p0-zigzag-wires",
+    "width": 1320,
+    "phase": 0,
+    "difficulty": 2,
+    "tags": ["item"],
+    "entryY": 340,
+    "exitY": 300,
+    "entities": [
+      { "t": "wire", "x": 260, "y": 250, "w": 240 },
+      { "t": "wire", "x": 640, "y": 170, "w": 300 },
+      { "t": "wire", "x": 1020, "y": 400, "w": 240 },
+      { "t": "item", "x": 520, "y": 330, "kind": "feather" },
+      { "t": "item", "x": 900, "y": 290, "kind": "feather" }
+    ]
+  }
+]

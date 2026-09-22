@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "verify:chunks": "vitest run tests/chunks.test.ts",
+    "sim:flight": "vitest run tests/flight-sim.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

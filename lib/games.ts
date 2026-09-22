@@ -30,16 +30,16 @@ export const GAMES: Record<GameId, GameMeta> = {
   },
   flight: {
     id: "flight",
-    title: "올빼미 비행",
+    title: "아울러닝",
     emoji: "🦉",
-    tagline: "한밤 캠퍼스를 날아라 — 원버튼 아케이드",
+    tagline: "색을 맞추고, 몸집을 고르고, 날갯짓을 아끼며 더 멀리",
     rules: [
-      "탭 · 클릭 · 스페이스 = 날갯짓",
-      "가로등 · 전깃줄 · 🐛 버그를 피하기",
-      "☕ 커피 = 3초 무적, ⭐ 별 = +20",
+      "꾹 누르면 상승 · 떼면 활공 (에너지는 날갯짓할 때만 줄어요)",
+      "색 게이트는 같은 색·도형으로 통과 — 틀려도 죽지 않고 에너지만 깎여요",
+      "🪶 에너지 · 🟢🔵 크기 · 🛡️🌈 버프를 챙기며 더 멀리",
     ],
     duration: 180,
-    scoreUnit: "m",
+    scoreUnit: "점",
     accent: "cyan",
   },
   phish: {

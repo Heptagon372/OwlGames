@@ -33,7 +33,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   open_hours: { start: "09:00", end: "18:00", tz: "Asia/Seoul" },
   force_open: "auto",
   level_curve: { base: 30, step: 5 },
-  game_k: { typer: 4, flight: 3, phish: 10 },
+  game_k: { typer: 4, flight: 20, phish: 10 },
   game_limits: {
     typer: { min_sec: 10, max_sec: 65 },
     flight: { min_sec: 3, max_sec: 185 },

@@ -1,0 +1,167 @@
+[
+  {
+    "id": "p2-breather-glide",
+    "width": 1040,
+    "phase": 2,
+    "difficulty": 2,
+    "tags": ["breather", "item"],
+    "entryY": 280,
+    "exitY": 280,
+    "entities": [
+      { "t": "wire", "x": 300, "y": 180, "w": 300 },
+      { "t": "item", "x": 620, "y": 330, "kind": "feather" },
+      { "t": "item", "x": 860, "y": 260, "kind": "star" }
+    ]
+  },
+  {
+    "id": "p2-glide-window",
+    "width": 1040,
+    "phase": 2,
+    "difficulty": 2,
+    "tags": ["breather", "item"],
+    "entryY": 300,
+    "exitY": 300,
+    "entities": [
+      { "t": "pillar", "x": 420, "gapY": 300, "gapH": 300 },
+      { "t": "item", "x": 760, "y": 360, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p2-shortcut",
+    "width": 1200,
+    "phase": 2,
+    "difficulty": 3,
+    "tags": ["narrow", "item"],
+    "entryY": 300,
+    "exitY": 300,
+    "entities": [
+      { "t": "narrow", "x": 560, "y": 250, "h": 56, "w": 200, "size": "S" },
+      { "t": "item", "x": 600, "y": 278, "kind": "gem" },
+      { "t": "item", "x": 900, "y": 300, "kind": "grow" }
+    ]
+  },
+  {
+    "id": "p2-tube-vs-arc",
+    "width": 1300,
+    "phase": 2,
+    "difficulty": 3,
+    "tags": ["narrow", "item"],
+    "entryY": 200,
+    "exitY": 300,
+    "entities": [
+      { "t": "item", "x": 300, "y": 260, "kind": "shrink" },
+      { "t": "narrow", "x": 500, "y": 180, "h": 60, "w": 300, "size": "S" },
+      { "t": "item", "x": 560, "y": 210, "kind": "gem" },
+      { "t": "item", "x": 1100, "y": 380, "kind": "shield" }
+    ]
+  },
+  {
+    "id": "p2-break-or-duck",
+    "width": 1260,
+    "phase": 2,
+    "difficulty": 3,
+    "tags": ["item"],
+    "entryY": 240,
+    "exitY": 300,
+    "entities": [
+      { "t": "item", "x": 300, "y": 260, "kind": "grow" },
+      { "t": "wall", "x": 560, "y": 0, "h": 300, "breakBy": "L" },
+      { "t": "item", "x": 580, "y": 140, "kind": "star" },
+      { "t": "item", "x": 1000, "y": 420, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p2-stacked-gates",
+    "width": 1220,
+    "phase": 2,
+    "difficulty": 3,
+    "tags": ["gate", "item"],
+    "entryY": 270,
+    "exitY": 270,
+    "entities": [
+      { "t": "gate", "x": 420, "y": 0, "h": 270, "color": "R" },
+      { "t": "gate", "x": 420, "y": 270, "h": 270, "color": "B" },
+      { "t": "pillar", "x": 760, "gapY": 300, "gapH": 210 },
+      { "t": "item", "x": 1020, "y": 200, "kind": "star" }
+    ]
+  },
+  {
+    "id": "p2-shrink-run",
+    "width": 1300,
+    "phase": 2,
+    "difficulty": 3,
+    "tags": ["narrow", "item"],
+    "entryY": 320,
+    "exitY": 280,
+    "entities": [
+      { "t": "item", "x": 200, "y": 300, "kind": "shrink" },
+      { "t": "narrow", "x": 560, "y": 250, "h": 64, "w": 320, "size": "S" },
+      { "t": "item", "x": 620, "y": 282, "kind": "bigFeather" },
+      { "t": "item", "x": 1140, "y": 330, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p2-narrow-ceiling",
+    "width": 1340,
+    "phase": 2,
+    "difficulty": 4,
+    "tags": ["narrow", "item"],
+    "entryY": 300,
+    "exitY": 220,
+    "entities": [
+      { "t": "pillar", "x": 260, "gapY": 320, "gapH": 210 },
+      { "t": "narrow", "x": 700, "y": 300, "h": 56, "w": 260, "size": "S" },
+      { "t": "item", "x": 760, "y": 328, "kind": "bigFeather" },
+      { "t": "item", "x": 1120, "y": 260, "kind": "grow" }
+    ]
+  },
+  {
+    "id": "p2-pillar-comb",
+    "width": 1400,
+    "phase": 2,
+    "difficulty": 4,
+    "tags": ["item"],
+    "entryY": 260,
+    "exitY": 320,
+    "entities": [
+      { "t": "pillar", "x": 220, "gapY": 240, "gapH": 210 },
+      { "t": "item", "x": 440, "y": 120, "kind": "grow" },
+      { "t": "pillar", "x": 640, "gapY": 350, "gapH": 200 },
+      { "t": "pillar", "x": 1060, "gapY": 300, "gapH": 210 },
+      { "t": "item", "x": 880, "y": 440, "kind": "star" }
+    ]
+  },
+  {
+    "id": "p2-wall-gate-mix",
+    "width": 1380,
+    "phase": 2,
+    "difficulty": 4,
+    "tags": ["gate", "item"],
+    "entryY": 300,
+    "exitY": 260,
+    "entities": [
+      { "t": "gate", "x": 340, "y": 0, "h": 270, "color": "P" },
+      { "t": "gate", "x": 340, "y": 270, "h": 270, "color": "R" },
+      { "t": "wall", "x": 700, "y": 240, "h": 300, "breakBy": "L" },
+      { "t": "item", "x": 706, "y": 60, "kind": "gem" },
+      { "t": "item", "x": 702, "y": 420, "kind": "star" },
+      { "t": "item", "x": 1100, "y": 380, "kind": "feather" }
+    ]
+  },
+  {
+    "id": "p2-tight-pass",
+    "width": 1240,
+    "phase": 2,
+    "difficulty": 4,
+    "tags": ["item"],
+    "entryY": 200,
+    "exitY": 420,
+    "entities": [
+      { "t": "wire", "x": 120, "y": 120, "w": 400 },
+      { "t": "item", "x": 420, "y": 170, "kind": "shield" },
+      { "t": "pillar", "x": 600, "gapY": 210, "gapH": 200 },
+      { "t": "wire", "x": 820, "y": 380, "w": 300 },
+      { "t": "item", "x": 1080, "y": 460, "kind": "feather" }
+    ]
+  }
+]
