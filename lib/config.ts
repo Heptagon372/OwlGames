@@ -17,6 +17,16 @@ export type BoothLocation = {
   note?: string;
 };
 
+export type OwlEnergyConfig = {
+  regen_min: number;
+  cap: number;
+  hard_cap: number;
+  cost: number;
+  drop_min_phase: number;
+  drop_min_distance: number;
+  drop_daily_cap: number;
+};
+
 export type AppConfig = {
   open_hours: OpenHours;
   force_open: ForceOpen;
@@ -27,6 +37,7 @@ export type AppConfig = {
   booth_location: BoothLocation;
   student_id_pattern: string;
   redeem_code_ttl_min: number;
+  owl_energy: OwlEnergyConfig;
 };
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -56,6 +67,15 @@ export const DEFAULT_CONFIG: AppConfig = {
   },
   student_id_pattern: "^[0-9]{9}$",
   redeem_code_ttl_min: 10,
+  owl_energy: {
+    regen_min: 10,
+    cap: 10,
+    hard_cap: 20,
+    cost: 1,
+    drop_min_phase: 3,
+    drop_min_distance: 900,
+    drop_daily_cap: 5,
+  },
 };
 
 export function mergeConfig(rows: { key: string; value: unknown }[] | null | undefined): AppConfig {

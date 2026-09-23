@@ -15,6 +15,7 @@ export const ITEM_SCORE: Record<ItemKind, number> = {
   rainbow: 60,
   gem: 150,
   star: 50,
+  owlEnergy: CFG.owlEnergy.score,
 };
 
 export type ScoreState = {
@@ -130,8 +131,9 @@ export function buildStats(args: {
   energyLeft: number;
   phaseMax: number;
   size: SizeKey;
+  owlEnergyFound: boolean;
 }): FlightStats {
-  const { meters, durationSec, turboMeters, s, energyLeft, phaseMax, size } = args;
+  const { meters, durationSec, turboMeters, s, energyLeft, phaseMax, size, owlEnergyFound } = args;
   return {
     distance_m: Math.floor(meters),
     duration_s: Math.round(durationSec * 10) / 10,
@@ -145,6 +147,7 @@ export function buildStats(args: {
     phase_max: phaseMax,
     special_cleared: s.specialCleared,
     special_bonus_score: specialBonusScore(s, turboMeters),
+    owl_energy_found: owlEnergyFound,
     size_end: size,
     build: BUILD,
   };

@@ -4,9 +4,10 @@ import { Logo } from "./brand/Logo";
 import { RankBadge } from "./RankBadge";
 import { ExpBar } from "./ExpBar";
 import { DemoBanner } from "./DemoBanner";
+import { OwlEnergyBar } from "./OwlEnergyBar";
 import { cn } from "@/lib/cn";
 import { rankInfo } from "@/lib/rank";
-import type { Profile } from "@/lib/types";
+import type { OwlEnergy, Profile } from "@/lib/types";
 
 const NAV = [
   { href: "/lobby", label: "로비", icon: Gamepad2 },
@@ -18,10 +19,12 @@ const NAV = [
 /** 로비·랭킹·티켓·내기록 공통 셸 (모바일 우선: 하단 탭바) */
 export function PlayerShell({
   profile,
+  energy,
   current,
   children,
 }: {
   profile: Profile;
+  energy: OwlEnergy;
   current: string;
   children: React.ReactNode;
 }) {
@@ -41,8 +44,9 @@ export function PlayerShell({
             <RankBadge rankIdx={profile.rank_idx} size="sm" />
           </Link>
         </div>
-        <div className="px-4 pb-3">
-          <ExpBar points={profile.total_points} compact />
+        <div className="flex items-center gap-3 px-4 pb-3">
+          <ExpBar points={profile.total_points} compact className="flex-1" />
+          <OwlEnergyBar initial={energy} compact />
         </div>
       </header>
 

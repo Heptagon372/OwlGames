@@ -14,7 +14,7 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 
 ## 아키텍처 원칙
 
-- **포인트·레벨·랭크·티켓·추첨은 전부 서버(Postgres RPC, `security definer`)에서 계산한다.**
+- **포인트·레벨·랭크·티켓·추첨·아울 에너지는 전부 서버(Postgres RPC, `security definer`)에서 계산한다.**
   클라이언트는 `lib/rpc.ts` 래퍼로만 호출하고, 결과를 표시만 한다.
 - `lib/rank.ts`는 DB 함수(`level_from_points` 등)와 **같은 수식**이어야 한다. 바꾸면 양쪽 + `tests/rank.test.ts`를 함께 고친다.
 - 게임은 Canvas 2D + rAF 직접 구현(엔진 금지). 공통 루프·캔버스 헬퍼는 `games/core/`.
@@ -49,6 +49,7 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 뽑기 확률·상품 | `app_config.gacha_table`, `prizes` 테이블 (관리자 화면에서 재고 수정) |
 | 단어·피싱 카드 추가 | `data/typer-words.ts`, `data/phish-cards.ts` (형식은 `tests/data.test.ts`가 검증) |
 | 부스 위치 안내 | `app_config.booth_location` |
+| 아울 에너지(스태미나) | `app_config.owl_energy` (DB) · 표시 기본값은 `lib/config.ts` · 게임 내 드롭은 `games/flight/config.ts`의 `CFG.owlEnergy` |
 
 ## 주의
 

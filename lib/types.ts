@@ -12,6 +12,8 @@ export type Profile = {
   total_points: number;
   level: number;
   rank_idx: number;
+  /** 아울 에너지 (마이그레이션 20260925 이후) */
+  owl_energy?: number;
   created_at: string;
 };
 
@@ -100,6 +102,26 @@ export type BoardStats = {
 
 // ---- RPC 응답 ----
 
+/** 아울 에너지 (스태미나) — 10분마다 1개, 최대 10개 */
+export type OwlEnergy = {
+  energy: number;
+  cap: number;
+  hard_cap: number;
+  cost: number;
+  /** 다음 1개까지 남은 초 (가득 찼으면 0) */
+  next_refill_sec: number;
+  /** 가득 찰 때까지 남은 초 */
+  full_in_sec: number;
+};
+
+export type EnergyGrantResult = {
+  user_id: string;
+  name: string;
+  student_id: string;
+  energy: number;
+  granted: number;
+};
+
 export type SubmitResult = {
   status: "ok" | "rejected";
   reason?: string;
@@ -111,6 +133,10 @@ export type SubmitResult = {
   rank_before: number;
   rank_after: number;
   tickets_gained: number;
+  /** 게임에서 아울 에너지를 주웠는지 (서버가 최종 판정) */
+  owl_energy_gained?: number;
+  /** 제출 후 남은 아울 에너지 */
+  owl_energy?: number;
 };
 
 export type IssuedCode = {

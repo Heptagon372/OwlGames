@@ -71,6 +71,8 @@ export const CFG = {
     breakWall: 100,
   },
   shield: { maxStack: 1 },
+  /** 🦉 아울 에너지 드롭 — 높은 스테이지에서 가끔 등장 (실제 지급은 서버가 판정) */
+  owlEnergy: { minPhase: 3, chance: 0.16, score: 100 },
   rainbow: { sec: 5 },
   /** 페이즈 해금 (거리 m) — 기획서 §3 */
   phases: [

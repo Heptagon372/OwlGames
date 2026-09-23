@@ -6,7 +6,7 @@ import { RankBadge } from "@/components/RankBadge";
 import { Card, Chip, TermLabel } from "@/components/ui/Card";
 import { formatNumber } from "@/lib/format";
 import { GAMES, isGameId } from "@/lib/games";
-import { getGameBests, getLeaderboard, getMyPosition, getMyProfile } from "@/lib/queries";
+import { getGameBests, getLeaderboard, getMyPosition, getMyProfile, getOwlEnergy } from "@/lib/queries";
 import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = { title: "랭킹" };
@@ -23,10 +23,11 @@ export default async function RankPage({ searchParams }: { searchParams: Promise
   const { tab } = await searchParams;
   const active = tab && (tab === "all" || isGameId(tab)) ? tab : "all";
 
-  const [rows, bests, myPos] = await Promise.all([
+  const [rows, bests, myPos, energy] = await Promise.all([
     active === "all" ? getLeaderboard(50) : Promise.resolve([]),
     active !== "all" && isGameId(active) ? getGameBests(active, 50) : Promise.resolve([]),
     getMyPosition(profile.id),
+    getOwlEnergy(),
   ]);
 
   const list =
@@ -51,7 +52,7 @@ export default async function RankPage({ searchParams }: { searchParams: Promise
         }));
 
   return (
-    <PlayerShell profile={profile} current="/rank">
+    <PlayerShell profile={profile} energy={energy} current="/rank">
       <TermLabel>ranking --board {active}</TermLabel>
       <h1 className="mb-4 mt-1 text-2xl font-black">랭킹</h1>
 

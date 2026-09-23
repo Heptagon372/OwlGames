@@ -18,7 +18,7 @@ import {
 } from "@/lib/client-queries";
 import { formatDateTime, timeAgo } from "@/lib/format";
 import { GAMES } from "@/lib/games";
-import { deleteUser, setForceOpen, setStock, setUserRole } from "@/lib/rpc";
+import { deleteUser, setForceOpen, setStock, setUserEnergy, setUserRole } from "@/lib/rpc";
 import type { GameSessionRow, PrizeRow, Profile, UserRole } from "@/lib/types";
 
 const TABS = [
@@ -127,6 +127,23 @@ function UsersTab({ meId }: { meId: string }) {
                 {u.student_id} · Lv {u.level} · {u.total_points}P
               </p>
             </div>
+            <label className="flex items-center gap-1 text-xs text-mute" title="아울 에너지">
+              🦉
+              <input
+                type="number"
+                min={0}
+                max={20}
+                defaultValue={u.owl_energy ?? 0}
+                onBlur={(e) => {
+                  const v = Math.max(0, Math.min(20, Number(e.target.value)));
+                  setUserEnergy(u.id, v).catch((err) =>
+                    setError(err instanceof Error ? err.message : "에너지 조정에 실패했어요"),
+                  );
+                }}
+                aria-label={`${u.name} 아울 에너지`}
+                className="num min-h-11 w-14 rounded-xl border border-line bg-night px-2 text-right outline-none focus:border-aqua/60"
+              />
+            </label>
             <select
               value={u.role}
               onChange={(e) => changeRole(u, e.target.value as UserRole)}

@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRight, Ticket as TicketIcon, TriangleAlert } from "lucide-react";
+import { OwlEnergyBar } from "@/components/OwlEnergyBar";
 import { PlayerShell } from "@/components/PlayerShell";
 import { RankBadge } from "@/components/RankBadge";
 import { Card, Chip, SectionTitle, TermLabel } from "@/components/ui/Card";
 import { ButtonLink } from "@/components/ui/Button";
 import { formatNumber } from "@/lib/format";
 import { GAMES } from "@/lib/games";
-import { getIsOpen, getLeaderboard, getMyPosition, getMyProfile, getMyTickets } from "@/lib/queries";
+import { getIsOpen, getLeaderboard, getMyPosition, getMyProfile, getOwlEnergy, getMyTickets } from "@/lib/queries";
 import { rankInfo, rankLevelRange } from "@/lib/rank";
 
 export const metadata: Metadata = { title: "로비" };
@@ -21,12 +22,13 @@ export default async function LobbyPage({
   const profile = await getMyProfile();
   if (!profile) redirect("/auth/login");
 
-  const [{ closed }, open, tickets, top, myPos] = await Promise.all([
+  const [{ closed }, open, tickets, top, myPos, energy] = await Promise.all([
     searchParams,
     getIsOpen(),
     getMyTickets(),
     getLeaderboard(10),
     getMyPosition(profile.id),
+    getOwlEnergy(),
   ]);
 
   const unused = tickets.filter((t) => t.status === "unused").length;
@@ -34,7 +36,7 @@ export default async function LobbyPage({
   const r = rankInfo(profile.rank_idx);
 
   return (
-    <PlayerShell profile={profile} current="/lobby">
+    <PlayerShell profile={profile} energy={energy} current="/lobby">
       {(!open || closed) && (
         <div className="mb-4 flex items-center gap-2 rounded-tile border border-alert/40 bg-alert/10 px-4 py-3 text-sm text-alert">
           <TriangleAlert className="size-4 shrink-0" />
@@ -58,6 +60,9 @@ export default async function LobbyPage({
           </p>
         </div>
       </Card>
+
+      {/* 아울 에너지 */}
+      <OwlEnergyBar initial={energy} className="mt-3" />
 
       {/* 티켓 배너 */}
       <Link href="/ticket" className="mt-3 block">
@@ -94,19 +99,23 @@ export default async function LobbyPage({
                   <p className="text-lg font-extrabold">{g.title}</p>
                   <p className="mt-0.5 text-sm text-mute">{g.tagline}</p>
                   <p className="num mt-1.5 text-[11px] text-dim">
-                    {g.id === "flight" ? `최대 ${g.duration}초` : `${g.duration}초`} · 30~300P
+                    {g.id === "flight" ? `최대 ${g.duration}초` : `${g.duration}초`} · 30~300P · 🦉 {energy.cost}
                   </p>
                 </div>
               </div>
               <div className="mt-4">
-                {open ? (
-                  <ButtonLink href={`/game/${g.id}`} block variant={g.accent === "amber" ? "primary" : "outline"}>
-                    플레이
-                  </ButtonLink>
-                ) : (
+                {!open ? (
                   <div className="grid min-h-12 place-items-center rounded-2xl border border-line bg-night/60 text-sm text-dim">
                     운영시간에 열려요
                   </div>
+                ) : energy.energy < energy.cost ? (
+                  <div className="grid min-h-12 place-items-center rounded-2xl border border-alert/40 bg-alert/10 text-sm text-alert">
+                    🦉 아울 에너지가 부족해요
+                  </div>
+                ) : (
+                  <ButtonLink href={`/game/${g.id}`} block variant={g.accent === "amber" ? "primary" : "outline"}>
+                    플레이
+                  </ButtonLink>
                 )}
               </div>
             </Card>

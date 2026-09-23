@@ -154,6 +154,15 @@ export function ResultModal({
             />
           </div>
 
+          {(result.owl_energy_gained ?? 0) > 0 && (
+            <div className="flex items-center gap-2 rounded-tile border border-aqua/50 bg-aqua/10 px-4 py-3 font-extrabold text-aqua">
+              🦉 아울 에너지 +{result.owl_energy_gained}
+              {typeof result.owl_energy === "number" && (
+                <span className="num ml-auto text-sm font-bold text-mute">보유 {result.owl_energy}</span>
+              )}
+            </div>
+          )}
+
           {result.tickets_gained > 0 && (
             <div className="flex items-center gap-2 rounded-tile border border-neon/50 bg-neon/10 px-4 py-3 font-extrabold text-neon">
               <Ticket className="size-5" />

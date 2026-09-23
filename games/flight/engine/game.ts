@@ -46,6 +46,8 @@ export type Game = {
   deathCause: DeathCause;
   deathAt: number;
   fallT: number;
+  /** 🦉 아울 에너지를 주웠는지 (제출 메타로 서버에 보낸다) */
+  owlEnergyFound: boolean;
 
   banner: Banner;
   flash: number;
@@ -96,6 +98,7 @@ export function createGame(seed = Date.now()): Game {
     deathCause: null,
     deathAt: 0,
     fallT: 0,
+    owlEnergyFound: false,
     banner: { text: phaseHint(0), until: 3 },
     flash: 0,
     shake: 0,
@@ -326,6 +329,11 @@ function collectItem(g: Game, kind: ItemKind): void {
     case "rainbow":
       g.rainbow = CFG.rainbow.sec;
       break;
+    case "owlEnergy":
+      g.owlEnergyFound = true;
+      g.banner = { text: "🦉 아울 에너지 발견!", sub: "게임을 한 판 더 할 수 있어요", until: g.time + 2.5 };
+      burst(g, OWL_X, g.y, "#3DD9EB", 22);
+      break;
     case "gem":
     case "star":
       break;
@@ -393,6 +401,7 @@ export function finalStats(g: Game): FlightStats {
     energyLeft: g.energy.value,
     phaseMax: g.phaseMax,
     size: g.size,
+    owlEnergyFound: g.owlEnergyFound,
   });
 }
 

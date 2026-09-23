@@ -29,6 +29,7 @@ export function createSpawner(rand: () => number, startX: number) {
   let lastExitY = CFG.view.h / 2;
   const lastIds: string[] = [];
   let hardStreak = 0;
+  let energyDropped = false;
   const entities: SpawnedEntity[] = [];
 
   function candidates(phase: number, special: SpecialKind | null, needBreather: boolean): Chunk[] {
@@ -72,6 +73,21 @@ export function createSpawner(rand: () => number, startX: number) {
     }
   }
 
+  /** 🦉 아울 에너지 — 높은 스테이지에서 한 판에 한 번만, 낮은 확률로 등장 */
+  function maybeDropEnergy(chunk: Chunk, originX: number, phase: number, scroll: number) {
+    if (energyDropped || phase < CFG.owlEnergy.minPhase || rand() >= CFG.owlEnergy.chance) return;
+    energyDropped = true;
+    const y = Math.max(80, Math.min(CFG.view.h - 80, (chunk.entryY + chunk.exitY) / 2));
+    const item: Entity = { t: "item", x: 0, y, kind: "owlEnergy" };
+    entities.push({
+      e: item,
+      x: originX + chunk.width / 2,
+      chunkX: originX,
+      chunkScroll: scroll,
+      w: entityWidth(item),
+    });
+  }
+
   return {
     entities,
     /** 화면 오른쪽 바깥까지 청크를 채운다 */
@@ -81,6 +97,7 @@ export function createSpawner(rand: () => number, startX: number) {
       while (cursorX < ahead && guard++ < 8) {
         const chunk = pick(phase, special);
         spawn(chunk, cursorX, scroll);
+        maybeDropEnergy(chunk, cursorX, phase, scroll);
         cursorX += chunk.width;
       }
     },
