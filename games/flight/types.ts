@@ -10,7 +10,8 @@ export type ItemKind =
   | "efficiency" // ⚡ 8초간 소비 50%
   | "rainbow" // 🌈 5초간 색 판정 무시
   | "gem" // 💎 점수 +150 (위험 위치)
-  | "star"; // 🎯 점수 +50
+  | "star" // 🎯 점수 +50
+  | "owlEnergy"; // 🦉 아울 에너지 (P3+ 저확률, 서버가 최종 지급 판정)
 
 export type Entity =
   /** 상하 기둥 쌍 — gapY 중심, gapH 높이의 통로 */
@@ -76,6 +77,8 @@ export type FlightStats = {
   special_cleared: number;
   /** 특수 구간 배율로 얻은 추가 점수 (서버 재계산용) */
   special_bonus_score: number;
+  /** 아울 에너지를 주웠는지 (서버가 스테이지·거리와 함께 검증) */
+  owl_energy_found: boolean;
   size_end: SizeKey;
   build: string;
 };

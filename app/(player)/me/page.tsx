@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { OwlEnergyBar } from "@/components/OwlEnergyBar";
 import { PlayerShell } from "@/components/PlayerShell";
 import { RankBadge } from "@/components/RankBadge";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -8,7 +9,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { PLACE_EMOJI } from "@/lib/config";
 import { formatDateTime, formatNumber } from "@/lib/format";
 import { GAMES } from "@/lib/games";
-import { getMyDraws, getMyProfile, getMySessions } from "@/lib/queries";
+import { getMyDraws, getMyProfile, getOwlEnergy, getMySessions } from "@/lib/queries";
 import { rankInfo } from "@/lib/rank";
 
 export const metadata: Metadata = { title: "내 기록" };
@@ -17,13 +18,13 @@ export default async function MePage() {
   const profile = await getMyProfile();
   if (!profile) redirect("/auth/login");
 
-  const [sessions, draws] = await Promise.all([getMySessions(30), getMyDraws()]);
+  const [sessions, draws, energy] = await Promise.all([getMySessions(30), getMyDraws(), getOwlEnergy()]);
   const r = rankInfo(profile.rank_idx);
   const played = sessions.filter((s) => s.status === "submitted");
   const bestPoints = played.reduce((m, s) => Math.max(m, s.points ?? 0), 0);
 
   return (
-    <PlayerShell profile={profile} current="/me">
+    <PlayerShell profile={profile} energy={energy} current="/me">
       <TermLabel>whoami</TermLabel>
       <h1 className="mb-4 mt-1 text-2xl font-black">내 기록</h1>
 
@@ -38,6 +39,8 @@ export default async function MePage() {
         </div>
         {profile.role !== "user" && <Chip tone="aqua">{profile.role}</Chip>}
       </Card>
+
+      <OwlEnergyBar initial={energy} className="mt-3" />
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         {[

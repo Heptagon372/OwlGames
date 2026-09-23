@@ -579,8 +579,9 @@ function drawItem(ctx: CanvasRenderingContext2D, s: SpawnedEntity, x: number, ti
   }
 
   // 공통 후광 — 외부 CC0 파티클 텍스처
-  const glow = tinted("glow", kind === "gem" ? "#3DD9EB" : "#FFE2AA", 128);
-  if (glow) drawAdditive(ctx, glow, cx, cy, 64, 64, 0.5);
+  const glowColor = kind === "gem" ? "#3DD9EB" : kind === "owlEnergy" ? "#9BEBFF" : "#FFE2AA";
+  const glow = tinted("glow", glowColor, 128);
+  if (glow) drawAdditive(ctx, glow, cx, cy, kind === "owlEnergy" ? 88 : 64, kind === "owlEnergy" ? 88 : 64, 0.55);
 
   switch (kind) {
     case "feather":
@@ -594,6 +595,9 @@ function drawItem(ctx: CanvasRenderingContext2D, s: SpawnedEntity, x: number, ti
       break;
     case "gem":
       drawGem(ctx, cx, cy, time);
+      break;
+    case "owlEnergy":
+      drawOwlEnergy(ctx, cx, cy, time);
       break;
     case "grow":
       drawSizeOrb(ctx, cx, cy, "#6BF0A0", "+");
@@ -715,6 +719,43 @@ function drawGem(ctx: CanvasRenderingContext2D, cx: number, cy: number, time: nu
   ctx.moveTo(0, -14);
   ctx.lineTo(0, 15);
   ctx.stroke();
+  ctx.restore();
+}
+
+/** 🦉 아울 에너지 — 회전하는 링 안의 부엉이 얼굴 */
+function drawOwlEnergy(ctx: CanvasRenderingContext2D, cx: number, cy: number, time: number): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+  // 회전 링
+  ctx.rotate(time * 1.6);
+  ctx.strokeStyle = "#3DD9EB";
+  ctx.lineWidth = 3;
+  ctx.shadowColor = "#3DD9EB";
+  ctx.shadowBlur = 18;
+  ctx.setLineDash([9, 7]);
+  ctx.beginPath();
+  ctx.arc(0, 0, 17, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.rotate(-time * 1.6);
+  // 부엉이 얼굴
+  ctx.fillStyle = "#0b1020";
+  ctx.beginPath();
+  ctx.arc(0, 0, 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "#FFB020";
+  ctx.beginPath();
+  ctx.arc(-4.5, -2, 4, 0, Math.PI * 2);
+  ctx.arc(4.5, -2, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#0b1020";
+  ctx.beginPath();
+  ctx.arc(-4.5, -2, 1.8, 0, Math.PI * 2);
+  ctx.arc(4.5, -2, 1.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#FFB020";
+  tri(ctx, 0, 2, 3, 6, -3, 6);
   ctx.restore();
 }
 

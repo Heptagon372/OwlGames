@@ -1,8 +1,8 @@
 // 데모 모드용 가짜 데이터 (Supabase 미설정 시). 실제 모드에서는 쓰이지 않는다.
 
-import { DEFAULT_CONFIG } from "./config";
 import { maskName } from "./format";
 import { levelFromPoints, rankFromLevel, tierFromRank } from "./rank";
+import { DEFAULT_CONFIG } from "./config";
 import type {
   BoardEvent,
   BoardStats,
@@ -13,6 +13,7 @@ import type {
   GameId,
   GameSessionRow,
   LeaderboardRow,
+  OwlEnergy,
   PrizeRow,
   Profile,
   TicketRow,
@@ -179,6 +180,7 @@ export const DEMO_ALL_USERS: Profile[] = NAMES.slice(0, 12).map((n, i) => {
     student_id: `2026${String(10001 + i * 37).padStart(5, "0")}`,
     role: i === 0 ? "staff" : "user",
     verified: true,
+    owl_energy: (i * 3) % 11,
     total_points: POINTS[i],
     level,
     rank_idx: rankFromLevel(level),
@@ -230,4 +232,56 @@ export function demoDraw(tier: number): BoothDrawResult {
     rank_idx: DEMO_PROFILE.rank_idx,
     remaining: demoRemaining,
   };
+}
+
+
+// ── 아울 에너지 (데모 전용 시뮬레이션) ──────────────────
+// 서버에서는 profiles.owl_energy + 10분마다 1개 충전으로 동작한다.
+const EN = DEFAULT_CONFIG.owl_energy;
+let demoEnergy = 7;
+let demoEnergyAt = Date.now();
+
+function demoSync(): void {
+  if (demoEnergy >= EN.cap) {
+    demoEnergyAt = Date.now();
+    return;
+  }
+  const step = EN.regen_min * 60_000;
+  const n = Math.floor((Date.now() - demoEnergyAt) / step);
+  if (n > 0) {
+    demoEnergy = Math.min(EN.cap, demoEnergy + n);
+    demoEnergyAt = demoEnergy >= EN.cap ? Date.now() : demoEnergyAt + n * step;
+  }
+}
+
+export function demoEnergyStatus(): OwlEnergy {
+  demoSync();
+  const step = EN.regen_min * 60;
+  const elapsed = (Date.now() - demoEnergyAt) / 1000;
+  const next = demoEnergy >= EN.cap ? 0 : Math.max(0, Math.round(step - (elapsed % step)));
+  const missing = Math.max(0, EN.cap - demoEnergy);
+  return {
+    energy: demoEnergy,
+    cap: EN.cap,
+    hard_cap: EN.hard_cap,
+    cost: EN.cost,
+    next_refill_sec: next,
+    full_in_sec: missing === 0 ? 0 : next + (missing - 1) * step,
+  };
+}
+
+/** 데모에서 게임 시작 시 소모. 부족하면 false */
+export function demoSpendEnergy(): boolean {
+  demoSync();
+  if (demoEnergy < EN.cost) return false;
+  if (demoEnergy >= EN.cap) demoEnergyAt = Date.now();
+  demoEnergy -= EN.cost;
+  return true;
+}
+
+export function demoAddEnergy(amount: number): number {
+  demoSync();
+  const before = demoEnergy;
+  demoEnergy = Math.min(EN.hard_cap, demoEnergy + amount);
+  return demoEnergy - before;
 }

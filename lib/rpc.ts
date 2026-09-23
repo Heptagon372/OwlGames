@@ -4,11 +4,20 @@
 // 데모 모드에서는 화면 확인용으로 흉내만 낸다 (DB 쓰기 없음).
 
 import { DEFAULT_CONFIG } from "./config";
-import { DEMO_PROFILE, demoDraw, demoLookup } from "./demo";
+import { DEMO_PROFILE, demoAddEnergy, demoDraw, demoEnergyStatus, demoLookup, demoSpendEnergy } from "./demo";
 import { estimatePoints } from "./games";
 import { levelFromPoints, rankFromLevel } from "./rank";
 import { getBrowserSupabase } from "./supabase/client";
-import type { BoothDrawResult, BoothLookup, GameId, IssuedCode, SubmitResult, UserRole } from "./types";
+import type {
+  BoothDrawResult,
+  BoothLookup,
+  EnergyGrantResult,
+  GameId,
+  IssuedCode,
+  OwlEnergy,
+  SubmitResult,
+  UserRole,
+} from "./types";
 
 export class RpcError extends Error {}
 
@@ -28,8 +37,44 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 let demoTotal = DEMO_PROFILE.total_points;
 
 export async function startGameSession(game: GameId): Promise<string> {
-  if (demo()) return `demo-${game}-${Date.now()}`;
+  if (demo()) {
+    // 데모에서도 아울 에너지를 쓰게 해서 실제 흐름을 그대로 확인할 수 있게 한다
+    if (!demoSpendEnergy()) throw new RpcError("아울 에너지가 부족해요. 10분마다 1개씩 충전돼요");
+    return `demo-${game}-${Date.now()}`;
+  }
   return call<string>("start_game_session", { p_game: game });
+}
+
+// ── 아울 에너지 ──────────────────────────────────────────
+
+export async function owlEnergyStatus(): Promise<OwlEnergy> {
+  if (demo()) return demoEnergyStatus();
+  return call<OwlEnergy>("owl_energy_status");
+}
+
+/** 부스 미션 보상 지급 (staff) */
+export async function boothGrantEnergy(
+  studentId: string,
+  amount: number,
+  reason: string,
+): Promise<EnergyGrantResult> {
+  if (demo()) {
+    await wait(300);
+    const granted = demoAddEnergy(amount);
+    if (granted === 0) throw new RpcError("이미 에너지가 가득 찼어요");
+    return {
+      user_id: DEMO_PROFILE.id,
+      name: "홍길동",
+      student_id: studentId,
+      energy: demoEnergyStatus().energy,
+      granted,
+    };
+  }
+  return call<EnergyGrantResult>("booth_grant_energy", {
+    p_student_id: studentId,
+    p_amount: amount,
+    p_reason: reason,
+  });
 }
 
 export async function submitGameSession(
@@ -46,6 +91,8 @@ export async function submitGameSession(
     const levelAfter = levelFromPoints(demoTotal);
     const rankBefore = rankFromLevel(levelBefore);
     const rankAfter = rankFromLevel(levelAfter);
+    // 아울러닝에서 에너지를 주웠다면 데모에서도 1개 지급
+    const energyGained = meta.owl_energy_found ? demoAddEnergy(1) : 0;
     return {
       status: "ok",
       raw_score: rawScore,
@@ -56,6 +103,8 @@ export async function submitGameSession(
       rank_before: rankBefore,
       rank_after: rankAfter,
       tickets_gained: rankAfter - rankBefore,
+      owl_energy_gained: energyGained,
+      owl_energy: demoEnergyStatus().energy,
     };
   }
   return call<SubmitResult>("submit_game_session", {
@@ -130,6 +179,11 @@ export async function setUserRole(userId: string, role: UserRole): Promise<void>
 export async function setForceOpen(mode: "auto" | "open" | "closed"): Promise<void> {
   if (demo()) return;
   await call<null>("admin_set_force_open", { p_mode: mode });
+}
+
+export async function setUserEnergy(userId: string, value: number): Promise<void> {
+  if (demo()) return;
+  await call<null>("admin_set_energy", { p_user_id: userId, p_value: value });
 }
 
 export async function setStock(place: number, stock: number): Promise<void> {

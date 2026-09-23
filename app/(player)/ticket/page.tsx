@@ -6,7 +6,7 @@ import { PlayerShell } from "@/components/PlayerShell";
 import { GachaOdds } from "@/components/GachaOdds";
 import { RankBadge } from "@/components/RankBadge";
 import { Card, TermLabel } from "@/components/ui/Card";
-import { getAppConfig, getMyActiveCode, getMyProfile, getMyTickets, getPrizes } from "@/lib/queries";
+import { getAppConfig, getMyActiveCode, getMyProfile, getOwlEnergy, getMyTickets, getPrizes } from "@/lib/queries";
 import { rankInfo, tierFromRank } from "@/lib/rank";
 
 export const metadata: Metadata = { title: "뽑기 티켓" };
@@ -15,11 +15,12 @@ export default async function TicketPage() {
   const profile = await getMyProfile();
   if (!profile) redirect("/auth/login");
 
-  const [tickets, activeCode, config, prizes] = await Promise.all([
+  const [tickets, activeCode, config, prizes, energy] = await Promise.all([
     getMyTickets(),
     getMyActiveCode(),
     getAppConfig(),
     getPrizes(),
+    getOwlEnergy(),
   ]);
 
   const unused = tickets.filter((t) => t.status === "unused").length;
@@ -29,7 +30,7 @@ export default async function TicketPage() {
   const r = rankInfo(profile.rank_idx);
 
   return (
-    <PlayerShell profile={profile} current="/ticket">
+    <PlayerShell profile={profile} energy={energy} current="/ticket">
       <TermLabel>tickets --mine</TermLabel>
       <h1 className="mb-4 mt-1 text-2xl font-black">뽑기 티켓</h1>
 

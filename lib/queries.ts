@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { mergeConfig, type AppConfig, isOpenNow } from "./config";
 import {
+  demoEnergyStatus,
   DEMO_DRAWS,
   DEMO_LEADERBOARD,
   DEMO_PRIZES,
@@ -14,6 +15,7 @@ import {
 import { getServerSupabase } from "./supabase/server";
 import type {
   DrawRow,
+  OwlEnergy,
   GameBestRow,
   GameId,
   GameSessionRow,
@@ -145,6 +147,15 @@ export async function getMyDraws(): Promise<MyDraw[]> {
     prize_name: d.place ? (names.get(d.place) ?? null) : null,
   }));
 }
+
+/** 아울 에너지 상태 (§포인트 남용 방지) */
+export const getOwlEnergy = cache(async (): Promise<OwlEnergy> => {
+  const supabase = await getServerSupabase();
+  if (!supabase) return demoEnergyStatus();
+  const { data, error } = await supabase.rpc("owl_energy_status");
+  if (error || !data) return demoEnergyStatus();
+  return data as OwlEnergy;
+});
 
 export const getPrizes = cache(async (): Promise<PrizeRow[]> => {
   const supabase = await getServerSupabase();

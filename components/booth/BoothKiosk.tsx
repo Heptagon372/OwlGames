@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { QrCode, RotateCcw, ScanLine, UserCheck } from "lucide-react";
+import { BatteryCharging, QrCode, RotateCcw, ScanLine, UserCheck } from "lucide-react";
 import { GachaMachine, type GachaState } from "@/components/GachaMachine";
+import { EnergyGrantPanel } from "./EnergyGrantPanel";
 import { QrScanner } from "./QrScanner";
 import { PendingList } from "@/components/staff/PendingList";
 import { RankBadge } from "@/components/RankBadge";
@@ -19,7 +20,7 @@ type Step = "input" | "user" | "drawing" | "result";
 
 /** 부스 키오스크 (§8.2) — 태블릿 가로 기준. 결과는 서버 RPC가 준 값만 표시 */
 export function BoothKiosk() {
-  const [tab, setTab] = useState<"draw" | "approve">("draw");
+  const [tab, setTab] = useState<"draw" | "energy" | "approve">("draw");
   const [step, setStep] = useState<Step>("input");
   const [code, setCode] = useState("");
   const [lookup, setLookup] = useState<BoothLookup | null>(null);
@@ -98,6 +99,7 @@ export function BoothKiosk() {
       <div className="mb-5 flex gap-2">
         {[
           { key: "draw" as const, label: "🎰 뽑기", icon: QrCode },
+          { key: "energy" as const, label: "🦉 에너지 충전", icon: BatteryCharging },
           { key: "approve" as const, label: "가입 승인", icon: UserCheck },
         ].map((t) => (
           <button
@@ -116,6 +118,8 @@ export function BoothKiosk() {
 
       {tab === "approve" ? (
         <PendingList />
+      ) : tab === "energy" ? (
+        <EnergyGrantPanel />
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
           {/* 좌: 코드 입력 / 유저 카드 */}
