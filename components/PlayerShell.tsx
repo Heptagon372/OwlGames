@@ -27,7 +27,7 @@ export function PlayerShell({
 }) {
   const r = rankInfo(profile.rank_idx);
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col">
+    <div className="mx-auto flex min-h-dvh-safe w-full max-w-2xl flex-col">
       <header className="sticky top-0 z-30 border-b border-line bg-night/80 backdrop-blur-md">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <Logo size="sm" href="/lobby" />

@@ -47,7 +47,9 @@ export const getAppConfig = cache(async (): Promise<AppConfig> => {
 
 export const getIsOpen = cache(async (): Promise<boolean> => {
   const supabase = await getServerSupabase();
-  if (!supabase) return isOpenNow(await getAppConfig());
+  // 데모 모드(Supabase 미설정)에서는 언제든 플레이할 수 있게 둔다 —
+  // 새벽에 열어보면 전부 잠겨 있어서 "고장난 줄" 알기 때문
+  if (!supabase) return true;
   const { data, error } = await supabase.rpc("is_open");
   if (error) return isOpenNow(await getAppConfig());
   return Boolean(data);

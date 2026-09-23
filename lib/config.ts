@@ -59,7 +59,11 @@ export const DEFAULT_CONFIG: AppConfig = {
 };
 
 export function mergeConfig(rows: { key: string; value: unknown }[] | null | undefined): AppConfig {
-  const cfg: AppConfig = structuredClone(DEFAULT_CONFIG);
+  // structuredClone은 iOS 15.3 이하에 없어서 JSON 복제로 폴백
+  const cfg: AppConfig =
+    typeof structuredClone === "function"
+      ? structuredClone(DEFAULT_CONFIG)
+      : (JSON.parse(JSON.stringify(DEFAULT_CONFIG)) as AppConfig);
   for (const row of rows ?? []) {
     if (row.key in cfg) (cfg as Record<string, unknown>)[row.key] = row.value;
   }

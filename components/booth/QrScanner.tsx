@@ -46,7 +46,11 @@ export function QrScanner({ open, onClose, onScan }: { open: boolean; onClose: (
     <Modal open={open} onClose={onClose} title="QR 스캔">
       <div id="qr-reader" className="overflow-hidden rounded-2xl border border-line" />
       {error && <p className="mt-3 text-sm text-alert">{error}</p>}
-      <p className="mt-3 text-xs text-dim">방문자 화면의 QR을 비춰주세요. 잘 안 되면 코드를 직접 입력해도 돼요.</p>
+      <p className="mt-3 text-xs text-dim">
+        방문자 화면의 QR을 비춰주세요. 잘 안 되면 코드를 직접 입력해도 돼요.
+        <br />
+        아이폰·사파리에서는 <span className="num">https</span> 주소에서만 카메라가 열립니다.
+      </p>
     </Modal>
   );
 }

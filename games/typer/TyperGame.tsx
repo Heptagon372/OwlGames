@@ -306,7 +306,7 @@ export function TyperGame({ onEnd }: GameComponentProps) {
   };
 
   return (
-    <div ref={rootRef} className="flex h-full flex-col">
+    <div ref={rootRef} className="flex h-full flex-col select-none">
       <div className="relative min-h-0 flex-1">
         <canvas ref={canvasRef} className="absolute inset-0" />
       </div>

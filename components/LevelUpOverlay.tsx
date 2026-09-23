@@ -38,6 +38,7 @@ export function LevelUpOverlay({ open, kind, level, rankIdx, ticketsGained = 0, 
         style={{
           background: `conic-gradient(from 0deg, transparent 0 8deg, ${r.colors[0]}55 8deg 10deg, transparent 10deg 20deg)`,
           maskImage: "radial-gradient(closest-side, black 20%, transparent 70%)",
+          WebkitMaskImage: "radial-gradient(closest-side, black 20%, transparent 70%)",
         }}
         aria-hidden
       />
