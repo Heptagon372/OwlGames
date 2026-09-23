@@ -138,7 +138,13 @@
     font-family: var(--font-sans);
     font-feature-settings: "ss06";
     word-break: keep-all;
+    /* dvh를 모르는 브라우저(iOS 15.3 이하)를 위한 폴백 */
+    min-height: 100vh;
     min-height: 100dvh;
+    /* 당겨서 새로고침이 게임 조작을 가로채지 않게 */
+    overscroll-behavior-y: none;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   ::selection {
     background: rgb(255 176 32 / 0.35);
@@ -206,7 +212,17 @@
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
+}
+
+/* 전체 화면 레이아웃 — dvh를 모르는 브라우저에는 @supports로 vh를 되돌려준다
+   (minifier가 같은 속성의 폴백 선언을 지워버려서 @supports로 적는다) */
+@utility h-dvh-safe {
+  height: 100dvh;
+}
+@utility min-h-dvh-safe {
+  min-height: 100dvh;
 }
 @utility card-solid {
   background: var(--color-panel);
@@ -264,6 +280,18 @@
 /* 신화 뱃지 무지개 */
 .rainbow-fill {
   background: conic-gradient(from 0deg, #ff6fd8, #ffb020, #fff36b, #6bf0a0, #3dd9eb, #7f8cff, #ff6fd8);
+}
+
+@supports not (height: 100dvh) {
+  .h-dvh-safe {
+    height: 100vh;
+  }
+  .min-h-dvh-safe {
+    min-height: 100vh;
+  }
+  body {
+    min-height: 100vh;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -121,7 +121,7 @@ export function PhishGame({ onEnd }: GameComponentProps) {
   const intent = dx < -40 ? "phish" : dx > 40 ? "safe" : null;
 
   return (
-    <div className="flex h-full flex-col bg-night">
+    <div className="flex h-full flex-col select-none bg-night">
       {/* HUD */}
       <div className="shrink-0 px-4 pt-3">
         <div className="flex items-end justify-between">

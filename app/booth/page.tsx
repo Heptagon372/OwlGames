@@ -18,7 +18,7 @@ export default async function BoothPage() {
   const [config, open] = await Promise.all([getAppConfig(), getIsOpen()]);
 
   return (
-    <div className="min-h-dvh">
+    <div className="min-h-dvh-safe">
       <DemoBanner />
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
         <div className="flex items-center gap-3">

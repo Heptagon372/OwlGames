@@ -230,7 +230,7 @@ export function FlightGame({ onEnd }: GameComponentProps) {
   return (
     <div
       ref={wrapRef}
-      className="relative h-full w-full touch-none overflow-hidden bg-[#06090f]"
+      className="relative h-full w-full touch-none overflow-hidden bg-[#06090f] select-none"
       onPointerDown={onPointerDown}
       onPointerUp={stopFlap}
       onPointerCancel={stopFlap}

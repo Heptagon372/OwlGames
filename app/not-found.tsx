@@ -3,7 +3,7 @@ import { ButtonLink } from "@/components/ui/Button";
 
 export default function NotFound() {
   return (
-    <div className="grid min-h-dvh place-items-center px-6 text-center">
+    <div className="grid min-h-dvh-safe place-items-center px-6 text-center">
       <div>
         <OwlMark sleepy className="mx-auto size-24" />
         <p className="num mt-6 text-5xl font-black text-neon">404</p>

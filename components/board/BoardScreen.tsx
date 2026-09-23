@@ -87,7 +87,7 @@ export function BoardScreen({
   }, [refreshAll, scheduleRefresh]);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden">
+    <div className="flex h-dvh-safe flex-col overflow-hidden">
       <header className="flex shrink-0 items-center justify-between border-b border-line px-8 py-4">
         <Logo href="/board" />
         <p className="font-mono text-[1.1vw] tracking-[0.3em] text-aqua">S.OWL BOOTH LIVE</p>

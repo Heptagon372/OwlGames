@@ -5,6 +5,7 @@
   "description": "S.OWL 동아리 부스 행사용 웹 미니게임 플랫폼 — 아울게임즈",
   "scripts": {
     "dev": "next dev",
+    "dev:lan": "next dev -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
+import { BrowserSupportNotice } from "@/components/BrowserSupportNotice";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="antialiased">
         <div className="night-sky" aria-hidden />
         {children}
+        <BrowserSupportNotice />
         <div className="scanlines" aria-hidden />
       </body>
     </html>
