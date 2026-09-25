@@ -10,11 +10,20 @@ import {
   DEMO_PENDING,
   DEMO_PRIZES,
   DEMO_SESSIONS,
+  DEMO_AUDIT,
   DEMO_STATS,
   type PendingUser,
 } from "./demo";
 import { getBrowserSupabase } from "./supabase/client";
-import type { BoardEvent, BoardStats, GameSessionRow, LeaderboardRow, PrizeRow, Profile } from "./types";
+import type {
+  AuditRow,
+  BoardEvent,
+  BoardStats,
+  GameSessionRow,
+  LeaderboardRow,
+  PrizeRow,
+  Profile,
+} from "./types";
 
 export async function fetchPendingUsers(): Promise<PendingUser[]> {
   const supabase = getBrowserSupabase();
@@ -39,6 +48,18 @@ export async function fetchUsers(query: string): Promise<Profile[]> {
   if (q) req = req.or(`name.ilike.%${q}%,student_id.ilike.%${q}%`);
   const { data } = await req;
   return (data as Profile[] | null) ?? [];
+}
+
+/** 관리자 감사 로그 (admin_audit) — RLS 로 관리자만 읽힌다 */
+export async function fetchAuditLog(limit = 50): Promise<AuditRow[]> {
+  const supabase = getBrowserSupabase();
+  if (!supabase) return DEMO_AUDIT.slice(0, limit);
+  const { data } = await supabase
+    .from("admin_audit")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data as AuditRow[] | null) ?? [];
 }
 
 export async function fetchLeaderboard(limit = 10): Promise<LeaderboardRow[]> {

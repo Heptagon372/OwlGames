@@ -4,6 +4,8 @@ import { maskName } from "./format";
 import { levelFromPoints, rankFromLevel, tierFromRank } from "./rank";
 import { DEFAULT_CONFIG } from "./config";
 import type {
+  AdminStats,
+  AuditRow,
   BoardEvent,
   BoardStats,
   BoothDrawResult,
@@ -149,6 +151,50 @@ export const DEMO_PRIZES: PrizeRow[] = [
 ];
 
 export const DEMO_STATS: BoardStats = { participants: 214, plays: 1387, challengers: 1, draws: 96 };
+
+/** 관리자 대시보드 (admin_stats RPC 대용) */
+export const DEMO_ADMIN_STATS: AdminStats = {
+  users: { total: 214, verified: 201, pending: 13, staff: 6, admin: 2, today: 47, energy_avg: 6.4 },
+  today: { plays: 1387, rejected: 21, active: 3, points: 243_910, adjusted: 4 },
+  games: [
+    { game: "typer", plays: 412, rejected: 5, avg_raw: 1180, best_raw: 3420, avg_pts: 228 },
+    { game: "phish", plays: 351, rejected: 4, avg_raw: 1960, best_raw: 4180, avg_pts: 212 },
+    { game: "flight", plays: 298, rejected: 9, avg_raw: 3140, best_raw: 9860, avg_pts: 187 },
+    { game: "logic", plays: 186, rejected: 2, avg_raw: 2870, best_raw: 6240, avg_pts: 173 },
+    { game: "survive", plays: 140, rejected: 1, avg_raw: 3620, best_raw: 8110, avg_pts: 151 },
+  ],
+  tickets: { unused: 88, reserved: 12, used: 96 },
+  prizes: [
+    { place: 1, name: "게이밍 PC", stock: 1, drawn: 0 },
+    { place: 2, name: "게이밍 마우스", stock: 4, drawn: 2 },
+    { place: 3, name: "장패드", stock: 17, drawn: 9 },
+    { place: 4, name: "과자", stock: 82, drawn: 38 },
+    { place: 5, name: "젤리", stock: 163, drawn: 47 },
+  ],
+  energy_today: 62,
+  energy_drops_today: 18,
+  draws_today: 96,
+  generated_at: new Date().toISOString(),
+};
+
+/** 감사 로그 (admin_audit 대용) */
+export const DEMO_AUDIT: AuditRow[] = [
+  { action: "user.role", actor: "데모부엉", target: "김민수", detail: { from: "user", to: "staff" }, m: 4 },
+  { action: "user.energy", actor: "부원A", target: "이서연", detail: { from: 2, to: 7 }, m: 12 },
+  { action: "prize.stock", actor: "데모부엉", target: "장패드", detail: { place: 3, from: 20, to: 17 }, m: 31 },
+  { action: "config.set", actor: "데모부엉", target: "open_hours", detail: { key: "open_hours" }, m: 55 },
+  { action: "user.verify", actor: "부원A", target: "박도윤", detail: { student_id: "202612345" }, m: 78 },
+  { action: "user.delete", actor: "데모부엉", target: "탈퇴계정", detail: { total_points: 120 }, m: 140 },
+].map((a, i) => ({
+  id: i + 1,
+  actor_id: DEMO_PROFILE.id,
+  actor_name: a.actor,
+  action: a.action,
+  target_id: null,
+  target_name: a.target,
+  detail: a.detail as Record<string, unknown>,
+  created_at: minutesAgo(a.m),
+}));
 
 export const DEMO_BOARD_EVENTS: BoardEvent[] = [
   { kind: "draw" as const, name: "홍길동", rank: 5, place: 3, prize: "장패드", m: 1 },

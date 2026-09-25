@@ -35,6 +35,46 @@ export type GameBestRow = {
   position: number;
 };
 
+/** admin_stats() 응답 (20260927000100_admin_system.sql) */
+export type AdminStats = {
+  users: {
+    total: number;
+    verified: number;
+    pending: number;
+    staff: number;
+    admin: number;
+    today: number;
+    energy_avg: number;
+  };
+  today: { plays: number; rejected: number; active: number; points: number; adjusted: number };
+  games: {
+    game: GameId;
+    plays: number;
+    rejected: number;
+    avg_raw: number;
+    best_raw: number;
+    avg_pts: number;
+  }[];
+  tickets: { unused: number; reserved: number; used: number };
+  prizes: { place: number; name: string; stock: number; drawn: number }[];
+  energy_today: number;
+  energy_drops_today: number;
+  draws_today: number;
+  generated_at: string;
+};
+
+/** admin_audit 행 — 남의 계정·설정·재고를 건드린 기록 */
+export type AuditRow = {
+  id: number;
+  actor_id: string | null;
+  actor_name: string | null;
+  action: string;
+  target_id: string | null;
+  target_name: string | null;
+  detail: Record<string, unknown>;
+  created_at: string;
+};
+
 export type GameSessionStatus = "active" | "submitted" | "rejected" | "expired";
 
 export type GameSessionRow = {

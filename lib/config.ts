@@ -27,6 +27,9 @@ export type OwlEnergyConfig = {
   drop_daily_cap: number;
 };
 
+/** 첫 관리자를 만들 수 있는 학번 (bootstrap_only = 관리자가 한 명도 없을 때만 동작) */
+export type MasterAdmin = { student_ids: string[]; bootstrap_only: boolean };
+
 export type AppConfig = {
   open_hours: OpenHours;
   force_open: ForceOpen;
@@ -38,6 +41,7 @@ export type AppConfig = {
   student_id_pattern: string;
   redeem_code_ttl_min: number;
   owl_energy: OwlEnergyConfig;
+  master_admin: MasterAdmin;
 };
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -78,6 +82,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     drop_min_distance: 900,
     drop_daily_cap: 5,
   },
+  master_admin: { student_ids: ["999999999"], bootstrap_only: true },
 };
 
 export function mergeConfig(rows: { key: string; value: unknown }[] | null | undefined): AppConfig {

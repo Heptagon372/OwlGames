@@ -62,9 +62,16 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 부스 위치 안내 | `app_config.booth_location` |
 | 아울 에너지(스태미나) | `app_config.owl_energy` (DB) · 표시 기본값은 `lib/config.ts` · 게임 내 드롭은 각 게임 `config.ts`의 `CFG.owlEnergy` (서버 조건과 같은 값이어야 한다) |
 | 실시간 등수·변동 표시 | `components/RankDelta.tsx` · `components/LiveRefresh.tsx` · `games/core/useGameSession.ts`의 `position` |
+| 관리자 화면 | `components/admin/AdminPanel.tsx` (대시보드·승인·유저·재고·설정·로그) |
+| 운영 값을 화면에서 바꾸기 | `admin_set_config` 화이트리스트(`supabase/migrations/20260927000100_admin_system.sql`) + `lib/rpc.ts`의 `setConfigValue` |
+| 관리자 대시보드 집계 | `admin_stats()` RPC — 항목을 늘리면 `lib/types.ts`의 `AdminStats`와 데모값도 같이 고친다 |
 
 ## 주의
 
 - 공개 레포다. `.env*`는 커밋하지 않는다 (`SUPABASE_SERVICE_ROLE_KEY`는 서버 전용).
 - staff는 RLS상 전체 `profiles`/`tickets`/`draws`를 볼 수 있으므로, "내 것"을 조회할 때는 `user_id` 필터를 꼭 건다.
 - 미들웨어(`middleware.ts`)가 role·verified·운영시간을 검사하지만 **최종 판단은 항상 서버 RPC**다.
+- 관리자·부원이 **남의** 계정/설정/재고를 바꾸면 `admin_audit`에 자동으로 남는다(테이블 트리거).
+  새 관리 기능을 만들 때 로그를 따로 심을 필요가 없다 — 대신 본인이 본인 행을 바꾸는 경로는 기록되지 않는다.
+- 마스터 관리자 학번(`app_config.master_admin`)은 **관리자가 0명일 때만** 승격시킨다. 기본값은 공개돼 있으니
+  행사 전에 바꾸라고 안내할 것.
