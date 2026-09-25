@@ -685,7 +685,8 @@ function drawStar(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: numb
     const a = (Math.PI / 5) * i - Math.PI / 2;
     const px = cx + Math.cos(a) * rad;
     const py = cy + Math.sin(a) * rad;
-    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    if (i) ctx.lineTo(px, py);
+    else ctx.moveTo(px, py);
   }
   ctx.closePath();
   ctx.fill();

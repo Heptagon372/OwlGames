@@ -73,6 +73,36 @@ export async function fetchBoardEvents(limit = 20): Promise<BoardEvent[]> {
   return (data as BoardEvent[] | null) ?? [];
 }
 
+/** 지금 내 등수 (leaderboard 뷰) — 결과 화면·로비의 실시간 등수 표시용 */
+export async function fetchMyPosition(): Promise<number | null> {
+  const supabase = getBrowserSupabase();
+  if (!supabase) {
+    const me = DEMO_LEADERBOARD.find((r) => r.user_id === "demo-me");
+    return me?.position ?? null;
+  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase.from("leaderboard").select("position").eq("user_id", user.id).maybeSingle();
+  const pos = (data as { position?: number } | null)?.position;
+  return typeof pos === "number" ? pos : null;
+}
+
+/** 아울 서바이버즈 난이도 해금 단계 (profiles.meta.survive_unlock) */
+export async function fetchSurviveUnlock(): Promise<number> {
+  const supabase = getBrowserSupabase();
+  if (!supabase) return 3; // 데모에서는 전부 열어둔다
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return 1;
+  const { data } = await supabase.from("profiles").select("meta").eq("id", user.id).maybeSingle();
+  const meta = (data?.meta ?? {}) as Record<string, unknown>;
+  const raw = Number(meta.survive_unlock ?? 1);
+  return Number.isFinite(raw) ? Math.max(1, Math.min(3, raw)) : 1;
+}
+
 export type UnclaimedDraw = {
   id: string;
   place: number | null;

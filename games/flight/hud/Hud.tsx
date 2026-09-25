@@ -4,6 +4,7 @@
 import { Pause } from "lucide-react";
 import { CFG, COLOR_INFO, type Color, type SizeKey } from "../config";
 import { cn } from "@/lib/cn";
+import { stageColor, stageLabel, STAGE_COUNT } from "@/lib/stages";
 import type { Banner, GameStatus } from "../engine/game";
 
 export type HudState = {
@@ -25,6 +26,8 @@ export type HudState = {
   special: string | null;
   /** 체감 속도 km/h */
   speed: number;
+  /** 공통 15단계 체계의 현재 단계 */
+  stage: number;
 };
 
 export function ShapeIcon({ shape, className, style }: { shape: "circle" | "square" | "triangle"; className?: string; style?: React.CSSProperties }) {
@@ -77,6 +80,10 @@ export function Hud({
         <p className="arcade mt-1 text-[11px] text-neon">{Math.round(hud.score).toLocaleString()}</p>
         <p className="arcade mt-1.5 text-[10px] text-mute">
           <span style={{ color: hud.speed > 60 ? "#FFB020" : undefined }}>{hud.speed}</span> KM/H
+        </p>
+        <p className="arcade mt-1 text-[10px]" style={{ color: stageColor(hud.stage) }}>
+          {stageLabel(hud.stage)}
+          <span className="text-[8px] text-mute">/{STAGE_COUNT}</span>
         </p>
       </div>
 

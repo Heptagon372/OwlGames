@@ -6,10 +6,21 @@ import { startLoop } from "../core/loop";
 import type { GameComponentProps } from "../core/types";
 import { PHISH_CARDS, type PhishCard } from "@/data/phish-cards";
 import { cn } from "@/lib/cn";
+import { stageColor, stageCurve, stageFromRatio, stageLabel } from "@/lib/stages";
 
 const DURATION = 90;
 const WRONG_PENALTY = 5; // 오답 −5초
 const SWIPE_THRESHOLD = 90;
+/** 카드 하나를 볼 수 있는 시간 — 단계마다 곱으로 짧아진다 (§공통 15단계).
+ *  STAGE 1에서 10초(한글 3~4줄을 천천히 읽는 시간), STAGE 15에서 4.3초. */
+const CARD_SEC = 10;
+const CARD_SEC_MIN = 3;
+/** STAGE 기준: 45장을 넘기면 15단계 */
+const STAGE_CARDS = 45;
+
+function cardSec(stage: number): number {
+  return Math.max(CARD_SEC_MIN, CARD_SEC / stageCurve(stage, 0.4));
+}
 
 function shuffle<T>(arr: readonly T[]): T[] {
   const a = [...arr];
@@ -38,6 +49,8 @@ export function PhishGame({ onEnd }: GameComponentProps) {
   const indexRef = useRef(0);
   const endedRef = useRef(false);
   const dragStart = useRef(0);
+  const cardLeftRef = useRef(CARD_SEC);
+  const [cardLeft, setCardLeft] = useState<number>(CARD_SEC);
   const [, force] = useState(0);
 
   const card: PhishCard | undefined = deck[index];
@@ -56,9 +69,17 @@ export function PhishGame({ onEnd }: GameComponentProps) {
   // 타이머
   useEffect(() => {
     endedRef.current = false;
-    const loop = startLoop((_, elapsed) => {
+    const loop = startLoop((dt, elapsed) => {
       const remain = DURATION - elapsed - penaltyRef.current;
       setLeft(Math.max(0, remain));
+
+      // 카드 제한시간 (해설을 보여주는 동안에는 멈춘다)
+      if (!lockedRef.current && !endedRef.current && remain > 0) {
+        cardLeftRef.current -= dt;
+        setCardLeft(Math.max(0, cardLeftRef.current));
+        if (cardLeftRef.current <= 0) timeoutRef.current?.();
+      }
+
       if (remain <= 0) {
         loop.stop();
         finish();
@@ -67,12 +88,15 @@ export function PhishGame({ onEnd }: GameComponentProps) {
     return () => loop.stop();
   }, [finish]);
 
+  // 시간 초과는 루프(=effect 클로저) 안에서 불러야 해서 ref로 건넨다
+  const timeoutRef = useRef<(() => void) | null>(null);
+
   const answer = useCallback(
-    (asPhish: boolean) => {
+    (asPhish: boolean | null) => {
       if (lockedRef.current || endedRef.current) return;
       const current = deck[indexRef.current];
       if (!current) return;
-      const ok = current.isPhish === asPhish;
+      const ok = asPhish !== null && current.isPhish === asPhish;
       lockedRef.current = true;
 
       if (ok) {
@@ -87,8 +111,11 @@ export function PhishGame({ onEnd }: GameComponentProps) {
         penaltyRef.current += WRONG_PENALTY;
       }
       force((n) => n + 1);
-      setDx(asPhish ? -420 : 420);
-      setFeedback({ ok, explain: current.explain });
+      if (asPhish !== null) setDx(asPhish ? -420 : 420);
+      setFeedback({
+        ok,
+        explain: asPhish === null ? `시간 초과 — ${current.explain}` : current.explain,
+      });
 
       // 오답이면 해설 1초, 정답이면 짧게
       setTimeout(
@@ -99,6 +126,8 @@ export function PhishGame({ onEnd }: GameComponentProps) {
           const next = indexRef.current + 1;
           indexRef.current = next;
           setIndex(next);
+          cardLeftRef.current = cardSec(stageFromRatio(next / STAGE_CARDS));
+          setCardLeft(cardLeftRef.current);
           if (next >= deck.length) finish();
         },
         ok ? 260 : 1000,
@@ -106,6 +135,10 @@ export function PhishGame({ onEnd }: GameComponentProps) {
     },
     [deck, finish],
   );
+
+  useEffect(() => {
+    timeoutRef.current = () => answer(null);
+  }, [answer]);
 
   // 키보드
   useEffect(() => {
@@ -130,6 +163,9 @@ export function PhishGame({ onEnd }: GameComponentProps) {
             <p className="num text-2xl font-black text-neon">{Math.round(scoreRef.current)}</p>
           </div>
           <div className="text-center">
+            <p className="text-[10px] font-bold" style={{ color: stageColor(stageFromRatio(index / STAGE_CARDS)) }}>
+              {stageLabel(stageFromRatio(index / STAGE_CARDS))}
+            </p>
             {streakRef.current > 0 && (
               <p className="num text-sm font-black text-neon-soft">
                 {streakRef.current} 연속 · ×{bonus.toFixed(1)}
@@ -202,6 +238,17 @@ export function PhishGame({ onEnd }: GameComponentProps) {
               )}
             >
               ✅ 정상
+            </div>
+
+            {/* 카드 제한시간 — 단계가 오를수록 짧아진다 */}
+            <div className="absolute inset-x-0 top-0 h-1 bg-night/60">
+              <div
+                className={cn(
+                  "h-full transition-[width] duration-100",
+                  cardLeft < 1.5 ? "bg-alert" : "bg-aqua/70",
+                )}
+                style={{ width: `${(cardLeft / cardSec(stageFromRatio(index / STAGE_CARDS))) * 100}%` }}
+              />
             </div>
 
             <CardBody card={card} />

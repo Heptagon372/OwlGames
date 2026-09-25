@@ -5,6 +5,7 @@ import { COLORS, fitCanvas, font, onResize, roundRect } from "../core/canvas";
 import { startLoop } from "../core/loop";
 import type { GameComponentProps } from "../core/types";
 import { TYPER_WORDS, type TyperDifficulty } from "@/data/typer-words";
+import { stageColor, stageCurve, stageFromRatio, stageLabel } from "@/lib/stages";
 
 const DURATION = 60;
 const FIREWALL_STEP = 20;
@@ -26,13 +27,18 @@ const DIFF_COLOR: Record<TyperDifficulty, string> = {
   hard: COLORS.alert,
 };
 
-/** 경과 시간에 따른 난이도 가중치 */
-function pickDifficulty(t: number): TyperDifficulty {
+/** 단계에 따른 단어 난이도 가중치 (STAGE 1~5 / 6~10 / 11~) */
+function pickDifficulty(stage: number): TyperDifficulty {
   const r = Math.random();
-  if (t < 20) return r < 0.7 ? "easy" : "normal";
-  if (t < 40) return r < 0.3 ? "easy" : r < 0.8 ? "normal" : "hard";
+  if (stage <= 5) return r < 0.7 ? "easy" : "normal";
+  if (stage <= 10) return r < 0.3 ? "easy" : r < 0.8 ? "normal" : "hard";
   return r < 0.15 ? "easy" : r < 0.6 ? "normal" : "hard";
 }
+
+/** 낙하 속도·스폰 간격은 단계마다 곱으로 붙는다 (§공통 15단계) */
+const FALL_BASE = 46;
+const SPAWN_BASE = 1.7;
+const SPAWN_MIN = 0.6;
 
 function comboMul(streak: number): number {
   if (streak >= 10) return 2;
@@ -88,7 +94,8 @@ export function TyperGame({ onEnd }: GameComponentProps) {
     fit();
 
     const spawn = () => {
-      const diff = pickDifficulty(elapsed);
+      const stage = stageFromRatio(elapsed / DURATION);
+      const diff = pickDifficulty(stage);
       const pool = TYPER_WORDS[diff];
       const text = pool[Math.floor(Math.random() * pool.length)];
       ctx.font = font(600, 15);
@@ -98,7 +105,7 @@ export function TyperGame({ onEnd }: GameComponentProps) {
         w: bw,
         x: 12 + Math.random() * Math.max(1, w - bw - 24),
         y: -28,
-        vy: 46 + elapsed * 1.7 + (diff === "hard" ? 8 : 0),
+        vy: FALL_BASE * stageCurve(stage, 0.5) + (diff === "hard" ? 8 : 0),
         diff,
       });
     };
@@ -159,7 +166,7 @@ export function TyperGame({ onEnd }: GameComponentProps) {
       nextSpawn -= dt;
       if (nextSpawn <= 0 && left > 0.5) {
         spawn();
-        nextSpawn = Math.max(0.62, 1.7 - elapsed * 0.018);
+        nextSpawn = Math.max(SPAWN_MIN, SPAWN_BASE / stageCurve(stageFromRatio(elapsed / DURATION), 0.45));
       }
 
       // 이동
@@ -274,6 +281,13 @@ export function TyperGame({ onEnd }: GameComponentProps) {
       ctx.fillStyle = left < 10 ? COLORS.alert : COLORS.aqua;
       ctx.font = font(800, 20);
       ctx.fillText(left.toFixed(1), w - 12, 42);
+
+      // 15단계 표시 (60초를 15단계로)
+      const stage = stageFromRatio(elapsed / DURATION);
+      ctx.textAlign = "right";
+      ctx.font = font(800, 11);
+      ctx.fillStyle = stageColor(stage);
+      ctx.fillText(stageLabel(stage), w - 12, 60);
 
       const mul = comboMul(streak);
       if (mul > 1) {
