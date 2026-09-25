@@ -1,120 +1,74 @@
-// 웨이브 스포너 (기획서 §3 표 · §12).
-// 규칙 두 가지를 동시에 지킨다 — 초당 스폰 예산(CFG.spawnBudgetPerSec)과 동시 적 상한(enemyCapAt).
+// 🦉 아울 서바이버즈 v2 — 스폰 (기획서 §3 · §14)
+// 스폰 예산 초당 6마리를 절대 넘지 않는다. 넘기면 기기가 아니라 게임이 먼저 무너진다.
 
-import { CFG, enemyCapAt, zoneAt } from "../config";
-import type { EnemyKind } from "../types";
-import { aliveEnemies, spawnEnemy, type World } from "./world";
-import { ENEMY_SPEC } from "./enemies";
-import { spawnBoss } from "./boss";
+import { CFG, hpMult } from "../config";
+import type { EnemyKind } from "../data/stages";
+import { aliveEnemies, clampToArena, enemyCap, spawnEnemy, type World } from "./world";
 
-// 구역별 등장 종류와 가중치 (§3 표).
-// 🐴 트로이목마는 죽을 때 버그 3마리를 더 만들어 예산 밖으로 킬 수를 늘리므로 비중을 낮게 잡는다
-// (§9.3 서버 거부 규칙: 초당 8킬 초과 불가).
-const WAVES: { kinds: EnemyKind[]; weights: number[] }[] = [
-  // ZONE 1 서버실 — 버그, 웜
-  { kinds: ["bug", "worm"], weights: [70, 30] },
-  // ZONE 2 캠퍼스망 — + 트로이목마
-  { kinds: ["bug", "worm", "trojan"], weights: [50, 36, 14] },
-  // ZONE 3 다크웹 — + 봇넷 무리, 랜섬웨어
-  { kinds: ["bug", "worm", "trojan", "botnet", "ransom"], weights: [24, 26, 10, 22, 18] },
-  // BOSS — 물량은 줄고 단단한 적 위주
-  { kinds: ["bug", "worm", "trojan", "ransom"], weights: [24, 30, 10, 36] },
-];
+export type SpawnState = {
+  budget: number;
+  eliteAt: number;
+};
 
-const SPAWN = {
-  /** 화면 밖 링에서 등장 (§3) */
-  ring: 620,
-  ringJitter: 60,
-  /** 🕸️ 봇넷 무리 8~12마리 (§7) */
-  swarmMin: 8,
-  swarmMax: 12,
-  swarmArc: 0.5,
-  swarmDepth: 90,
-  /** 무리는 예산이 가득 찼을 때만 터뜨리고 남은 만큼 빚을 진다 */
-  swarmCost: CFG.spawnBudgetPerSec,
-  /** 💀 엘리트 — ZONE 2부터 30초마다 1마리 (§7) */
-  eliteInterval: 30,
-  eliteFromZone: 1,
-  /** 한 프레임에 처리할 최대 스폰 횟수 (안전장치) */
-  maxPerFrame: 4,
-} as const;
-
-/** 예산 버킷 상한 = 1초치. 누적 스폰 수는 항상 budget × t + 이 값 이하가 된다 */
-const BUCKET_MAX = CFG.spawnBudgetPerSec;
-
-/** 플레이어 중심 링 위의 좌표로 한 마리 소환 */
-function spawnAtRing(w: World, kind: EnemyKind, angle: number, dist: number): number {
-  return spawnEnemy(w, kind, w.player.x + Math.cos(angle) * dist, w.player.y + Math.sin(angle) * dist, ENEMY_SPEC[kind]);
+export function createSpawnState(): SpawnState {
+  return { budget: 0, eliteAt: 70 };
 }
 
-function ringDist(w: World): number {
-  return SPAWN.ring + w.rand() * SPAWN.ringJitter;
-}
-
-/** 구역 가중치로 종류 하나를 뽑는다 */
-function pickKind(w: World, zone: number): EnemyKind {
-  const wave = WAVES[zone] ?? WAVES[0];
-  let total = 0;
-  for (let i = 0; i < wave.weights.length; i++) total += wave.weights[i];
-  let r = w.rand() * total;
-  for (let i = 0; i < wave.kinds.length; i++) {
-    r -= wave.weights[i];
-    if (r <= 0) return wave.kinds[i];
+/** 구간별 스폰 강도 — 중간보스·보스 구간에는 잡몹을 줄인다 */
+function waveMultiplier(w: World): number {
+  switch (w.phase) {
+    case "wave1": return 0.75 + Math.min(0.35, w.t / CFG.wave.w1End) * 0.5;
+    case "midboss": return 0.35;
+    case "wave2": return 1;
+    case "boss": return 0.45;
+    default: return 0;
   }
-  return wave.kinds[wave.kinds.length - 1];
 }
 
-/** 🕸️ 봇넷 무리 — 한 방향에서 뭉쳐서 밀려온다 */
-function spawnSwarm(w: World, count: number): number {
-  const base = w.rand() * Math.PI * 2;
-  const dist = ringDist(w);
-  let made = 0;
-  for (let i = 0; i < count; i++) {
-    const a = base + (w.rand() - 0.5) * SPAWN.swarmArc;
-    if (spawnAtRing(w, "botnet", a, dist + (w.rand() - 0.5) * SPAWN.swarmDepth) >= 0) made++;
+/** 플레이어 주변 링 위의 한 점 — 화면 밖이면서 아레나 안 */
+function ringPoint(w: World): { x: number; y: number } | null {
+  for (let k = 0; k < 8; k++) {
+    const a = w.rand() * Math.PI * 2;
+    const r = CFG.spawn.ringMin + w.rand() * (CFG.spawn.ringMax - CFG.spawn.ringMin);
+    const x = w.player.x + Math.cos(a) * r;
+    const y = w.player.y + Math.sin(a) * r;
+    if (x > 20 && x < CFG.arena.w - 20 && y > 20 && y < CFG.arena.h - 20) return { x, y };
   }
-  return made;
+  // 아레나가 좁아 링을 못 잡으면 가장자리에 붙여서라도 화면 밖에서 낸다
+  const p = clampToArena(w.player.x + (w.rand() < 0.5 ? -1 : 1) * 520, w.player.y + (w.rand() - 0.5) * 520, 24);
+  return Math.hypot(p.x - w.player.x, p.y - w.player.y) > 300 ? p : null;
 }
 
-/** 웨이브 테이블 + 스폰 예산(초당 최대 CFG.spawnBudgetPerSec) + 동시 상한(enemyCapAt) */
-export function updateSpawner(w: World, dt: number): void {
-  const zone = zoneAt(w.t);
+/** 이 구간에서 나올 수 있는 적 */
+function pickKind(w: World): EnemyKind {
+  const list = w.info.enemies;
+  const pool = w.phase === "wave1" ? list.slice(0, Math.max(1, list.length - 1)) : list;
+  return pool[Math.floor(w.rand() * pool.length)];
+}
 
-  // 👹 보스 — 165초에 1마리 (§3)
-  if (w.t >= CFG.zones[CFG.zones.length - 1].from && w.bossIndex < 0 && !w.run.bossKilled) {
-    spawnBoss(w);
-    if (w.bossIndex >= 0) w.spawnAcc -= 1;
+export function updateSpawner(w: World, st: SpawnState, dt: number): void {
+  if (w.over) return;
+
+  const cap = enemyCap(w);
+  // 스테이지가 올라가면 적은 **더 세지되 더 적게** 나온다.
+  // 체력이 2배인데 수까지 그대로면 시작 장비로는 길을 뚫을 수가 없어서 S7 이 27초 만에 끝난다.
+  st.budget += (CFG.spawn.budgetPerSec * waveMultiplier(w) * dt) / Math.sqrt(hpMult(w.stage));
+
+  while (st.budget >= 1) {
+    st.budget -= 1;
+    if (aliveEnemies(w) >= cap) break;
+    const at = ringPoint(w);
+    if (!at) break;
+    spawnEnemy(w, pickKind(w), at.x, at.y);
   }
 
-  // 💀 엘리트 — ZONE 2부터 30초마다 (§7)
-  if (w.eliteTimer > 0) w.eliteTimer -= dt;
-  if (w.eliteTimer <= 0 && zone >= SPAWN.eliteFromZone) {
-    if (spawnAtRing(w, "elite", w.rand() * Math.PI * 2, ringDist(w)) >= 0) {
-      w.eliteTimer = SPAWN.eliteInterval;
-      w.spawnAcc -= 1;
+  // 💀 엘리트 — 웨이브 2부터 30초마다 (무한 구간 '엘리트 2배' 규칙이면 2마리)
+  if (w.phase === "wave2" && w.t >= st.eliteAt && aliveEnemies(w) < cap) {
+    st.eliteAt += 30;
+    const n = w.info.rule === "elite" ? 2 : 1;
+    for (let k = 0; k < n; k++) {
+      const at = ringPoint(w);
+      if (at) spawnEnemy(w, "elite", at.x, at.y, 1);
     }
-  }
-
-  // 일반 웨이브 — 예산 토큰을 채우고 상한까지만 쓴다
-  w.spawnAcc = Math.min(BUCKET_MAX, w.spawnAcc + CFG.spawnBudgetPerSec * dt);
-  const cap = w.lowSpec ? Math.min(CFG.enemyCapLow, enemyCapAt(w.t)) : enemyCapAt(w.t);
-  let alive = aliveEnemies(w);
-  let guard = 0;
-
-  while (w.spawnAcc >= 1 && alive < cap && guard++ < SPAWN.maxPerFrame) {
-    const kind = pickKind(w, zone);
-    if (kind === "botnet") {
-      const count = SPAWN.swarmMin + Math.floor(w.rand() * (SPAWN.swarmMax - SPAWN.swarmMin + 1));
-      // 예산이 덜 찼거나 상한에 걸리면 무리 대신 한 마리만 보낸다
-      if (w.spawnAcc >= SPAWN.swarmCost && alive + count <= cap) {
-        const made = spawnSwarm(w, count);
-        w.spawnAcc -= made;
-        alive += made;
-        continue;
-      }
-    }
-    if (spawnAtRing(w, kind, w.rand() * Math.PI * 2, ringDist(w)) < 0) break; // 풀이 가득
-    w.spawnAcc -= 1;
-    alive += 1;
   }
 }

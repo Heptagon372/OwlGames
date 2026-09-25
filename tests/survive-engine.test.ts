@@ -1,780 +1,711 @@
+// 🦉 아울 서바이버즈 v2 엔진 검증 (기획서 §15 수용 기준)
 import { describe, expect, it } from "vitest";
-import { CFG, enemyCapAt, xpToNext } from "@/games/survive/config";
-import type { Card, EnemyKind, WeaponId } from "@/games/survive/types";
+import { CFG, atkMult, hpMult, stageScoreMult, xpToNext } from "@/games/survive/config";
+import {
+  ACTIVE_IDS,
+  ACTIVES,
+  applyPassives,
+  baseStats,
+  EVOLUTIONS,
+  EVO_IDS,
+  PASSIVE_IDS,
+  PASSIVES,
+  skillCooldown,
+  skillDamage,
+} from "@/games/survive/data/skills";
+import { ENEMY_SPEC, STAGES, stageInfo } from "@/games/survive/data/stages";
+import { applyCard, drawCards, pendingEvolution } from "@/games/survive/engine/levelup";
+import {
+  clearForBoss,
+  obstacleDensity,
+  OBSTACLE_KINDS,
+  passable,
+  placeObstacles,
+} from "@/games/survive/engine/obstacles";
+import { createSpawnState, updateSpawner } from "@/games/survive/engine/spawner";
+import { spawnBoss, spawnMidboss, updateBoss } from "@/games/survive/engine/boss";
+import { buildMeta, rawScore } from "@/games/survive/engine/score";
 import {
   aliveEnemies,
-  BULLET_KINDS,
   createWorld,
   damageEnemy,
-  ENEMY_KINDS,
-  forEachEnemyNear,
-  nearestEnemy,
+  hurtPlayer,
+  killEnemy,
+  recalcStats,
   refreshGrid,
   spawnEnemy,
+  TAG,
   type World,
 } from "@/games/survive/engine/world";
-import { ENEMY_SPEC, onEnemyDeath, RANSOM_SLOW, separateEnemies, updateEnemies } from "@/games/survive/engine/enemies";
-import { updateWeapons, weaponCooldown, weaponDamage, WEAPON_INFO } from "@/games/survive/engine/weapons";
-import { applyCard, applyPassives, drawCards, evolvableWeapon, PASSIVE_INFO } from "@/games/survive/engine/levelup";
-import { updateSpawner } from "@/games/survive/engine/spawner";
-import { updateBoss } from "@/games/survive/engine/boss";
+import { chooseCard, createRun, update, type Run } from "@/games/survive/engine/game";
+import type { PassiveId, PassiveSlot } from "@/games/survive/types";
 
-const DT = CFG.physics.dt;
-const FRAMES = CFG.runSec * 60;
+const DT = 1 / 60;
 
-/** 카드 식별자 — 같은 카드가 두 번 나오지 않는지 확인할 때 쓴다 */
-function cardKey(c: Card): string {
-  return `${c.kind}:${c.id}`;
+function world(stage = 1, seed = 12345): World {
+  const w = createWorld(seed, stage, "dark", true);
+  refreshGrid(w);
+  return w;
 }
 
-function giveWeapon(w: World, id: WeaponId, level = 1) {
-  w.weapons.push({ id, level, cd: 0, evolved: null, ammo: 0 });
+function passives(list: [PassiveId, number][]): PassiveSlot[] {
+  return list.map(([id, lv]) => ({ id, lv }));
 }
 
-/* ── 패시브 (§6) ─────────────────────────────────────── */
+/* ── 1. 스킬 50종 ───────────────────────────────────────────── */
 
-describe("패시브 → 스탯 (§6)", () => {
-  it("패시브가 없으면 기본값 그대로다", () => {
-    const w = createWorld(1, 1);
-    applyPassives(w);
-    expect(w.stats.damage).toBe(1);
-    expect(w.stats.cooldown).toBe(1);
-    expect(w.stats.projExtra).toBe(0);
-    expect(w.stats.projSpeed).toBe(1);
-    expect(w.stats.dmgTaken).toBe(1);
-    expect(w.stats.magnet).toBe(CFG.player.magnet);
-    expect(w.stats.speed).toBe(CFG.player.speed);
-    expect(w.player.maxHp).toBe(CFG.player.hp);
+describe("스킬 데이터 (§7)", () => {
+  it("액티브 20 · 패시브 18 · 진화 12 = 50종", () => {
+    expect(ACTIVE_IDS).toHaveLength(20);
+    expect(PASSIVE_IDS).toHaveLength(18);
+    expect(EVO_IDS).toHaveLength(12);
+    expect(ACTIVE_IDS.length + PASSIVE_IDS.length + EVO_IDS.length).toBe(50);
+  });
+
+  it("모든 스킬이 이름·이모지·설명을 갖는다", () => {
+    for (const id of ACTIVE_IDS) {
+      const s = ACTIVES[id];
+      expect(s.name.length).toBeGreaterThan(0);
+      expect(s.emoji.length).toBeGreaterThan(0);
+      expect(s.desc.length).toBeGreaterThan(0);
+      expect(s.cd).toBeGreaterThanOrEqual(0);
+      expect(s.dmg).toBeGreaterThanOrEqual(0);
+    }
+    for (const id of PASSIVE_IDS) {
+      expect(PASSIVES[id].desc.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("진화 12종이 전부 유효한 재료를 가리킨다", () => {
+    for (const id of EVO_IDS) {
+      const e = EVOLUTIONS[id];
+      const isActiveBase = (ACTIVE_IDS as string[]).includes(e.base);
+      const isPassiveBase = (PASSIVE_IDS as string[]).includes(e.base);
+      expect(isActiveBase || isPassiveBase).toBe(true);
+      expect((PASSIVE_IDS as string[]).includes(e.req)).toBe(true);
+      if (isActiveBase) {
+        // 액티브 쪽에도 같은 진화가 연결돼 있어야 한다
+        expect(ACTIVES[e.base as (typeof ACTIVE_IDS)[number]].evo).toBe(id);
+      }
+    }
+  });
+
+  it("레벨이 오르면 피해는 커지고 쿨다운은 줄어든다", () => {
+    const st = baseStats();
+    expect(skillDamage(10, 5, st)).toBeGreaterThan(skillDamage(10, 1, st));
+    expect(skillCooldown(1, 5, st)).toBeLessThan(skillCooldown(1, 1, st));
+    expect(skillCooldown(1, 5, st)).toBeGreaterThanOrEqual(0.06);
+  });
+});
+
+/* ── 2. 패시브 → 스탯 ───────────────────────────────────────── */
+
+describe("패시브 18종 (§7)", () => {
+  it("없으면 기본값 그대로", () => {
+    const s = applyPassives([]);
+    expect(s.damage).toBe(1);
+    expect(s.maxHp).toBe(CFG.player.hp);
+    expect(s.revives).toBe(0);
   });
 
   it("🧠 코어 = 레벨당 피해 +12%", () => {
-    for (const lv of [1, 3, 5]) {
-      const w = createWorld(1, 1);
-      w.passives.core = lv;
-      applyPassives(w);
-      expect(w.stats.damage).toBeCloseTo(1 + 0.12 * lv, 6);
-    }
+    expect(applyPassives(passives([["P01", 3]])).damage).toBeCloseTo(1.36, 5);
   });
 
-  it("⏱️ CPU 클럭 = 레벨당 쿨다운 -8%", () => {
-    for (const lv of [1, 3, 5]) {
-      const w = createWorld(1, 1);
-      w.passives.cpu = lv;
-      applyPassives(w);
-      expect(w.stats.cooldown).toBeCloseTo(1 - 0.08 * lv, 6);
-    }
+  it("⏱️ CPU 클럭 = 레벨당 쿨다운 -8% (바닥 0.4)", () => {
+    expect(applyPassives(passives([["P02", 2]])).cooldown).toBeCloseTo(0.84, 5);
+    expect(applyPassives(passives([["P02", 5]])).cooldown).toBeGreaterThanOrEqual(0.4);
   });
 
-  it("💾 램 = 3레벨마다 투사체 +1", () => {
-    const expected = [0, 1, 1, 1, 2, 2];
-    for (let lv = 0; lv <= 5; lv++) {
-      const w = createWorld(1, 1);
-      if (lv > 0) w.passives.ram = lv;
-      applyPassives(w);
-      expect(w.stats.projExtra).toBe(expected[lv]);
-    }
+  it("💾 RAM = 2레벨마다 투사체 +1", () => {
+    expect(applyPassives(passives([["P03", 1]])).projectiles).toBe(0);
+    expect(applyPassives(passives([["P03", 2]])).projectiles).toBe(1);
+    expect(applyPassives(passives([["P03", 5]])).projectiles).toBe(2);
   });
 
-  it("📶 대역폭 = 레벨당 투사체 속도·사거리 +15%", () => {
-    for (const lv of [1, 2, 5]) {
-      const w = createWorld(1, 1);
-      w.passives.bandwidth = lv;
-      applyPassives(w);
-      expect(w.stats.projSpeed).toBeCloseTo(1 + 0.15 * lv, 6);
-    }
+  it("🧱 방화벽 두께 = 최대 체력 +20 / 받는 피해 -4%", () => {
+    const s = applyPassives(passives([["P05", 2]]));
+    expect(s.maxHp).toBe(CFG.player.hp + 40);
+    expect(s.damageTaken).toBeCloseTo(0.92, 5);
   });
 
-  it("🧱 방화벽 두께 = 최대 체력 +20 / 받는 피해 -5% (늘어난 만큼 바로 회복)", () => {
-    const w = createWorld(1, 1);
-    w.player.hp = CFG.player.hp;
-    for (let lv = 1; lv <= 5; lv++) {
-      w.passives.firewall_thick = lv;
-      applyPassives(w);
-      expect(w.player.maxHp).toBe(CFG.player.hp + 20 * lv);
-      expect(w.stats.dmgTaken).toBeCloseTo(1 - 0.05 * lv, 6);
-    }
-    expect(w.player.hp).toBe(w.player.maxHp); // 만피에서 5번 올렸으니 그대로 만피
-    // 다친 상태에서 올리면 증가분만 회복된다
-    w.player.hp = 50;
-    w.passives.firewall_thick = 5;
-    applyPassives(w);
-    expect(w.player.hp).toBe(50); // 같은 레벨 재계산은 회복이 없다 (멱등)
+  it("❤️‍🩹 리스폰 프로토콜 = 부활 1회 + 무적 1초 (Lv당 +0.4초, Lv5는 60% 회복)", () => {
+    expect(applyPassives(passives([["P13", 1]])).reviveIFrame).toBeCloseTo(1, 5);
+    expect(applyPassives(passives([["P13", 3]])).reviveIFrame).toBeCloseTo(1.8, 5);
+    const max = applyPassives(passives([["P13", 5]]));
+    expect(max.revives).toBe(1);
+    expect(max.reviveHeal).toBeCloseTo(0.6, 5);
   });
 
-  it("🧲 자석 +30% / 👟 부츠 +10%", () => {
-    const w = createWorld(1, 1);
-    w.passives.magnet = 2;
-    w.passives.boots = 4;
-    applyPassives(w);
-    expect(w.stats.magnet).toBeCloseTo(CFG.player.magnet * 1.6, 5);
-    expect(w.stats.speed).toBeCloseTo(CFG.player.speed * 1.4, 5);
-  });
-
-  it("모든 패시브가 카드 문구를 갖는다", () => {
-    for (const id of Object.keys(PASSIVE_INFO)) {
-      const info = PASSIVE_INFO[id as keyof typeof PASSIVE_INFO];
-      expect(info.label.length).toBeGreaterThan(0);
-      expect(info.desc.length).toBeGreaterThan(0);
-      expect(info.emoji.length).toBeGreaterThan(0);
-    }
+  it("🔄 페일오버 클러스터(E12) = 부활 2회 + 3초 무적 + 폭발", () => {
+    const s = applyPassives(passives([["P13", 5], ["P14", 3]]), true);
+    expect(s.revives).toBe(2);
+    expect(s.reviveIFrame).toBeGreaterThanOrEqual(3);
+    expect(s.reviveBlast).toBe(true);
   });
 });
 
-/* ── 카드 추첨 (§14) ─────────────────────────────────── */
+/* ── 3. 진화 조건 ───────────────────────────────────────────── */
 
-describe("레벨업 카드 추첨 (§14)", () => {
-  it("항상 서로 다른 3장을 돌려준다", () => {
-    const w = createWorld(42, 1);
-    for (let i = 0; i < 300; i++) {
+describe("진화 (§6.1)", () => {
+  it("액티브 MAX + 짝 패시브 Lv3 이면 진화할 수 있다", () => {
+    const w = world();
+    w.actives = [{ id: "A01", lv: 5, evo: null, cd: 0 }];
+    w.passives = passives([["P03", 3]]);
+    expect(pendingEvolution(w)).toBe("E01");
+  });
+
+  it("하나라도 모자라면 진화하지 않는다", () => {
+    const w = world();
+    w.actives = [{ id: "A01", lv: 4, evo: null, cd: 0 }];
+    w.passives = passives([["P03", 3]]);
+    expect(pendingEvolution(w)).toBeNull();
+    w.actives = [{ id: "A01", lv: 5, evo: null, cd: 0 }];
+    w.passives = passives([["P03", 2]]);
+    expect(pendingEvolution(w)).toBeNull();
+  });
+
+  it("E12 는 패시브 두 개(P13 MAX + P14 Lv3)로 열린다", () => {
+    const w = world();
+    w.passives = passives([["P13", 5], ["P14", 3]]);
+    expect(pendingEvolution(w)).toBe("E12");
+  });
+
+  it("진화 카드는 1번 슬롯에 고정으로 나온다 (§7 추첨 규칙 1)", () => {
+    const w = world();
+    w.actives = [{ id: "A01", lv: 5, evo: null, cd: 0 }];
+    w.passives = passives([["P03", 3]]);
+    for (let i = 0; i < 20; i++) {
       const cards = drawCards(w);
-      expect(cards).toHaveLength(CFG.levelup.cards);
-      expect(new Set(cards.map(cardKey)).size).toBe(CFG.levelup.cards);
+      expect(cards[0].kind).toBe("evolution");
+      expect(cards[0].id).toBe("E01");
     }
   });
 
-  it("Lv6 이전에는 신규 무기가 1장 이상 보장된다 (§14-2)", () => {
-    const w = createWorld(43, 1);
-    for (let i = 0; i < 200; i++) {
+  it("진화를 적용하면 슬롯에 붙고 통계가 오른다", () => {
+    const w = world();
+    w.actives = [{ id: "A01", lv: 5, evo: null, cd: 0 }];
+    w.passives = passives([["P03", 3]]);
+    applyCard(w, drawCards(w)[0]);
+    expect(w.actives[0].evo).toBe("E01");
+    expect(w.evolutions).toContain("E01");
+    expect(w.run.evolutions).toBe(1);
+    expect(w.freeze).toBeGreaterThan(0);
+  });
+});
+
+/* ── 4. 카드 추첨 ───────────────────────────────────────────── */
+
+describe("레벨업 카드 (§7 추첨 규칙)", () => {
+  it("항상 서로 다른 3장", () => {
+    const w = world();
+    for (let i = 0; i < 40; i++) {
       const cards = drawCards(w);
-      const owned = new Set(w.weapons.map((x) => x.id));
-      expect(cards.some((c) => c.kind === "weapon" && !owned.has(c.id))).toBe(true);
+      expect(cards).toHaveLength(3);
+      expect(new Set(cards.map((c) => c.id)).size).toBe(3);
     }
   });
 
-  it("진화 조건을 채우면 1번 슬롯에 100% 진화 카드가 나온다 (§15-4)", () => {
-    const w = createWorld(7, 1);
-    w.weapons[0].level = CFG.levelup.maxWeaponLevel;
-    w.passives.ram = CFG.levelup.evolvePassiveLevel;
-    applyPassives(w);
-    expect(evolvableWeapon(w)).toBe("feather");
-    for (let i = 0; i < 400; i++) {
-      const cards = drawCards(w);
-      expect(cards[0].kind).toBe("evolve");
-      expect(cards[0].kind === "evolve" && cards[0].evolved).toBe(WEAPON_INFO.feather.evolved);
-      expect(cards).toHaveLength(CFG.levelup.cards);
+  it("Lv6 이전에는 신규 액티브가 최소 1장 나온다", () => {
+    const w = world();
+    w.player.level = 3;
+    for (let i = 0; i < 30; i++) {
+      expect(drawCards(w).some((c) => c.kind === "new-active")).toBe(true);
     }
   });
 
-  it("진화 조건이 하나라도 모자라면 진화 카드가 없다", () => {
-    const w = createWorld(8, 1);
-    w.weapons[0].level = CFG.levelup.maxWeaponLevel;
-    w.passives.ram = CFG.levelup.evolvePassiveLevel - 1;
-    expect(evolvableWeapon(w)).toBeNull();
-    for (let i = 0; i < 50; i++) expect(drawCards(w).some((c) => c.kind === "evolve")).toBe(false);
-  });
-
-  it("슬롯이 가득 차면 보유한 것 강화만 등장한다 (§5.1)", () => {
-    const w = createWorld(9, 1);
-    giveWeapon(w, "firewall");
-    giveWeapon(w, "sniffer");
-    giveWeapon(w, "ddos");
-    w.passives.core = 1;
-    w.passives.cpu = 1;
-    w.passives.ram = 1;
-    w.passives.boots = 1;
-    applyPassives(w);
-    expect(w.weapons).toHaveLength(CFG.levelup.weaponSlots);
-
-    const ownedW = new Set(w.weapons.map((x) => x.id));
-    const ownedP = new Set(Object.keys(w.passives));
-    for (let i = 0; i < 300; i++) {
+  it("슬롯이 가득 차면 보유 스킬 강화만 나온다 (§6.1)", () => {
+    const w = world();
+    w.actives = ACTIVE_IDS.slice(0, CFG.slots.active).map((id) => ({ id, lv: 1, evo: null, cd: 0 }));
+    w.passives = PASSIVE_IDS.slice(0, CFG.slots.passive).map((id) => ({ id, lv: 1 }));
+    for (let i = 0; i < 30; i++) {
       for (const c of drawCards(w)) {
-        if (c.kind === "weapon") expect(ownedW.has(c.id)).toBe(true);
-        if (c.kind === "passive") expect(ownedP.has(c.id)).toBe(true);
+        expect(c.kind === "up-active" || c.kind === "up-passive").toBe(true);
       }
     }
   });
 
-  it("체력 30% 이하면 💉백신·🧱방화벽 두께가 더 자주 나온다 (§14-5)", () => {
-    function count(hpRatio: number): number {
-      const w = createWorld(123, 1);
-      w.player.level = 12; // 신규 무기 보장 규칙을 피해서 가중치만 본다
+  it("체력 30% 이하면 구제 패시브가 더 자주 나온다 (§7 추첨 규칙 5)", () => {
+    const rescue = new Set(["P05", "P12", "P13"]);
+    const count = (hpRatio: number) => {
+      const w = world(1, 777);
+      w.player.level = 12;
       w.player.hp = w.player.maxHp * hpRatio;
       let n = 0;
-      for (let i = 0; i < 400; i++) {
-        for (const c of drawCards(w)) {
-          if (c.kind === "weapon" && c.id === "vaccine") n++;
-          if (c.kind === "passive" && c.id === "firewall_thick") n++;
+      for (let i = 0; i < 300; i++) for (const c of drawCards(w)) if (rescue.has(c.id)) n++;
+      return n;
+    };
+    expect(count(0.2)).toBeGreaterThan(count(1));
+  });
+
+  it("같은 카드가 3회 연속으로는 안 나온다 (§7 추첨 규칙 4)", () => {
+    const w = world();
+    const history = [["A02"], ["A02"]] as never;
+    for (let i = 0; i < 30; i++) {
+      expect(drawCards(w, history).some((c) => c.id === "A02")).toBe(false);
+    }
+  });
+
+  it("카드를 적용하면 레벨이 오르거나 새로 들어온다", () => {
+    const w = world();
+    const before = w.actives.length;
+    applyCard(w, { kind: "new-active", id: "A08", name: "x", emoji: "x", desc: "x", level: "신규" });
+    expect(w.actives).toHaveLength(before + 1);
+    applyCard(w, { kind: "up-active", id: "A08", name: "x", emoji: "x", desc: "x", level: "Lv1 → 2" });
+    expect(w.actives.find((s) => s.id === "A08")?.lv).toBe(2);
+    applyCard(w, { kind: "new-passive", id: "P01", name: "x", emoji: "x", desc: "x", level: "신규" });
+    expect(w.stats.damage).toBeCloseTo(1.12, 5);
+  });
+});
+
+/* ── 5. 장애물 (§8) ─────────────────────────────────────────── */
+
+describe("장애물 (§8)", () => {
+  it("밀도가 항상 6~9% 안에 든다", () => {
+    for (let seed = 1; seed <= 25; seed++) {
+      const w = world(1, seed * 101);
+      placeObstacles(w);
+      const d = obstacleDensity(w);
+      expect(d).toBeGreaterThanOrEqual(CFG.obstacle.densityMin - 0.005);
+      expect(d).toBeLessThanOrEqual(CFG.obstacle.densityMax);
+    }
+  });
+
+  it("어떤 두 장애물 사이에도 140px 통로가 남는다", () => {
+    for (const seed of [4242, 77, 31337]) {
+      const w = world(1, seed);
+      placeObstacles(w);
+      const o = w.obstacles;
+      for (let i = 0; i < o.cap; i++) {
+        if (!o.alive[i]) continue;
+        for (let j = i + 1; j < o.cap; j++) {
+          if (!o.alive[j]) continue;
+          expect(
+            passable(o.x[i], o.y[i], o.w[i], o.h[i], o.x[j], o.y[j], o.w[j], o.h[j], CFG.obstacle.minCorridorPx),
+          ).toBe(true);
         }
       }
-      return n;
     }
-    const low = count(CFG.levelup.lowHpRatio - 0.05);
-    const full = count(1);
-    expect(low).toBeGreaterThan(full);
   });
 
-  it("같은 카드가 3회 연속으로는 안 나온다 (§14-4)", () => {
-    const w = createWorld(77, 1);
-    w.player.level = 12;
-    const history: Set<string>[] = [];
-    for (let i = 0; i < 400; i++) history.push(new Set(drawCards(w).map(cardKey)));
-    for (let i = 2; i < history.length; i++) {
-      for (const key of history[i]) {
-        // 후보가 말라서 규칙을 푼 경우를 제외하려면 후보 수가 충분해야 한다
-        expect(history[i - 1].has(key) && history[i - 2].has(key)).toBe(false);
-      }
+  it("플레이어 스폰 반경 200px 안에는 두지 않는다", () => {
+    const w = world(1, 99);
+    placeObstacles(w);
+    const o = w.obstacles;
+    for (let i = 0; i < o.cap; i++) {
+      if (!o.alive[i]) continue;
+      expect(Math.hypot(o.x[i] - w.player.x, o.y[i] - w.player.y)).toBeGreaterThanOrEqual(CFG.obstacle.spawnClearRadius);
     }
+  });
+
+  it("보스 등장 시 40%가 치워진다", () => {
+    const w = world(1, 31337);
+    placeObstacles(w);
+    const before = obstacleDensity(w);
+    clearForBoss(w);
+    expect(obstacleDensity(w)).toBeLessThan(before);
+  });
+
+  it("장애물 종류 4종이 모두 정의돼 있다", () => {
+    expect(OBSTACLE_KINDS).toHaveLength(4);
+    for (const k of OBSTACLE_KINDS) expect(k.hp).toBeGreaterThan(0);
   });
 });
 
-/* ── 카드 적용 ───────────────────────────────────────── */
+/* ── 6. 스테이지 (§4·§5) ────────────────────────────────────── */
 
-describe("카드 적용", () => {
-  it("신규 무기는 슬롯에 추가되고 보유 무기는 레벨이 오른다", () => {
-    const w = createWorld(2, 1);
-    applyCard(w, { kind: "weapon", id: "ddos", level: 1, label: "", desc: "", emoji: "" });
-    expect(w.weapons).toHaveLength(2);
-    expect(w.weapons[1]).toMatchObject({ id: "ddos", level: 1 });
-
-    for (let i = 0; i < 10; i++) applyCard(w, { kind: "weapon", id: "ddos", level: 2, label: "", desc: "", emoji: "" });
-    expect(w.weapons[1].level).toBe(CFG.levelup.maxWeaponLevel); // MAX를 넘지 않는다
-  });
-
-  it("패시브 카드는 레벨과 스탯을 함께 올린다", () => {
-    const w = createWorld(2, 1);
-    applyCard(w, { kind: "passive", id: "core", level: 1, label: "", desc: "", emoji: "" });
-    applyCard(w, { kind: "passive", id: "core", level: 2, label: "", desc: "", emoji: "" });
-    expect(w.passives.core).toBe(2);
-    expect(w.stats.damage).toBeCloseTo(1.24, 6);
-  });
-
-  it("진화 카드는 무기를 진화시키고 run.evolutions를 올린다", () => {
-    const w = createWorld(2, 1);
-    w.weapons[0].level = CFG.levelup.maxWeaponLevel;
-    w.passives.ram = CFG.levelup.evolvePassiveLevel;
-    const card = drawCards(w)[0];
-    expect(card.kind).toBe("evolve");
-    applyCard(w, card);
-    expect(w.weapons[0].evolved).toBe("feather_storm");
-    expect(w.run.evolutions).toBe(1);
-    expect(evolvableWeapon(w)).toBeNull(); // 같은 무기를 두 번 진화하지 않는다
-    expect(w.banner?.text).toContain(WEAPON_INFO.feather.evolvedLabel);
-  });
-
-  it("모든 무기가 진화 짝·문구를 갖는다 (§6)", () => {
-    for (const id of Object.keys(WEAPON_INFO)) {
-      const info = WEAPON_INFO[id as WeaponId];
-      expect(PASSIVE_INFO[info.pair]).toBeDefined();
-      expect(info.evolvedLabel.length).toBeGreaterThan(0);
-      expect(info.evolvedDesc.length).toBeGreaterThan(0);
+describe("스테이지 (§4·§5)", () => {
+  it("1~15 스테이지가 전부 보스·중간보스를 갖는다", () => {
+    expect(STAGES).toHaveLength(15);
+    for (const s of STAGES) {
+      expect(s.boss.name.length).toBeGreaterThan(0);
+      expect(s.boss.patterns.length).toBeGreaterThanOrEqual(2);
+      expect(s.midboss.name.length).toBeGreaterThan(0);
+      expect(s.enemies.length).toBeGreaterThan(0);
+      for (const e of s.enemies) expect(ENEMY_SPEC[e]).toBeDefined();
     }
+  });
+
+  it("체력·공격력 배율이 스테이지마다 누적된다", () => {
+    expect(hpMult(1)).toBeCloseTo(1, 5);
+    expect(hpMult(7)).toBeCloseTo(1 + 0.18 * 6, 5);
+    expect(atkMult(7)).toBeCloseTo(1 + 0.12 * 6, 5);
+  });
+
+  it("점수 배율은 ×3.0 에서 멈춘다", () => {
+    expect(stageScoreMult(1)).toBeCloseTo(1, 5);
+    expect(stageScoreMult(7)).toBeCloseTo(1.36, 5);
+    expect(stageScoreMult(99)).toBeCloseTo(3, 5);
+  });
+
+  it("16 이상은 무한 스테이지 — 3스테이지마다 특수 규칙, 5스테이지마다 강화 보스", () => {
+    const s18 = stageInfo(18);
+    expect(s18.endless).toBe(true);
+    expect(s18.rule).not.toBeNull();
+    const s20 = stageInfo(20);
+    expect(s20.boss.patterns.length).toBeGreaterThan(STAGES[(20 - 1) % 15].boss.patterns.length);
+  });
+
+  it("XP 곡선은 10 + 7L", () => {
+    expect(xpToNext(1)).toBe(17);
+    expect(xpToNext(10)).toBe(80);
   });
 });
 
-/* ── 적 (§7) ─────────────────────────────────────────── */
+/* ── 7. 스폰 (§14) ──────────────────────────────────────────── */
 
-describe("적 (§7)", () => {
-  it("🐴 트로이목마는 처치되면 🐛버그 3마리로 분열한다", () => {
-    const w = createWorld(4, 1);
-    const i = spawnEnemy(w, "trojan", 100, 100, ENEMY_SPEC.trojan);
-    expect(damageEnemy(w, i, ENEMY_SPEC.trojan.hp)).toBe(true);
-    onEnemyDeath(w, "trojan", 100, 100);
-    let bugs = 0;
-    for (let k = 0; k < w.enemies.cap; k++) {
-      if (w.enemies.alive[k] && ENEMY_KINDS[w.enemies.kind[k]] === "bug") bugs++;
-    }
-    expect(bugs).toBe(3);
-  });
-
-  it("💀 엘리트를 잡으면 보물상자로 무기가 Lv+2 오른다", () => {
-    const w = createWorld(4, 1);
-    giveWeapon(w, "ddos");
-    const before = w.weapons.reduce((a, x) => a + x.level, 0);
-    onEnemyDeath(w, "elite", 0, 0);
-    expect(w.weapons.reduce((a, x) => a + x.level, 0)).toBe(before + 2);
-    expect(w.banner?.text).toContain("보물상자");
-    expect(w.banner?.until).toBeCloseTo(w.t + 2, 6);
-  });
-
-  it("🔒 랜섬웨어에 닿으면 이동속도 둔화가 걸린다", () => {
-    const w = createWorld(4, 1);
-    spawnEnemy(w, "ransom", CFG.player.radius + ENEMY_SPEC.ransom.r - 2, 0, ENEMY_SPEC.ransom);
-    expect(w.player.slow).toBe(0);
-    updateEnemies(w, DT);
-    expect(w.player.slow).toBe(RANSOM_SLOW.sec);
-  });
-
-  it("적은 플레이어를 향해 다가온다 (경로탐색 없이 벡터 정규화만)", () => {
-    const w = createWorld(4, 1);
-    const i = spawnEnemy(w, "bug", 300, 0, ENEMY_SPEC.bug);
-    const before = w.enemies.x[i];
-    for (let f = 0; f < 60; f++) updateEnemies(w, DT);
-    expect(w.enemies.x[i]).toBeLessThan(before);
-    expect(w.enemies.x[i]).toBeCloseTo(before - ENEMY_SPEC.bug.speed, 0);
-  });
-
-  it("겹친 적은 8프레임마다 밀려난다 (§12)", () => {
-    const w = createWorld(4, 1);
-    const a = spawnEnemy(w, "bug", 400, 0, ENEMY_SPEC.bug);
-    const b = spawnEnemy(w, "bug", 402, 0, ENEMY_SPEC.bug);
-    refreshGrid(w);
-    separateEnemies(w, 1); // 8의 배수가 아니면 아무 일도 없다
-    expect(w.enemies.x[b] - w.enemies.x[a]).toBeCloseTo(2, 6);
-    separateEnemies(w, 8);
-    expect(w.enemies.x[b] - w.enemies.x[a]).toBeGreaterThan(2);
-  });
-
-  it("적 스펙이 기획서 표와 같다 (§7)", () => {
-    expect(ENEMY_SPEC.bug.hp).toBe(10);
-    expect(ENEMY_SPEC.worm.hp).toBe(8);
-    expect(ENEMY_SPEC.trojan.hp).toBe(45);
-    expect(ENEMY_SPEC.botnet.hp).toBe(6);
-    expect(ENEMY_SPEC.ransom.hp).toBe(90);
-    expect(ENEMY_SPEC.elite.hp).toBe(400);
-    expect(ENEMY_SPEC.boss.hp).toBe(1500);
-    expect(ENEMY_SPEC.worm.speed).toBeGreaterThan(ENEMY_SPEC.bug.speed);
-    expect(ENEMY_SPEC.elite.xp).toBe(25);
-    expect(ENEMY_SPEC.boss.xp).toBe(100);
-  });
-});
-
-/* ── 무기 ────────────────────────────────────────────── */
-
-describe("무기 (§6)", () => {
-  it("피해는 레벨과 🧠코어에 비례한다", () => {
-    const w = createWorld(5, 1);
-    expect(weaponDamage(w, 10, 1)).toBeCloseTo(10, 6);
-    expect(weaponDamage(w, 10, 5)).toBeCloseTo(20, 6);
-    w.passives.core = 5;
-    applyPassives(w);
-    expect(weaponDamage(w, 10, 5)).toBeCloseTo(20 * 1.6, 6);
-  });
-
-  it("쿨다운은 레벨과 ⏱️CPU 클럭에 따라 줄어든다", () => {
-    const w = createWorld(5, 1);
-    const base = weaponCooldown(w, 0.8, 1);
-    expect(base).toBeCloseTo(0.8, 6);
-    expect(weaponCooldown(w, 0.8, 5)).toBeCloseTo(0.8 * 0.68, 6);
-    w.passives.cpu = 5;
-    applyPassives(w);
-    expect(weaponCooldown(w, 0.8, 1)).toBeCloseTo(0.8 * 0.6, 6);
-    expect(weaponCooldown(w, 0.8, 1)).toBeLessThan(base);
-  });
-
-  it("⏱️CPU 클럭을 올리면 같은 시간에 더 많이 발사한다", () => {
-    function fired(cpu: number): number {
-      const w = createWorld(6, 1);
-      if (cpu > 0) w.passives.cpu = cpu;
-      applyPassives(w);
-      spawnEnemy(w, "bug", 300, 0, { ...ENEMY_SPEC.bug, hp: 1e9 });
-      let n = 0;
-      for (let f = 0; f < 180; f++) {
-        refreshGrid(w);
-        const before = countAlive(w.bullets.alive);
-        updateWeapons(w, DT);
-        n += countAlive(w.bullets.alive) - before;
-      }
-      return n;
-    }
-    expect(fired(5)).toBeGreaterThan(fired(0));
-  });
-
-  it("🛡️ 방화벽은 주변 적을 계속 깎는다", () => {
-    const w = createWorld(6, 1);
-    w.weapons.length = 0;
-    giveWeapon(w, "firewall");
-    const i = spawnEnemy(w, "bug", 40, 0, { ...ENEMY_SPEC.bug, hp: 500 });
-    const before = w.enemies.hp[i];
-    for (let f = 0; f < 60; f++) {
-      refreshGrid(w);
-      updateWeapons(w, DT);
-    }
-    expect(w.enemies.hp[i]).toBeLessThan(before);
-  });
-
-  it("🛰️ 포트 스캐너는 위성을 궤도에 유지한다 (진화하면 6개)", () => {
-    const w = createWorld(6, 1);
-    w.weapons.length = 0;
-    giveWeapon(w, "portscan");
-    for (let f = 0; f < 5; f++) updateWeapons(w, DT);
-    expect(countOrbit(w)).toBe(2);
-    w.weapons[0].evolved = "botnet_orbital";
-    for (let f = 0; f < 5; f++) updateWeapons(w, DT);
-    expect(countOrbit(w)).toBe(6);
-  });
-
-  it("🪶 깃털 폭풍(진화)은 적이 없어도 8방향으로 난사한다", () => {
-    const w = createWorld(6, 1);
-    w.weapons[0].evolved = "feather_storm";
-    w.weapons[0].level = CFG.levelup.maxWeaponLevel;
-    updateWeapons(w, DT);
-    expect(countAlive(w.bullets.alive)).toBe(8);
-  });
-});
-
-function countAlive(a: Uint8Array): number {
-  let n = 0;
-  for (let i = 0; i < a.length; i++) if (a[i]) n++;
-  return n;
-}
-
-const ORBIT_KIND = BULLET_KINDS.indexOf("orbit");
-
-function countOrbit(w: World): number {
-  let n = 0;
-  for (let i = 0; i < w.bullets.cap; i++) if (w.bullets.alive[i] && w.bullets.kind[i] === ORBIT_KIND) n++;
-  return n;
-}
-
-/* ── 스포너 (§3 · §12) ───────────────────────────────── */
-
-describe("스포너 (§3 · §12)", () => {
+describe("스포너 (§14)", () => {
   it("스폰 예산(초당 6마리)을 넘지 않는다", () => {
-    const w = createWorld(31, 1);
-    let total = 0;
-    for (let f = 0; f < FRAMES; f++) {
-      w.t += DT;
-      w.enemies.alive.fill(0); // 동시 상한이 아니라 예산만 보기 위해 매 프레임 비운다
-      updateSpawner(w, DT);
-      total += aliveEnemies(w);
-      // 버킷(1초치) + 무리 스폰의 빚만큼만 앞당겨질 수 있다
-      expect(total).toBeLessThanOrEqual(CFG.spawnBudgetPerSec * w.t + CFG.spawnBudgetPerSec + 2);
-    }
-    expect(total / CFG.runSec).toBeLessThanOrEqual(CFG.spawnBudgetPerSec);
-    expect(total).toBeGreaterThan(CFG.spawnBudgetPerSec * CFG.runSec * 0.9); // 예산을 놀리지도 않는다
+    const w = world(1, 555);
+    const st = createSpawnState();
+    for (let i = 0; i < 60; i++) updateSpawner(w, st, DT);
+    expect(aliveEnemies(w)).toBeLessThanOrEqual(CFG.spawn.budgetPerSec + 1);
   });
 
-  it("동시 적 상한(enemyCapAt)을 넘겨 스폰하지 않는다", () => {
-    const w = createWorld(32, 1);
-    for (let f = 0; f < FRAMES; f++) {
+  it("동시 적 상한을 넘기지 않는다", () => {
+    const w = world(1, 556);
+    w.phase = "wave2";
+    const st = createSpawnState();
+    for (let i = 0; i < 60 * 120; i++) {
+      updateSpawner(w, st, DT);
       w.t += DT;
-      const before = aliveEnemies(w);
-      updateSpawner(w, DT);
-      // 상한이 구간 전환으로 내려가는 경우가 있어 "늘리지 않는다"로 본다 (+2 = 엘리트·보스)
-      expect(aliveEnemies(w)).toBeLessThanOrEqual(Math.max(before, enemyCapAt(w.t)) + 2);
     }
+    expect(aliveEnemies(w)).toBeLessThanOrEqual(CFG.perf.maxEnemies);
   });
 
-  it("구간별로 정해진 적만 나오고 엘리트·보스가 제때 등장한다 (§3)", () => {
-    const w = createWorld(33, 1);
-    const seen: Record<string, number> = {};
-    const firstAt: Partial<Record<EnemyKind, number>> = {};
-    for (let f = 0; f < FRAMES; f++) {
-      w.t += DT;
-      const before = new Uint8Array(w.enemies.alive);
-      updateSpawner(w, DT);
-      for (let i = 0; i < w.enemies.cap; i++) {
-        if (before[i] || !w.enemies.alive[i]) continue;
-        const kind = ENEMY_KINDS[w.enemies.kind[i]];
-        seen[kind] = (seen[kind] ?? 0) + 1;
-        if (firstAt[kind] === undefined) firstAt[kind] = w.t;
+  it("적은 항상 화면 밖(플레이어에서 300px 이상)에서 나온다", () => {
+    const w = world(1, 557);
+    const st = createSpawnState();
+    for (let i = 0; i < 600; i++) updateSpawner(w, st, DT);
+    const e = w.enemies;
+    for (let i = 0; i < e.cap; i++) {
+      if (!e.alive[i]) continue;
+      expect(Math.hypot(e.x[i] - w.player.x, e.y[i] - w.player.y)).toBeGreaterThan(299);
+    }
+  });
+});
+
+/* ── 8. 속성 연계 (§6.2) ────────────────────────────────────── */
+
+describe("속성 연계 (§6.2)", () => {
+  function target(w: World): number {
+    const i = spawnEnemy(w, "ransom", w.player.x + 200, w.player.y);
+    w.enemies.hp[i] = 100000;
+    w.enemies.maxHp[i] = 100000;
+    refreshGrid(w);
+    return i;
+  }
+
+  it("❄️ 둔화 + ⚡ 전기 = 피해 ×2", () => {
+    const a = world(1, 10);
+    const b = world(1, 10);
+    const ia = target(a);
+    const ib = target(b);
+    b.enemies.slowT[ib] = 2;
+    damageEnemy(a, ia, 100, TAG.electric, false);
+    damageEnemy(b, ib, 100, TAG.electric, false);
+    expect(a.enemies.hp[ia] - b.enemies.hp[ib]).toBeCloseTo(100, 3);
+  });
+
+  it("🕳️ 흡입 + 광역 = 피해 +50%", () => {
+    const a = world(1, 11);
+    const b = world(1, 11);
+    const ia = target(a);
+    const ib = target(b);
+    b.enemies.pullT[ib] = 1;
+    damageEnemy(a, ia, 100, TAG.aoe, false);
+    damageEnemy(b, ib, 100, TAG.aoe, false);
+    expect(a.enemies.hp[ia] - b.enemies.hp[ib]).toBeCloseTo(50, 3);
+  });
+
+  it("🎯 표식 + 관통 = 치명타 확정", () => {
+    const w = world(1, 12);
+    const i = target(w);
+    w.enemies.markT[i] = 2;
+    const before = w.enemies.hp[i];
+    damageEnemy(w, i, 100, TAG.pierce, false);
+    expect(before - w.enemies.hp[i]).toBeCloseTo(100 * w.stats.critDamage, 3);
+  });
+
+  it("🔥 화상 + 💥 폭발 = 주변 3체로 번진다", () => {
+    const w = world(1, 13);
+    const i = target(w);
+    w.enemies.burnT[i] = 3;
+    w.enemies.burnDps[i] = 10;
+    const others: number[] = [];
+    for (let k = 0; k < 3; k++) {
+      const j = spawnEnemy(w, "bug", w.enemies.x[i] + 20 * (k + 1), w.enemies.y[i]);
+      w.enemies.hp[j] = 9999;
+      others.push(j);
+    }
+    refreshGrid(w);
+    damageEnemy(w, i, 10, TAG.explosion, false);
+    expect(others.some((j) => w.enemies.burnT[j] > 0)).toBe(true);
+  });
+});
+
+/* ── 9. 피격·부활 (§9.1) ────────────────────────────────────── */
+
+describe("피격과 부활 (§9.1)", () => {
+  it("피격하면 흔들림과 로그가 함께 남는다", () => {
+    const w = world();
+    hurtPlayer(w, 10);
+    expect(w.shake).toBeGreaterThan(0);
+    expect(w.log.some((l) => l.tag === "WARN")).toBe(true);
+    expect(w.run.damageTaken).toBe(1);
+  });
+
+  it("무적 중에는 맞지 않는다", () => {
+    const w = world();
+    hurtPlayer(w, 10);
+    const hp = w.player.hp;
+    hurtPlayer(w, 10);
+    expect(w.player.hp).toBe(hp);
+  });
+
+  it("🌑 스텔스 캐시 쉴드는 피격 1회를 무효로 한다", () => {
+    const w = world();
+    w.passives = passives([["P18", 1]]);
+    recalcStats(w);
+    w.player.shield = true;
+    const hp = w.player.hp;
+    hurtPlayer(w, 30);
+    expect(w.player.hp).toBe(hp);
+    expect(w.player.shield).toBe(false);
+  });
+
+  it("부활은 정확히 1초(+Lv당 0.4초) 무적을 준다", () => {
+    const w = world();
+    w.passives = passives([["P13", 2]]);
+    recalcStats(w);
+    w.player.hp = 1;
+    hurtPlayer(w, 999);
+    expect(w.player.alive).toBe(true);
+    expect(w.run.revivesUsed).toBe(1);
+    expect(w.player.invuln).toBeCloseTo(1.4, 5);
+    expect(w.log.some((l) => l.tag === "FATAL")).toBe(true);
+  });
+
+  it("부활이 없으면 죽는다", () => {
+    const w = world();
+    w.player.hp = 1;
+    hurtPlayer(w, 999);
+    expect(w.player.alive).toBe(false);
+    expect(w.over).toBe(true);
+  });
+});
+
+/* ── 10. 보스 (§3·§4) ───────────────────────────────────────── */
+
+describe("보스 (§3)", () => {
+  it("중간보스는 한 번만 나오고 처치하면 기록이 남는다", () => {
+    const w = world();
+    spawnMidboss(w);
+    spawnMidboss(w);
+    let count = 0;
+    for (let i = 0; i < w.enemies.cap; i++) if (w.enemies.alive[i] && w.enemies.rank[i] === 2) count++;
+    expect(count).toBe(1);
+    killEnemy(w, w.midboss.idx);
+    expect(w.run.midbossKilled).toBe(true);
+  });
+
+  it("보스는 체력이 줄면 페이즈가 바뀐다", () => {
+    const w = world();
+    spawnBoss(w);
+    expect(w.boss.active).toBe(true);
+    expect(w.boss.phase).toBe(0);
+    w.enemies.hp[w.boss.idx] = w.boss.maxHp * 0.5;
+    updateBoss(w, DT);
+    expect(w.boss.phase).toBe(1);
+    w.enemies.hp[w.boss.idx] = w.boss.maxHp * 0.2;
+    updateBoss(w, DT);
+    expect(w.boss.phase).toBe(2);
+    expect(w.log.filter((l) => l.tag === "ALERT").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("보스를 잡으면 클리어 상태가 된다", () => {
+    const w = world();
+    spawnBoss(w);
+    killEnemy(w, w.boss.idx);
+    expect(w.cleared).toBe(true);
+    expect(w.boss.active).toBe(false);
+  });
+
+  it("보스 패턴 12종이 예외 없이 돈다", () => {
+    for (let stage = 1; stage <= 15; stage++) {
+      const w = world(stage, 1000 + stage);
+      spawnBoss(w);
+      w.boss.phase = 2;
+      for (let i = 0; i < 60 * 12; i++) {
+        updateBoss(w, DT);
+        w.t += DT;
+        w.frame++;
       }
-      w.enemies.alive.fill(0); // 상한에 막히지 않게 비운다
-      if (w.bossIndex >= 0) w.enemies.alive[w.bossIndex] = 1; // 보스는 살려 둔다
+      expect(Number.isFinite(w.enemies.x[w.boss.idx])).toBe(true);
+      expect(Number.isFinite(w.player.hp)).toBe(true);
     }
-    expect(firstAt.bug).toBeLessThan(5);
-    expect(firstAt.trojan).toBeGreaterThanOrEqual(CFG.zones[1].from);
-    expect(firstAt.botnet).toBeGreaterThanOrEqual(CFG.zones[2].from);
-    expect(firstAt.ransom).toBeGreaterThanOrEqual(CFG.zones[2].from);
-    expect(firstAt.elite).toBeGreaterThanOrEqual(CFG.zones[1].from);
-    expect(seen.elite).toBe(4); // 60·90·120·150초
-    expect(seen.boss).toBe(1);
-    expect(firstAt.boss).toBeGreaterThanOrEqual(CFG.zones[3].from);
-    expect(seen.botnet).toBeGreaterThan(CFG.levelup.weaponSlots); // 무리로 나온다
   });
 });
 
-/* ── 보스 (§7) ───────────────────────────────────────── */
+/* ── 11. 점수·메타 (§11) ────────────────────────────────────── */
 
-describe("보스 (§7)", () => {
-  it("3페이즈(소환 → 장판 → 돌진)를 모두 돈다", () => {
-    const w = createWorld(51, 1);
-    w.t = CFG.zones[3].from;
-    updateSpawner(w, DT);
-    expect(w.bossIndex).toBeGreaterThanOrEqual(0);
-
-    const start = aliveEnemies(w);
-    for (let f = 0; f < 5 * 60; f++) updateBoss(w, DT); // 1페이즈: 소환
-    expect(aliveEnemies(w)).toBeGreaterThan(start);
-
-    for (let f = 0; f < 5 * 60; f++) updateBoss(w, DT); // 2페이즈: 장판
-    expect(countAlive(w.hazards.alive)).toBeGreaterThan(0);
-
-    let dashed = false;
-    for (let f = 0; f < 5 * 60; f++) {
-      updateBoss(w, DT); // 3페이즈: 돌진
-      const i = w.bossIndex;
-      if (i >= 0 && Math.abs(w.enemies.vx[i]) + Math.abs(w.enemies.vy[i]) > 100) dashed = true;
-    }
-    expect(dashed).toBe(true);
+describe("점수와 메타 (§11)", () => {
+  it("원점수 공식이 기획서와 같다", () => {
+    const w = world(7);
+    w.t = 150;
+    w.run.kills = 400;
+    w.player.level = 15;
+    w.run.evolutions = 1;
+    w.run.midbossKilled = true;
+    w.run.obstacles = 10;
+    w.run.damageTaken = 3;
+    w.cleared = true;
+    const base = 400 * 3 + 150 * 6 + 15 * 40 + 300 + 250 + 1000 + 10 * 8;
+    expect(rawScore(w)).toBe(Math.round(base * stageScoreMult(7)));
   });
 
-  it("보스는 한 번만 등장하고 처치되면 다시 나오지 않는다", () => {
-    const w = createWorld(52, 1);
-    w.t = CFG.zones[3].from;
-    updateSpawner(w, DT);
-    const i = w.bossIndex;
-    expect(i).toBeGreaterThanOrEqual(0);
-    damageEnemy(w, i, ENEMY_SPEC.boss.hp * 10);
-    expect(w.run.bossKilled).toBe(true);
-    for (let f = 0; f < 600; f++) {
-      w.t += DT;
-      updateSpawner(w, DT);
+  it("무피격 보너스는 피격이 0일 때만", () => {
+    const w = world(1);
+    w.t = 100;
+    const hit = rawScore(w);
+    w.run.damageTaken = 1;
+    expect(rawScore(w)).toBe(hit - CFG.score.noDamage);
+  });
+
+  it("메타가 서버 검증 키를 모두 갖는다", () => {
+    const w = world(3);
+    w.t = 120.44;
+    const meta = buildMeta(w, "mobile");
+    for (const key of [
+      "stage", "cleared", "duration_s", "kills", "level", "evolutions",
+      "midboss", "obstacles", "damage_taken", "revives_used", "theme", "build", "device", "v",
+    ]) {
+      expect(meta).toHaveProperty(key);
     }
-    expect(w.bossIndex).toBe(-1);
+    expect(meta.duration_s).toBeCloseTo(120.4, 5);
   });
 });
 
-/* ── 180초 헤드리스 런 ───────────────────────────────── */
+/* ── 12. 헤드리스 런 (§15-10) ───────────────────────────────── */
 
-type Report = {
+type RunReport = {
+  stage: number;
+  cleared: boolean;
+  sec: number;
   kills: number;
   level: number;
   evolutions: number;
-  eliteKills: number;
-  bossKilled: boolean;
-  deaths: number;
-  firstDeathSec: number;
-  weapons: string[];
-  maxAlive: number;
+  midboss: boolean;
+  obstacles: number;
+  killsPerSec: number;
 };
 
-// 스텁 루프용 스크래치 (테스트에서도 프레임마다 클로저를 만들지 않는다)
-let hw: World | null = null;
-let hb = -1;
-const REHIT = 0.2;
-const PICKUP = 18;
-const ARENA = 700;
-/** 이 거리 안의 적만 피한다 (그 밖이면 XP 줍기 우선) */
-const FLEE_R = 240;
-
-function nearestOrb(w: World): number {
-  const o = w.orbs;
-  let best = -1;
-  let bestD = Infinity;
-  for (let i = 0; i < o.cap; i++) {
-    if (!o.alive[i]) continue;
-    const dx = o.x[i] - w.player.x;
-    const dy = o.y[i] - w.player.y;
-    const d = dx * dx + dy * dy;
-    if (d < bestD) {
-      bestD = d;
-      best = i;
-    }
-  }
-  return best;
-}
-const MAX_ENEMY_R = Math.max(...Object.values(ENEMY_SPEC).map((s) => s.r));
-
-const bulletVisit = (j: number, dist: number): void => {
-  const w = hw;
-  if (!w) return;
-  const b = w.bullets;
-  const e = w.enemies;
-  if (!b.alive[hb] || !e.alive[j] || b.hitCd[hb] > 0) return;
-  if (dist > b.r[hb] + e.r[j]) return;
-  if (damageEnemy(w, j, b.dmg[hb])) onEnemyDeath(w, ENEMY_KINDS[e.kind[j]], e.x[j], e.y[j]);
-  b.hitCd[hb] = REHIT;
-  if (b.pierce[hb] > 0) b.pierce[hb]--;
-  else b.alive[hb] = 0;
-};
-
-let hazDps = 0;
-const hazardVisit = (j: number): void => {
-  const w = hw;
-  if (!w) return;
-  if (!w.enemies.alive[j]) return;
-  if (damageEnemy(w, j, hazDps)) onEnemyDeath(w, ENEMY_KINDS[w.enemies.kind[j]], w.enemies.x[j], w.enemies.y[j]);
-};
-
-let touchDmg = 0;
-const touchVisit = (j: number, dist: number): void => {
-  const w = hw;
-  if (!w) return;
+/** 가장 가까운 적 반대로 도망치는 단순 봇 */
+function botInput(run: Run): { mx: number; my: number } {
+  const w = run.world;
   const p = w.player;
-  if (p.iframe > 0 || p.invuln > 0) return;
-  if (dist > w.enemies.r[j] + CFG.player.radius) return;
-  touchDmg = w.enemies.dmg[j] * w.stats.dmgTaken;
-  p.hp -= touchDmg;
-  p.iframe = CFG.player.iframeSec;
-  w.run.damageTaken += touchDmg;
-};
-
-/** 봇의 카드 선택 — 진화를 노리고 시작 무기와 그 짝 패시브에 몰아 준다 (실제 플레이어 기준) */
-function botPick(w: World, cards: Card[]): Card {
-  const focus = w.weapons[0];
-  const pair = WEAPON_INFO[focus.id].pair;
-  const owned = new Set(w.weapons.map((x) => x.id));
-  return (
-    cards.find((c) => c.kind === "evolve") ??
-    cards.find((c) => c.kind === "weapon" && c.id === focus.id) ??
-    cards.find((c) => c.kind === "passive" && c.id === pair) ??
-    // 패시브 슬롯을 잡동사니로 채우면 짝 패시브가 영영 안 나온다 — 보유 무기 강화를 먼저 집는다
-    cards.find((c) => c.kind === "weapon" && owned.has(c.id)) ??
-    cards[Math.floor(w.rand() * cards.length)]
-  );
+  let bx = 0;
+  let by = 0;
+  const e = w.enemies;
+  for (let i = 0; i < e.cap; i++) {
+    if (!e.alive[i]) continue;
+    const dx = p.x - e.x[i];
+    const dy = p.y - e.y[i];
+    const d = Math.hypot(dx, dy);
+    if (d > 220 || d < 0.001) continue;
+    bx += dx / d / d;
+    by += dy / d / d;
+  }
+  // 아레나 중앙으로 약하게 당긴다 (구석에 몰리면 죽는다)
+  bx += (CFG.arena.w / 2 - p.x) * 0.0004;
+  by += (CFG.arena.h / 2 - p.y) * 0.0004;
+  const len = Math.hypot(bx, by) || 1;
+  return { mx: bx / len, my: by / len };
 }
 
-/** 루프·렌더 없이 엔진 모듈만 180초 돌린다 (봇은 가장 가까운 적을 피해 다닌다) */
-function headlessRun(seed: number): Report {
-  const w = createWorld(seed, 1);
-  applyPassives(w);
-  hw = w;
-  let deaths = 0;
-  let firstDeathSec: number = CFG.runSec;
-  let maxAlive = 0;
-
-  for (let frame = 0; frame < FRAMES; frame++) {
-    w.t += DT;
-    refreshGrid(w);
-    updateSpawner(w, DT);
-    updateEnemies(w, DT);
-    separateEnemies(w, frame);
-    updateWeapons(w, DT);
-    updateBoss(w, DT);
-
-    // ── 아래는 게임 루프(main 세션 담당) 몫을 대신하는 최소 구현 ──
-    const b = w.bullets;
-    for (let i = 0; i < b.cap; i++) {
-      if (!b.alive[i]) continue;
-      b.x[i] += b.vx[i] * DT;
-      b.y[i] += b.vy[i] * DT;
-      b.life[i] -= DT;
-      if (b.hitCd[i] > 0) b.hitCd[i] -= DT;
-      if (b.life[i] <= 0) {
-        b.alive[i] = 0;
-        continue;
+function simulate(stage: number, seed: number): RunReport {
+  const run = createRun(seed, stage, "dark", true);
+  let guard = 0;
+  while (!run.world.over && guard < 60 * 200) {
+    guard++;
+    if (run.cards.length > 0) {
+      // 아무거나 고르면 빌드가 망해서 밸런스 측정이 안 된다 — 진화 > 신규 액티브 > 나머지
+      const order = ["evolution", "new-active", "up-active", "new-passive", "up-passive"];
+      let best = 0;
+      for (let i = 1; i < run.cards.length; i++) {
+        if (order.indexOf(run.cards[i].kind) < order.indexOf(run.cards[best].kind)) best = i;
       }
-      if (b.hitCd[i] > 0) continue;
-      hb = i;
-      forEachEnemyNear(w, b.x[i], b.y[i], b.r[i] + MAX_ENEMY_R, bulletVisit);
+      chooseCard(run, best);
+      continue;
     }
-
-    const h = w.hazards;
-    for (let i = 0; i < h.cap; i++) {
-      if (!h.alive[i]) continue;
-      h.life[i] -= DT;
-      if (h.life[i] <= 0) {
-        h.alive[i] = 0;
-        continue;
-      }
-      if (h.owner[i] === 0) {
-        hazDps = h.dps[i] * DT;
-        forEachEnemyNear(w, h.x[i], h.y[i], h.r[i], hazardVisit);
-      } else {
-        const dx = w.player.x - h.x[i];
-        const dy = w.player.y - h.y[i];
-        if (dx * dx + dy * dy <= h.r[i] * h.r[i]) w.player.hp -= h.dps[i] * DT;
-      }
+    if (run.world.freeze > 0) {
+      update(run, DT, { mx: 0, my: 0 });
+      continue;
     }
-
-    const p = w.player;
-    if (p.iframe > 0) p.iframe -= DT;
-    if (p.invuln > 0) p.invuln -= DT;
-    if (p.slow > 0) p.slow -= DT;
-
-    // 봇 이동 = 가까운 적 회피 + XP 조각 줍기 + 경기장 복귀
-    let dx = 0;
-    let dy = 0;
-    const n = nearestEnemy(w, p.x, p.y, FLEE_R);
-    if (n >= 0) {
-      const fx = p.x - w.enemies.x[n];
-      const fy = p.y - w.enemies.y[n];
-      const fl = Math.sqrt(fx * fx + fy * fy) || 1;
-      dx += (fx / fl) * 1.2;
-      dy += (fy / fl) * 1.2;
-    }
-    const orb = nearestOrb(w);
-    if (orb >= 0) {
-      const ox = w.orbs.x[orb] - p.x;
-      const oy = w.orbs.y[orb] - p.y;
-      const ol = Math.sqrt(ox * ox + oy * oy) || 1;
-      dx += (ox / ol) * 0.9;
-      dy += (oy / ol) * 0.9;
-    }
-    const home = Math.sqrt(p.x * p.x + p.y * p.y);
-    if (home > ARENA) {
-      dx -= (p.x / home) * 1.5;
-      dy -= (p.y / home) * 1.5;
-    }
-    if (dx === 0 && dy === 0) dx = 1;
-    const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    const speed = w.stats.speed * (p.slow > 0 ? 1 - RANSOM_SLOW.mult : 1);
-    p.vx = (dx / len) * speed;
-    p.vy = (dy / len) * speed;
-    p.x += p.vx * DT;
-    p.y += p.vy * DT;
-
-    forEachEnemyNear(w, p.x, p.y, CFG.player.radius + MAX_ENEMY_R, touchVisit);
-    if (p.hp <= 0) {
-      deaths++;
-      if (deaths === 1) firstDeathSec = w.t;
-      p.hp = p.maxHp; // 180초 전체를 측정하기 위해 부활시킨다
-      p.iframe = 1;
-    }
-
-    const o = w.orbs;
-    for (let i = 0; i < o.cap; i++) {
-      if (!o.alive[i]) continue;
-      const ox = p.x - o.x[i];
-      const oy = p.y - o.y[i];
-      const d = Math.sqrt(ox * ox + oy * oy) || 1;
-      if (d < w.stats.magnet) {
-        o.x[i] += (ox / d) * 300 * DT;
-        o.y[i] += (oy / d) * 300 * DT;
-      }
-      if (d < PICKUP) {
-        o.alive[i] = 0;
-        p.xp += o.value[i];
-      }
-    }
-    while (p.xp >= p.xpNext && p.level < CFG.player.maxLevel) {
-      p.xp -= p.xpNext;
-      p.level++;
-      p.xpNext = xpToNext(p.level);
-      w.pendingLevelUps++;
-    }
-    while (w.pendingLevelUps > 0) {
-      w.pendingLevelUps--;
-      applyCard(w, botPick(w, drawCards(w)));
-    }
-
-    const alive = aliveEnemies(w);
-    if (alive > maxAlive) maxAlive = alive;
+    update(run, DT, botInput(run));
   }
-
-  hw = null;
+  const w = run.world;
   return {
+    stage,
+    cleared: w.cleared,
+    sec: Math.round(w.t),
     kills: w.run.kills,
     level: w.player.level,
     evolutions: w.run.evolutions,
-    eliteKills: w.run.eliteKills,
-    bossKilled: w.run.bossKilled,
-    deaths,
-    firstDeathSec: Math.round(firstDeathSec),
-    weapons: w.weapons.map((x) => `${x.id}${x.evolved ? "⭐" : ""}Lv${x.level}`),
-    maxAlive,
+    midboss: w.run.midbossKilled,
+    obstacles: w.run.obstacles,
+    killsPerSec: w.run.kills / Math.max(1, w.t),
   };
 }
 
-// 기본 3판(CI용). SIM_RUNS=30 으로 늘리면 밸런스 튜닝용 리포트가 된다.
 const SIM_RUNS = Number(process.env.SIM_RUNS ?? 3);
 
-describe("180초 헤드리스 런", () => {
-  const runs = Array.from({ length: SIM_RUNS }, (_, i) => headlessRun(101 + i * 101));
+describe("헤드리스 런 (§15)", () => {
+  const reports: RunReport[] = [];
+  for (let i = 0; i < SIM_RUNS; i++) reports.push(simulate(1, 9000 + i * 37));
+  const s7 = simulate(7, 4242);
 
   it("리포트", () => {
-    const evolved = runs.filter((r) => r.evolutions > 0).length;
-    console.log("[survive-sim]", JSON.stringify({ evolveRate: evolved / runs.length, runs }));
-    expect(runs).toHaveLength(SIM_RUNS);
+    console.log("[survive-v2]", JSON.stringify({ s1: reports, s7 }));
+    expect(reports.length).toBe(SIM_RUNS);
   });
 
-  it("예외·NaN 없이 끝나고 처치 수가 그럴듯하다", () => {
-    for (const r of runs) {
+  it("예외·NaN 없이 끝난다", () => {
+    for (const r of reports) {
       expect(Number.isFinite(r.kills)).toBe(true);
-      expect(r.kills).toBeGreaterThan(150);
-      // §9.3 서버 거부 규칙: 초당 8킬 초과 불가
-      expect(r.kills).toBeLessThanOrEqual(CFG.runSec * 8);
-      expect(r.level).toBeGreaterThanOrEqual(8);
-      expect(r.level).toBeLessThanOrEqual(CFG.player.maxLevel);
-      expect(r.evolutions).toBeLessThanOrEqual(3);
-      expect(r.weapons.length).toBeLessThanOrEqual(CFG.levelup.weaponSlots);
-      expect(r.maxAlive).toBeLessThanOrEqual(CFG.pool.enemies);
+      expect(r.sec).toBeGreaterThan(0);
+      expect(r.level).toBeGreaterThanOrEqual(1);
     }
   });
 
-  it("엘리트 4마리와 보스가 등장한다 (§3)", () => {
-    for (const r of runs) expect(r.eliteKills).toBeGreaterThan(0);
+  it("서버 거부선(초당 8킬·레벨 24·진화 3)을 넘지 않는다 (§11.3)", () => {
+    for (const r of [...reports, s7]) {
+      expect(r.killsPerSec).toBeLessThanOrEqual(8);
+      expect(r.level).toBeLessThanOrEqual(CFG.xp.maxLevel);
+      expect(r.evolutions).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it("런이 180초 하드캡 안에서 끝난다 (§3)", () => {
+    for (const r of [...reports, s7]) expect(r.sec).toBeLessThanOrEqual(CFG.wave.hardCapSec + 1);
+  });
+
+  it("중간보스 구간까지는 살아남는다", () => {
+    expect(reports.some((r) => r.sec >= CFG.wave.midbossAt)).toBe(true);
+  });
+
+  it("밸런스: 단순 봇도 1스테이지를 종종 클리어한다 (§15-10)", () => {
+    // 고정 시드 8판. 봇은 '가장 가까운 적 반대로 도망만 치는' 수준이라
+    // 사람 기준 70% 클리어(§15-10)에 대응하는 봇 기준선은 "8판 중 2판 이상"으로 잡았다.
+    const fixed = Array.from({ length: 8 }, (_, i) => simulate(1, 9000 + i * 37));
+    const cleared = fixed.filter((r) => r.cleared).length;
+    expect(cleared).toBeGreaterThanOrEqual(2);
+    // 보스를 만나기 전에 전멸하지는 않는다
+    expect(fixed.filter((r) => r.sec >= CFG.wave.bossAt).length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("밸런스: 7스테이지는 훨씬 어렵지만 중간보스까지는 간다", () => {
+    expect(s7.sec).toBeGreaterThanOrEqual(CFG.wave.midbossAt);
+    expect(s7.level).toBeGreaterThanOrEqual(8);
   });
 });

@@ -1,108 +1,147 @@
-// 🛡️ 아울 서바이버즈 (OWL SURVIVORS) 튜닝 상수 — 기획서 전체 수치를 여기 모은다.
-// 엔진 코드에 매직넘버 금지.
+// 🦉 아울 서바이버즈 v2 — 튜닝 상수 (기획서 §13)
+// 게임 안의 모든 수치는 여기에서만 온다. 엔진 코드에 매직넘버 금지.
 
 export const CFG = {
-  /** 논리 해상도 (고정 카메라, 플레이어 중심) */
+  /** 논리 해상도 — 가로 고정 (세로면 회전 안내, §2) */
   view: { w: 960, h: 540 },
-  /** 런 길이 180초 고정 (§1) */
-  runSec: 180,
-  physics: { dt: 1 / 60, maxStepsPerFrame: 3 },
+  /** 맵(아레나). 카메라가 플레이어를 따라가되 이 안으로 제한된다.
+   *  장애물 "밀도 6~9%"(§8)는 이 면적 기준이라 경계가 반드시 필요하다. */
+  arena: { w: 1600, h: 900 },
 
-  player: {
-    hp: 100,
-    speed: 190,
-    radius: 13,
-    /** 피격 후 무적 (§7) */
-    iframeSec: 0.5,
-    magnet: 70,
-    /** 레벨 L → L+1 필요 XP: 8 + 6L (§5.1) */
-    xpBase: 8,
-    xpStep: 6,
-    maxLevel: 20,
-  },
+  player: { hp: 100, speed: 190, iFrameSec: 0.8, pickupRadius: 70, radius: 13 },
 
-  /** 구역 타임라인 (§3) */
-  zones: [
-    { idx: 0, name: "ZONE 1 · 서버실", from: 0, to: 60, cap: 60, tone: "#0b1020" },
-    { idx: 1, name: "ZONE 2 · 캠퍼스망", from: 60, to: 120, cap: 110, tone: "#0d1526" },
-    { idx: 2, name: "ZONE 3 · 다크웹", from: 120, to: 165, cap: 180, tone: "#140b1e" },
-    { idx: 3, name: "BOSS · 루트킷 오버로드", from: 165, to: 180, cap: 80, tone: "#1a0b12" },
-  ],
-  /** 스폰 예산 — 초당 최대 마리 (§12) */
-  spawnBudgetPerSec: 6,
-  /** 저사양 대응 상한 (§12) */
-  enemyCapLow: 120,
+  /** 레벨업 XP 곡선 (§13) */
+  xp: { base: 10, step: 7, maxLevel: 24 },
 
-  /** 스테이지 (§8) */
-  stages: [
-    { id: 1, name: "서버실", emoji: "🖥️", hpMult: 1.0, speedMult: 1.0, scoreMult: 1.0 },
-    { id: 2, name: "캠퍼스망", emoji: "🏫", hpMult: 1.3, speedMult: 1.08, scoreMult: 1.25 },
-    { id: 3, name: "다크웹", emoji: "🕳️", hpMult: 1.7, speedMult: 1.15, scoreMult: 1.5 },
-  ],
+  slots: { active: 6, passive: 6 },
 
-  /** 풀 크기 — 런 중 new 금지 (§12) */
-  pool: { enemies: 256, bullets: 256, orbs: 512, particles: 256, hazards: 32 },
-  /** 공간 해시 셀 크기 */
-  gridCell: 64,
-
-  /** 레벨업 카드 (§14) */
-  levelup: {
-    cards: 3,
-    rerolls: 1,
+  card: {
+    choices: 3,
+    reroll: 1,
+    skip: 1,
     skipXpRatio: 0.1,
-    newWeaponBelowLevel: 6,
-    newWeaponChanceLate: 0.4,
+    /** Lv10 이후 신규 스킬 등장 확률 (§7 추첨 규칙 3) */
+    newSkillRateAfterLv10: 0.4,
+    /** Lv6 이전에는 신규 액티브 최소 1장 보장 */
+    newActiveBeforeLv: 6,
+    /** 같은 카드 3회 연속 금지 */
+    noRepeat: 3,
+    /** 체력 30% 이하면 구제 패시브 가중치 2배 */
     lowHpRatio: 0.3,
     lowHpWeight: 2,
-    weaponSlots: 4,
-    passiveSlots: 4,
-    maxWeaponLevel: 5,
-    maxPassiveLevel: 5,
-    /** 진화 조건: 무기 MAX + 짝 패시브 3 이상 (§6) */
-    evolvePassiveLevel: 3,
   },
 
-  /** 점수 (§9.1) */
+  evolution: { activeMaxLv: 5, passiveReqLv: 3, forceTopSlot: true, maxSkillLv: 5 },
+
+  /** 런 타임라인 (§3) */
+  wave: { w1End: 40, midbossAt: 40, w2Start: 55, bossAt: 100, hardCapSec: 180 },
+
+  /** 스테이지 스케일 (§4·§5) */
+  stage: {
+    count: 15,
+    hpPerStage: 0.18,
+    atkPerStage: 0.12,
+    /** 적이 주는 XP 도 스테이지마다 오른다 — 안 그러면 체력만 2배가 돼서 시작하자마자 밀린다 */
+    xpPerStage: 0.14,
+    multBase: 1.0,
+    multPerStage: 0.06,
+    multCap: 3.0,
+    /** 무한 구간: 5스테이지마다 강화 보스 */
+    endlessBossEvery: 5,
+    /** 무한 구간: 3스테이지마다 특수 규칙 1개 */
+    endlessRuleEvery: 3,
+    /** 시작 보정 — 높은 스테이지에 갈수록 "장비를 갖추고" 들어간다 (§DECISIONS) */
+    startLevelEvery: 3,
+    startSkillEvery: 5,
+    startHpPerStage: 8,
+  },
+
+  /** 장애물 (§8) — 밀도 상한이 이 시스템의 핵심 */
+  obstacle: {
+    densityMin: 0.06,
+    densityMax: 0.09,
+    minCorridorPx: 140,
+    spawnClearRadius: 200,
+    hpDropRate: 0.12,
+    hpDropAmount: 8,
+    bossClearRatio: 0.4,
+    xpMin: 1,
+    xpMax: 3,
+    /** 배치 시도 상한 (무한 루프 금지) */
+    maxAttempts: 2000,
+  },
+
+  /** 피격 연출 (§9.1) */
+  feedback: {
+    shakeSec: 0.25,
+    shakePx: 6,
+    bossShakeSec: 0.4,
+    bossShakePx: 12,
+    hitFlashSec: 0.08,
+    logLines: 5,
+    logFadeSec: 3,
+    lowHpRatio: 0.3,
+    evoFreezeSec: 0.6,
+  },
+
+  /** 스폰 (§14) */
+  spawn: { budgetPerSec: 6, ringMin: 560, ringMax: 680 },
+
+  /** 성능 (§14) */
+  perf: {
+    maxEnemies: 180,
+    maxEnemiesLow: 120,
+    maxProjectiles: 256,
+    maxParticles: 256,
+    maxOrbs: 512,
+    maxHazards: 48,
+    maxObstacles: 64,
+    gridCell: 64,
+    fpsFloor: 45,
+    lowFpsSec: 2,
+    /** XP 조각이 이 수를 넘으면 가까운 것끼리 병합 */
+    orbMergeAbove: 60,
+  },
+
+  /** 점수 (§11.1) */
   score: {
     perKill: 3,
-    perSec: 8,
+    perSec: 6,
     perLevel: 40,
     perEvolution: 300,
-    perElite: 50,
-    boss: 800,
-    perZone: 150,
+    midboss: 250,
+    stageCleared: 1000,
+    perObstacle: 8,
+    noDamage: 500,
   },
 
-  /** 아울 에너지 드롭 — ZONE 3 이상에서 가끔 (플랫폼 규칙) */
-  owlEnergy: { minZone: 2, chance: 0.35, fromElite: true },
+  /** 🦉 아울 에너지 인게임 드랍 — 서버 조건과 같은 값이어야 한다 */
+  owlEnergy: { minStage: 3, chance: 0.3, requireClear: true },
 
-  /** K=20이면 스테이지 1 풀클리어(raw ≈ 6,300)만으로 상한 300P라 난이도 선택이 무의미해진다 */
-  platform: { K: 30, basePoints: 30, maxBonus: 270, maxSessionSec: 200 },
-
-  /** 저사양 감지 (§12) */
-  perf: { lowFpsThreshold: 45, lowFpsSec: 2 },
+  platform: { K: 20, basePoints: 30, maxBonus: 270, maxSessionSec: 200 },
 } as const;
 
-export type StageId = 1 | 2 | 3;
-
+/** 레벨 L → L+1 에 필요한 XP (§13) */
 export function xpToNext(level: number): number {
-  return CFG.player.xpBase + CFG.player.xpStep * level;
+  return CFG.xp.base + CFG.xp.step * level;
 }
 
-/** 경과 시간 → 구역 index (0~3) */
-export function zoneAt(sec: number): number {
-  for (let i = CFG.zones.length - 1; i >= 0; i--) if (sec >= CFG.zones[i].from) return i;
-  return 0;
+/** 스테이지 S 의 적 체력 배율 (§4) */
+export function hpMult(stage: number): number {
+  return 1 + CFG.stage.hpPerStage * (Math.max(1, stage) - 1);
 }
 
-/** 경과 시간에 따른 동시 적 상한 (구역 안에서 선형 증가) */
-export function enemyCapAt(sec: number): number {
-  const z = CFG.zones[zoneAt(sec)];
-  const prev = zoneAt(sec) === 0 ? 20 : CFG.zones[zoneAt(sec) - 1].cap;
-  const t = Math.min(1, (sec - z.from) / Math.max(1, z.to - z.from));
-  return Math.round(prev + (z.cap - prev) * t);
+/** 스테이지 S 의 적 공격력 배율 (§4) */
+export function atkMult(stage: number): number {
+  return 1 + CFG.stage.atkPerStage * (Math.max(1, stage) - 1);
 }
 
-export function stageById(id: StageId) {
-  return CFG.stages.find((s) => s.id === id) ?? CFG.stages[0];
+/** 스테이지 S 의 XP 배율 — 스테이지가 올라가면 성장도 빨라진다 */
+export function xpMult(stage: number): number {
+  return 1 + CFG.stage.xpPerStage * (Math.max(1, stage) - 1);
+}
+
+/** 스테이지 S 의 점수 배율 (§5) — 상한 ×3.0 */
+export function stageScoreMult(stage: number): number {
+  return Math.min(CFG.stage.multCap, CFG.stage.multBase + CFG.stage.multPerStage * (Math.max(1, stage) - 1));
 }

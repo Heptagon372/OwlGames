@@ -1,291 +1,201 @@
-// 아울 서바이버즈 오케스트레이터 — 월드 갱신 순서와 충돌·픽업·레벨업을 담당한다.
-// 무기/적/보스/스폰/카드 로직은 각 모듈에 있고 여기서는 엮기만 한다.
-import { CFG, enemyCapAt, xpToNext, zoneAt, type StageId } from "../config";
-import type { Card, EnemyKind } from "../types";
-import { onEnemyDeath, separateEnemies, updateEnemies } from "./enemies";
-import { applyCard, applyPassives, drawCards, evolvableWeapon } from "./levelup";
-import { updateBoss, spawnBoss } from "./boss";
-import { updateSpawner } from "./spawner";
-import { updateWeapons } from "./weapons";
-import { stageColor, stageLabel } from "@/lib/stages";
+// 🦉 아울 서바이버즈 v2 — 런 진행 (기획서 §3)
+// 한 스테이지 = 한 런. 웨이브1 → 중간보스 → 웨이브2 → 보스 → 클리어/실패.
+
+import { CFG, xpToNext } from "../config";
+import type { ThemeId } from "../theme";
+import { spawnBoss, spawnMidboss, updateBoss } from "./boss";
+import { updateEnemies, updateHostileBullets } from "./enemies";
+import { drawCards, applyCard } from "./levelup";
+import { placeObstacles, resolveCollision } from "./obstacles";
+import { updateBullets, updateHazards, updateSkills } from "./skills";
+import { createSpawnState, updateSpawner, type SpawnState } from "./spawner";
 import {
-  ENEMY_KINDS,
-  burst,
+  clampToArena,
   createWorld,
-  damageEnemy,
-  forEachEnemyNear,
   healPlayer,
+  pushLog,
+  recalcStats,
   refreshGrid,
-  runStage,
-  spawnParticle,
   type World,
 } from "./world";
+import type { Card, SkillId } from "../types";
 
 export type Input = { mx: number; my: number };
 
 export type Run = {
   world: World;
-  /** 레벨업 카드 (선택 대기 중이면 비어 있지 않다) */
+  spawn: SpawnState;
+  /** 비어 있지 않으면 게임 정지 (§2) */
   cards: Card[];
+  pending: number;
   rerolls: number;
-  frame: number;
+  skips: number;
+  history: SkillId[][];
 };
 
-export function createRun(seed: number, stage: StageId): Run {
-  const world = createWorld(seed, stage);
-  applyPassives(world);
-  world.banner = { text: CFG.zones[0].name, sub: "이동만 하세요 — 공격은 자동", until: 3 };
-  return { world, cards: [], rerolls: CFG.levelup.rerolls, frame: 0 };
+export function createRun(seed: number, stage: number, theme: ThemeId, reduced = false): Run {
+  const world = createWorld(seed, stage, theme, reduced);
+  placeObstacles(world);
+  pushLog(world, "INFO", `STAGE ${stage} — ${world.info.name}`);
+  if (world.info.rule) pushLog(world, "ALERT", `특수 규칙: ${world.info.rule}`);
+  return {
+    world,
+    spawn: createSpawnState(),
+    cards: [],
+    pending: 0,
+    rerolls: CFG.card.reroll,
+    skips: CFG.card.skip,
+    history: [],
+  };
 }
 
-/** 카드 선택 대기 중에는 게임 시간이 멈춘다 (§15-8) */
 export function isPaused(run: Run): boolean {
   return run.cards.length > 0;
 }
 
-export function update(run: Run, dt: number, input: Input): void {
-  const w = run.world;
-  if (w.over || isPaused(run)) return;
-  run.frame++;
+/* ── 레벨업 ─────────────────────────────────────────────────── */
 
-  w.t += dt;
-  tickStage(w);
-  tickZone(w);
-
-  // ── 플레이어 이동 ────────────────────────────────────
+function gainXp(w: World, run: Run, amount: number): void {
   const p = w.player;
-  p.iframe = Math.max(0, p.iframe - dt);
-  p.slow = Math.max(0, p.slow - dt);
-  const speed = w.stats.speed * (p.slow > 0 ? 0.8 : 1);
-  const len = Math.hypot(input.mx, input.my) || 1;
-  const nx = input.mx / len;
-  const ny = input.my / len;
-  if (input.mx || input.my) {
-    p.vx = nx * speed;
-    p.vy = ny * speed;
-  } else {
-    p.vx *= 0.82;
-    p.vy *= 0.82;
+  p.xp += amount * w.stats.xpGain;
+  while (p.xp >= p.xpNext && p.level < CFG.xp.maxLevel) {
+    p.xp -= p.xpNext;
+    p.level += 1;
+    p.xpNext = xpToNext(p.level);
+    run.pending += 1;
+    pushLog(w, "INFO", `Lv.${p.level}  스킬 선택 가능`);
   }
-  p.x += p.vx * dt;
-  p.y += p.vy * dt;
+}
 
-  // ── 월드 ─────────────────────────────────────────────
-  refreshGrid(w);
-  updateSpawner(w, dt);
-  updateEnemies(w, dt);
-  separateEnemies(w, run.frame);
-  if (w.bossIndex >= 0) updateBoss(w, dt);
-  updateWeapons(w, dt);
-
-  updateBullets(w, dt);
-  updateHazards(w, dt);
-  updateOrbs(w, dt);
-  contactDamage(w, dt);
-  updateParticles(w, dt);
-
-  w.shake = Math.max(0, w.shake - dt);
-  w.flash = Math.max(0, w.flash - dt);
-  if (w.banner && w.t > w.banner.until) w.banner = null;
-
-  // 레벨업 대기 → 카드 뽑기
-  if (w.pendingLevelUps > 0 && run.cards.length === 0) {
-    w.pendingLevelUps -= 1;
-    run.cards = drawCards(w);
-  }
-
-  // 종료 판정
-  if (p.hp <= 0) {
-    w.over = true;
-    w.cleared = false;
-    burst(w, p.x, p.y, 30, 2, 220);
-  } else if (w.t >= CFG.runSec) {
-    w.over = true;
-    w.cleared = true;
-    w.banner = { text: "SYSTEM SECURED", sub: "180초 생존 성공!", until: w.t + 3 };
-  }
+function openCards(run: Run): void {
+  if (run.cards.length > 0 || run.pending <= 0) return;
+  run.pending -= 1;
+  const cards = drawCards(run.world, run.history);
+  if (cards.length === 0) return;
+  run.cards = cards;
+  run.history.push(cards.map((c) => c.id));
+  if (run.history.length > 4) run.history.shift();
 }
 
 export function chooseCard(run: Run, index: number): void {
   const card = run.cards[index];
   if (!card) return;
   applyCard(run.world, card);
-  applyPassives(run.world);
   run.cards = [];
+  openCards(run);
 }
 
 export function rerollCards(run: Run): void {
   if (run.rerolls <= 0 || run.cards.length === 0) return;
   run.rerolls -= 1;
-  run.cards = drawCards(run.world);
+  run.cards = drawCards(run.world, run.history);
 }
 
 export function skipCards(run: Run): void {
-  if (run.cards.length === 0) return;
+  if (run.skips <= 0 || run.cards.length === 0) return;
+  run.skips -= 1;
   const w = run.world;
-  w.player.xp += Math.round(w.player.xpNext * CFG.levelup.skipXpRatio);
+  w.player.xp += w.player.xpNext * CFG.card.skipXpRatio;
   run.cards = [];
+  openCards(run);
 }
 
-/* ── 내부 ─────────────────────────────────────────────── */
+/* ── 프레임 ─────────────────────────────────────────────────── */
 
-/** 15단계 난이도 — 단계가 오를 때마다 배너로 알린다 */
-function tickStage(w: World): void {
-  const s = runStage(w);
-  if (s === w.stage15) return;
-  w.stage15 = s;
-  if (s > w.stageMax) w.stageMax = s;
-  w.banner = { text: stageLabel(s), sub: "난이도 상승", until: w.t + 1.8 };
-  void stageColor(s);
-}
-
-function tickZone(w: World): void {
-  const z = zoneAt(w.t);
-  if (z === w.zone) return;
-  // 구역 전환 — 클리어 보너스 + 회복 (§3)
-  w.zone = z;
-  w.run.zonesCleared = z;
-  healPlayer(w, 20);
-  w.banner = { text: CFG.zones[z].name, sub: z === 3 ? "보스 출현!" : "구역 클리어 +150점", until: w.t + 2.5 };
-  w.flash = 0.25;
-  if (z === 3) spawnBoss(w);
-}
-
-function updateBullets(w: World, dt: number): void {
-  const b = w.bullets;
-  for (let i = 0; i < b.cap; i++) {
-    if (!b.alive[i]) continue;
-    b.life[i] -= dt;
-    if (b.life[i] <= 0) {
-      b.alive[i] = 0;
-      continue;
-    }
-    b.hitCd[i] = Math.max(0, b.hitCd[i] - dt);
-    b.x[i] += b.vx[i] * dt;
-    b.y[i] += b.vy[i] * dt;
-
-    if (b.hitCd[i] > 0) continue;
-    const bx = b.x[i];
-    const by = b.y[i];
-    const br = b.r[i];
-    const dmg = b.dmg[i];
-    let consumed = false;
-    forEachEnemyNear(w, bx, by, br + 26, (ei, dist) => {
-      if (consumed || !w.enemies.alive[ei]) return;
-      if (dist > br + w.enemies.r[ei]) return;
-      const kind = ENEMY_KINDS[w.enemies.kind[ei]] as EnemyKind;
-      const ex = w.enemies.x[ei];
-      const ey = w.enemies.y[ei];
-      if (damageEnemy(w, ei, dmg)) onEnemyDeath(w, kind, ex, ey);
-      spawnParticle(w, bx, by, 0, 0, 0.15, 0, 3);
-      if (b.pierce[i] > 0) {
-        b.pierce[i] -= 1;
-        b.hitCd[i] = 0.08;
-      } else {
-        b.alive[i] = 0;
-        consumed = true;
-      }
-    });
-  }
-}
-
-function updateHazards(w: World, dt: number): void {
-  const h = w.hazards;
+function updatePlayer(w: World, dt: number, input: Input): void {
   const p = w.player;
-  for (let i = 0; i < h.cap; i++) {
-    if (!h.alive[i]) continue;
-    h.life[i] -= dt;
-    if (h.life[i] <= 0) {
-      h.alive[i] = 0;
-      continue;
-    }
-    if (h.owner[i] === 0) {
-      forEachEnemyNear(w, h.x[i], h.y[i], h.r[i], (ei) => {
-        const kind = ENEMY_KINDS[w.enemies.kind[ei]] as EnemyKind;
-        const ex = w.enemies.x[ei];
-        const ey = w.enemies.y[ei];
-        if (damageEnemy(w, ei, h.dps[i] * dt)) onEnemyDeath(w, kind, ex, ey);
-      });
-    } else if (Math.hypot(p.x - h.x[i], p.y - h.y[i]) < h.r[i]) {
-      hurtPlayer(w, h.dps[i] * dt, false);
+  if (!p.alive) return;
+
+  let speed = w.stats.speed;
+  if (p.slow > 0) { p.slow -= dt; speed *= 0.8; }
+
+  const len = Math.hypot(input.mx, input.my);
+  if (len > 0.01) {
+    const nx = input.mx / Math.max(1, len);
+    const ny = input.my / Math.max(1, len);
+    p.x += nx * speed * dt;
+    p.y += ny * speed * dt;
+    p.dir = Math.atan2(ny, nx);
+  }
+
+  const hit = resolveCollision(w, p.x, p.y, CFG.player.radius);
+  const at = clampToArena(hit.x, hit.y, CFG.player.radius);
+  p.x = at.x;
+  p.y = at.y;
+
+  if (p.iframe > 0) p.iframe -= dt;
+  if (p.invuln > 0) p.invuln -= dt;
+  if (w.stats.regen > 0) healPlayer(w, w.stats.regen * dt);
+
+  // 🌑 스텔스 캐시 — 무피격 유지 시 쉴드 충전
+  if (w.stats.shieldSec > 0 && !p.shield) {
+    p.noHitT += dt;
+    if (p.noHitT >= w.stats.shieldSec) {
+      p.shield = true;
+      p.noHitT = 0;
+      pushLog(w, "INFO", "스텔스 캐시 충전 완료");
     }
   }
 }
 
-function updateOrbs(w: World, dt: number): void {
+function updateOrbs(w: World, run: Run, dt: number): void {
   const o = w.orbs;
   const p = w.player;
-  const magnet = w.stats.magnet;
+  const pickup = w.stats.pickup;
+  let alive = 0;
+
   for (let i = 0; i < o.cap; i++) {
     if (!o.alive[i]) continue;
+    alive++;
     const dx = p.x - o.x[i];
     const dy = p.y - o.y[i];
-    const d = Math.hypot(dx, dy);
-    if (d < magnet) {
-      const pull = 520 / Math.max(24, d);
-      o.vx[i] += (dx / d) * pull * dt * 60;
-      o.vy[i] += (dy / d) * pull * dt * 60;
-      o.x[i] += o.vx[i] * dt;
-      o.y[i] += o.vy[i] * dt;
-    }
-    if (d < CFG.player.radius + 8) {
-      o.alive[i] = 0;
-      gainXp(w, o.value[i]);
-    }
-  }
-}
-
-function gainXp(w: World, amount: number): void {
-  const p = w.player;
-  if (p.level >= CFG.player.maxLevel) return;
-  p.xp += amount;
-  while (p.xp >= p.xpNext && p.level < CFG.player.maxLevel) {
-    p.xp -= p.xpNext;
-    p.level += 1;
-    p.xpNext = xpToNext(p.level);
-    w.pendingLevelUps += 1;
-  }
-}
-
-function contactDamage(w: World, dt: number): void {
-  const p = w.player;
-  const e = w.enemies;
-  forEachEnemyNear(w, p.x, p.y, CFG.player.radius + 40, (i, dist) => {
-    if (dist > CFG.player.radius + e.r[i]) return;
-    const kind = ENEMY_KINDS[e.kind[i]];
-    hurtPlayer(w, e.dmg[i], true);
-    if (kind === "ransom") p.slow = 2;
-    // 살짝 밀어내서 겹쳐 박히는 걸 막는다
-    const dx = e.x[i] - p.x;
-    const dy = e.y[i] - p.y;
     const d = Math.hypot(dx, dy) || 1;
-    e.x[i] += (dx / d) * 6;
-    e.y[i] += (dy / d) * 6;
-  });
-  void dt;
-}
 
-export function hurtPlayer(w: World, amount: number, useIframe: boolean): void {
-  const p = w.player;
-  if (p.invuln > 0) return;
-  if (useIframe && p.iframe > 0) return;
-  const dmg = amount * w.stats.dmgTaken;
-  p.hp -= dmg;
-  w.run.damageTaken += dmg;
-  if (useIframe) p.iframe = CFG.player.iframeSec;
-  w.shake = Math.max(w.shake, 0.18);
-  w.flash = Math.max(w.flash, 0.18);
+    // 도망치며 싸우는 게임이라, 흘린 조각이 그 자리에 남으면 레벨이 안 오른다.
+    // 가까우면 확 빨려오고, 멀어도 천천히 따라온다.
+    if (d < pickup) {
+      o.vx[i] += (dx / d) * 1400 * dt;
+      o.vy[i] += (dy / d) * 1400 * dt;
+    } else {
+      o.vx[i] += (dx / d) * 200 * dt;
+      o.vy[i] += (dy / d) * 200 * dt;
+    }
+    o.vx[i] *= 0.92;
+    o.vy[i] *= 0.92;
+    o.x[i] += o.vx[i] * dt;
+    o.y[i] += o.vy[i] * dt;
+
+    if (d < CFG.player.radius + 10) {
+      o.alive[i] = 0;
+      if (o.kind[i] === 1) healPlayer(w, o.value[i]);
+      else gainXp(w, run, o.value[i]);
+    }
+  }
+
+  // XP 조각이 너무 많으면 병합 (§14)
+  if (alive > CFG.perf.orbMergeAbove) {
+    let merged = 0;
+    for (let i = 0; i < o.cap && merged < 20; i++) {
+      if (!o.alive[i] || o.kind[i] !== 0) continue;
+      for (let j = i + 1; j < o.cap; j++) {
+        if (!o.alive[j] || o.kind[j] !== 0) continue;
+        if (Math.hypot(o.x[i] - o.x[j], o.y[i] - o.y[j]) < 26) {
+          o.value[i] += o.value[j];
+          o.alive[j] = 0;
+          merged++;
+          break;
+        }
+      }
+    }
+  }
 }
 
 function updateParticles(w: World, dt: number): void {
-  const q = w.parts;
+  const q = w.particles;
   for (let i = 0; i < q.cap; i++) {
     if (!q.alive[i]) continue;
     q.life[i] -= dt;
-    if (q.life[i] <= 0) {
-      q.alive[i] = 0;
-      continue;
-    }
+    if (q.life[i] <= 0) { q.alive[i] = 0; continue; }
     q.x[i] += q.vx[i] * dt;
     q.y[i] += q.vy[i] * dt;
     q.vx[i] *= 0.94;
@@ -293,10 +203,78 @@ function updateParticles(w: World, dt: number): void {
   }
 }
 
-/** 현재 동시 적 상한 (저사양이면 낮춘다) */
-export function currentEnemyCap(w: World): number {
-  const cap = enemyCapAt(w.t);
-  return w.lowSpec ? Math.min(cap, CFG.enemyCapLow) : cap;
+function updatePhase(w: World): void {
+  if (w.phase === "over") return;
+  const t = w.t;
+  if (w.phase === "wave1" && t >= CFG.wave.midbossAt) {
+    w.phase = "midboss";
+    spawnMidboss(w);
+  } else if (w.phase === "midboss" && t >= CFG.wave.w2Start) {
+    w.phase = "wave2";
+    pushLog(w, "INFO", "웨이브 2 — 적 강화");
+  } else if (w.phase === "wave2" && t >= CFG.wave.bossAt) {
+    w.phase = "boss";
+    spawnBoss(w);
+  }
 }
 
-export { evolvableWeapon };
+function updateCamera(w: World): void {
+  const halfW = CFG.view.w / 2;
+  const halfH = CFG.view.h / 2;
+  w.cam.x = Math.max(halfW, Math.min(CFG.arena.w - halfW, w.player.x));
+  w.cam.y = Math.max(halfH, Math.min(CFG.arena.h - halfH, w.player.y));
+}
+
+export function update(run: Run, dt: number, input: Input): void {
+  const w = run.world;
+  if (w.over) return;
+
+  // ⭐ 진화 연출 동안은 멈춘다 (§9.1)
+  if (w.freeze > 0) {
+    w.freeze -= dt;
+    return;
+  }
+  if (isPaused(run)) return;
+
+  w.t += dt;
+  w.frame += 1;
+
+  updatePhase(w);
+  refreshGrid(w);
+
+  updatePlayer(w, dt, input);
+  updateSpawner(w, run.spawn, dt);
+  updateEnemies(w, dt);
+  updateBoss(w, dt);
+  updateSkills(w, dt);
+  updateBullets(w, dt);
+  updateHostileBullets(w, dt);
+  updateHazards(w, dt);
+  updateOrbs(w, run, dt);
+  updateParticles(w, dt);
+  updateCamera(w);
+
+  if (w.shake > 0) w.shake = Math.max(0, w.shake - dt);
+  if (w.flash > 0) w.flash = Math.max(0, w.flash - dt * 2.5);
+  if (w.vignette > 0) w.vignette = Math.max(0, w.vignette - dt);
+  if (w.banner && w.t > w.banner.until) w.banner = null;
+
+  openCards(run);
+
+  // 종료 판정
+  if (w.cleared && !w.over) {
+    w.over = true;
+    w.phase = "over";
+    pushLog(w, "EVO", `STAGE ${w.stage} CLEAR`);
+  } else if (!w.player.alive) {
+    w.over = true;
+    w.phase = "over";
+  } else if (w.t >= CFG.wave.hardCapSec) {
+    w.over = true;
+    w.phase = "over";
+    w.overReason = "시간 초과";
+    pushLog(w, "FATAL", "시간 초과 — 보스를 잡지 못했다");
+  }
+}
+
+export { recalcStats };

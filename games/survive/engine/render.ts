@@ -1,353 +1,415 @@
-// 렌더 — Canvas 2D 단일 캔버스, DOM 금지 (기획서 §12).
-// 스프라이트는 오프스크린 캔버스에 미리 그려두고 매 프레임 drawImage만 한다.
+// 🦉 아울 서바이버즈 v2 — 렌더 (기획서 §10.3)
+//
+// 도형 기반 미니멀. 매 프레임 path 를 그리지 않고 **오프스크린에 미리 그려 둔 뒤 drawImage** 한다.
+// 다크는 네온(발광), 라이트는 외곽선 — 두 테마가 같은 코드로 그려지면 라이트가 죽는다 (§10.1).
+
 import { CFG } from "../config";
-import { BULLET_KINDS, ENEMY_KINDS, type World } from "./world";
+import { alpha, neon, stageAccent, type Theme } from "../theme";
+import { HZ } from "./skills";
+import type { World } from "./world";
 
-const W = CFG.view.w;
-const H = CFG.view.h;
+/* ── 스프라이트 캐시 ────────────────────────────────────────── */
 
-/** 파티클 색 인덱스 → 색 */
-const PARTICLE_COLORS = ["#FFD27A", "#6BF0A0", "#FF5C7A", "#3DD9EB", "#CDA8FF"];
+const sprites = new Map<string, HTMLCanvasElement>();
 
-type Sprites = {
-  player: HTMLCanvasElement;
-  enemies: HTMLCanvasElement[];
-  bullets: HTMLCanvasElement[];
-  orb: HTMLCanvasElement;
-};
+export function resetSprites(): void {
+  sprites.clear();
+}
 
-let sprites: Sprites | null = null;
-
-function makeSprite(size: number, draw: (ctx: CanvasRenderingContext2D, s: number) => void): HTMLCanvasElement {
-  const c = document.createElement("canvas");
-  c.width = size;
-  c.height = size;
-  const ctx = c.getContext("2d");
-  if (ctx) {
-    ctx.translate(size / 2, size / 2);
-    draw(ctx, size);
+function make(key: string, w: number, h: number, draw: (c: CanvasRenderingContext2D) => void): HTMLCanvasElement {
+  const hit = sprites.get(key);
+  if (hit) return hit;
+  const cv = document.createElement("canvas");
+  cv.width = Math.ceil(w);
+  cv.height = Math.ceil(h);
+  const c = cv.getContext("2d");
+  if (c) {
+    c.translate(cv.width / 2, cv.height / 2);
+    draw(c);
   }
-  return c;
+  sprites.set(key, cv);
+  return cv;
 }
 
-function circleSprite(size: number, fill: string, stroke: string, glow = 10): HTMLCanvasElement {
-  return makeSprite(size, (ctx) => {
-    const r = size / 2 - 3;
-    ctx.shadowColor = glow > 0 ? stroke : "transparent";
-    ctx.shadowBlur = glow;
-    ctx.fillStyle = fill;
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = 2;
-    ctx.stroke();
+function polygon(c: CanvasRenderingContext2D, sides: number, r: number): void {
+  c.beginPath();
+  for (let i = 0; i < sides; i++) {
+    const a = (Math.PI * 2 * i) / sides - Math.PI / 2;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r;
+    if (i) c.lineTo(x, y);
+    else c.moveTo(x, y);
+  }
+  c.closePath();
+}
+
+/** 적 — 등급이 올라갈수록 변이 많아진다 (§10.3) */
+function enemySprite(t: Theme, sides: number, r: number, rank: number): HTMLCanvasElement {
+  const color = rank >= 2 ? t.boss : rank === 1 ? t.accent : t.enemy;
+  const pad = t.glow ? 14 : 6;
+  return make(`e:${t.id}:${sides}:${r}:${rank}`, (r + pad) * 2, (r + pad) * 2, (c) => {
+    c.save();
+    neon(c, t, color, rank >= 2 ? 22 : 12);
+    c.fillStyle = alpha(color, t.glow ? 0.9 : 1);
+    polygon(c, sides, r);
+    c.fill();
+    c.restore();
+    if (!t.glow) {
+      c.lineWidth = 2;
+      c.strokeStyle = "rgba(20,27,51,0.6)";
+      polygon(c, sides, r);
+      c.stroke();
+    }
+    if (rank >= 2) {
+      // 보스는 코어가 하나 더 있다
+      c.fillStyle = alpha(t.text, 0.85);
+      c.beginPath();
+      c.arc(0, 0, r * 0.28, 0, Math.PI * 2);
+      c.fill();
+    }
   });
 }
 
-function buildSprites(): Sprites {
-  // 적 — 종류별 색·모양 (§7)
-  const enemies = ENEMY_KINDS.map((kind) => {
-    switch (kind) {
-      case "bug":
-        return circleSprite(26, "#3a2c52", "#CDA8FF", 8);
-      case "worm":
-        return makeSprite(26, (ctx) => {
-          ctx.fillStyle = "#1d5a44";
-          ctx.strokeStyle = "#6BF0A0";
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, 10, 6, 0.5, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-        });
-      case "trojan":
-        return makeSprite(40, (ctx) => {
-          ctx.fillStyle = "#4a2f16";
-          ctx.strokeStyle = "#FFB020";
-          ctx.lineWidth = 2.5;
-          ctx.beginPath();
-          ctx.moveTo(0, -14);
-          ctx.lineTo(14, 8);
-          ctx.lineTo(-14, 8);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
-        });
-      case "botnet":
-        return circleSprite(20, "#20304f", "#7FA6FF", 6);
-      case "ransom":
-        return makeSprite(44, (ctx) => {
-          ctx.fillStyle = "#3a1020";
-          ctx.strokeStyle = "#FF5C7A";
-          ctx.lineWidth = 3;
-          ctx.shadowColor = "#FF5C7A";
-          ctx.shadowBlur = 12;
-          ctx.fillRect(-13, -13, 26, 26);
-          ctx.strokeRect(-13, -13, 26, 26);
-        });
-      case "elite":
-        return makeSprite(66, (ctx) => {
-          ctx.fillStyle = "#2b1f3f";
-          ctx.strokeStyle = "#FFD27A";
-          ctx.lineWidth = 3;
-          ctx.shadowColor = "#FFD27A";
-          ctx.shadowBlur = 18;
-          ctx.beginPath();
-          for (let i = 0; i < 6; i++) {
-            const a = (Math.PI / 3) * i - Math.PI / 2;
-            const x = Math.cos(a) * 24;
-            const y = Math.sin(a) * 24;
-            if (i) ctx.lineTo(x, y);
-            else ctx.moveTo(x, y);
-          }
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
-        });
-      default:
-        return makeSprite(150, (ctx) => {
-          ctx.fillStyle = "#1a0b12";
-          ctx.strokeStyle = "#FF5C7A";
-          ctx.lineWidth = 5;
-          ctx.shadowColor = "#FF5C7A";
-          ctx.shadowBlur = 30;
-          ctx.beginPath();
-          ctx.arc(0, 0, 58, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = "#FF5C7A";
-          ctx.beginPath();
-          ctx.arc(-20, -12, 9, 0, Math.PI * 2);
-          ctx.arc(20, -12, 9, 0, Math.PI * 2);
-          ctx.fill();
-        });
+/** 플레이어 = 원 + 삼각 귀 */
+function owlSprite(t: Theme): HTMLCanvasElement {
+  const r = CFG.player.radius;
+  const pad = t.glow ? 18 : 8;
+  return make(`owl:${t.id}`, (r + pad) * 2, (r + pad) * 2, (c) => {
+    c.save();
+    neon(c, t, t.player, 18);
+    c.fillStyle = t.player;
+    c.beginPath();
+    c.arc(0, 0, r, 0, Math.PI * 2);
+    c.fill();
+    // 귀
+    c.beginPath();
+    c.moveTo(-r * 0.9, -r * 0.5); c.lineTo(-r * 0.35, -r * 1.5); c.lineTo(-r * 0.05, -r * 0.6);
+    c.moveTo(r * 0.9, -r * 0.5); c.lineTo(r * 0.35, -r * 1.5); c.lineTo(r * 0.05, -r * 0.6);
+    c.fill();
+    c.restore();
+    if (!t.glow) {
+      c.lineWidth = 2;
+      c.strokeStyle = "rgba(20,27,51,0.7)";
+      c.beginPath();
+      c.arc(0, 0, r, 0, Math.PI * 2);
+      c.stroke();
     }
-  });
-
-  const bullets = BULLET_KINDS.map((kind) => {
-    switch (kind) {
-      case "laser":
-        return makeSprite(30, (ctx) => {
-          ctx.fillStyle = "#9BEBFF";
-          ctx.shadowColor = "#3DD9EB";
-          ctx.shadowBlur = 14;
-          ctx.fillRect(-13, -3, 26, 6);
-        });
-      case "orbit":
-        return circleSprite(24, "#FFE08A", "#FFB020", 14);
-      case "ddos":
-        return circleSprite(14, "#FFFFFF", "#7FA6FF", 10);
-      case "explosion":
-        return circleSprite(60, "rgba(255,176,32,0.25)", "#FFB020", 20);
-      case "spike":
-        return makeSprite(22, (ctx) => {
-          ctx.fillStyle = "#6BF0A0";
-          ctx.shadowColor = "#6BF0A0";
-          ctx.shadowBlur = 10;
-          ctx.beginPath();
-          ctx.moveTo(0, -9);
-          ctx.lineTo(7, 7);
-          ctx.lineTo(-7, 7);
-          ctx.closePath();
-          ctx.fill();
-        });
-      default:
-        return makeSprite(18, (ctx) => {
-          ctx.fillStyle = "#FFD27A";
-          ctx.shadowColor = "#FFB020";
-          ctx.shadowBlur = 10;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, 7, 3, 0, 0, Math.PI * 2);
-          ctx.fill();
-        });
-    }
-  });
-
-  const player = makeSprite(44, (ctx) => {
-    ctx.shadowColor = "#FFB020";
-    ctx.shadowBlur = 16;
-    ctx.fillStyle = "#3a4a86";
-    ctx.beginPath();
-    ctx.arc(0, 0, 14, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    // 귀깃
-    ctx.fillStyle = "#2a3665";
-    ctx.beginPath();
-    ctx.moveTo(-11, -9);
-    ctx.lineTo(-6, -19);
-    ctx.lineTo(-2, -10);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(11, -9);
-    ctx.lineTo(6, -19);
-    ctx.lineTo(2, -10);
-    ctx.closePath();
-    ctx.fill();
     // 눈
-    ctx.fillStyle = "#0b1020";
-    ctx.beginPath();
-    ctx.arc(-5, -2, 5, 0, Math.PI * 2);
-    ctx.arc(5, -2, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#FFE6A6";
-    ctx.beginPath();
-    ctx.arc(-5, -2, 2.4, 0, Math.PI * 2);
-    ctx.arc(5, -2, 2.4, 0, Math.PI * 2);
-    ctx.fill();
-    // 부리
-    ctx.fillStyle = "#FFB020";
-    ctx.beginPath();
-    ctx.moveTo(0, 2);
-    ctx.lineTo(4, 8);
-    ctx.lineTo(-4, 8);
-    ctx.closePath();
-    ctx.fill();
+    c.fillStyle = t.bg;
+    c.beginPath();
+    c.arc(-r * 0.36, -r * 0.1, r * 0.26, 0, Math.PI * 2);
+    c.arc(r * 0.36, -r * 0.1, r * 0.26, 0, Math.PI * 2);
+    c.fill();
   });
-
-  const orb = circleSprite(14, "#6BF0A0", "#B6FFD6", 10);
-  return { player, enemies, bullets, orb };
 }
 
-export function render(ctx: CanvasRenderingContext2D, w: World, reduced: boolean): void {
-  if (!sprites) sprites = buildSprites();
-  const s = sprites;
-  const camX = w.player.x - W / 2;
-  const camY = w.player.y - H / 2;
+function bulletSprite(t: Theme, look: number): HTMLCanvasElement {
+  const color =
+    look === 7 ? t.danger : look === 3 ? t.accent : look === 1 || look === 2 ? t.xp : t.player;
+  const size = look === 6 ? 12 : look === 3 ? 10 : look === 1 ? 9 : 7;
+  const pad = t.glow ? 12 : 4;
+  return make(`b:${t.id}:${look}`, (size + pad) * 2, (size + pad) * 2, (c) => {
+    c.save();
+    neon(c, t, color, 14);
+    c.fillStyle = color;
+    if (look === 1 || look === 2) {
+      c.fillRect(-size, -3, size * 2, 6);
+    } else if (look === 0) {
+      // 깃털
+      c.beginPath();
+      c.ellipse(0, 0, size, size * 0.5, 0, 0, Math.PI * 2);
+      c.fill();
+    } else {
+      c.beginPath();
+      c.arc(0, 0, size * 0.8, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.restore();
+    if (!t.glow) {
+      c.lineWidth = 1.5;
+      c.strokeStyle = "rgba(20,27,51,0.5)";
+      c.beginPath();
+      c.arc(0, 0, size * 0.8, 0, Math.PI * 2);
+      c.stroke();
+    }
+  });
+}
+
+function orbSprite(t: Theme, kind: number): HTMLCanvasElement {
+  const color = kind === 1 ? t.hp : t.xp;
+  const pad = t.glow ? 10 : 4;
+  return make(`o:${t.id}:${kind}`, (6 + pad) * 2, (6 + pad) * 2, (c) => {
+    c.save();
+    neon(c, t, color, 10);
+    c.fillStyle = color;
+    c.beginPath();
+    c.arc(0, 0, 5, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+  });
+}
+
+/* ── 배경 ───────────────────────────────────────────────────── */
+
+function drawFloor(ctx: CanvasRenderingContext2D, w: World, camX: number, camY: number): void {
+  const t = w.theme;
+  const accent = stageAccent(w.stage);
+  ctx.fillStyle = t.bg;
+  ctx.fillRect(0, 0, CFG.view.w, CFG.view.h);
+
+  const step = 64;
+  const ox = -(camX % step);
+  const oy = -(camY % step);
+  ctx.strokeStyle = t.grid;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = ox; x <= CFG.view.w; x += step) {
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, CFG.view.h);
+  }
+  for (let y = oy; y <= CFG.view.h; y += step) {
+    ctx.moveTo(0, y);
+    ctx.lineTo(CFG.view.w, y);
+  }
+  ctx.stroke();
+
+  // 스테이지 액센트 — 바닥에 옅게 깔아 스테이지를 구분한다
+  ctx.fillStyle = alpha(accent, t.glow ? 0.05 : 0.08);
+  ctx.fillRect(0, 0, CFG.view.w, CFG.view.h);
+
+  // 아레나 경계
+  const l = -camX;
+  const tp = -camY;
+  ctx.strokeStyle = alpha(accent, 0.55);
+  ctx.lineWidth = 3;
+  ctx.strokeRect(l, tp, CFG.arena.w, CFG.arena.h);
+}
+
+/* ── 본체 ───────────────────────────────────────────────────── */
+
+const PARTICLE_COLORS = ["player", "enemy", "obstacle", "boss", "accent", "xp", "danger"] as const;
+
+export function render(ctx: CanvasRenderingContext2D, w: World): void {
+  const t = w.theme;
+  const camX = w.cam.x - CFG.view.w / 2;
+  const camY = w.cam.y - CFG.view.h / 2;
+
+  let sx = 0;
+  let sy = 0;
+  if (w.shake > 0 && !w.reduced) {
+    sx = (Math.random() - 0.5) * w.shakePx * 2;
+    sy = (Math.random() - 0.5) * w.shakePx * 2;
+  }
 
   ctx.save();
-  if (w.shake > 0 && !reduced) {
-    ctx.translate((Math.random() - 0.5) * w.shake * 14, (Math.random() - 0.5) * w.shake * 14);
-  }
+  ctx.translate(sx, sy);
+  drawFloor(ctx, w, camX, camY);
 
-  // 배경 + 구역 톤
-  ctx.fillStyle = CFG.zones[w.zone].tone;
-  ctx.fillRect(-40, -40, W + 80, H + 80);
-  drawGrid(ctx, camX, camY);
+  const vx = (x: number) => x - camX;
+  const vy = (y: number) => y - camY;
 
   // 장판
-  const hz = w.hazards;
-  for (let i = 0; i < hz.cap; i++) {
-    if (!hz.alive[i]) continue;
-    const x = hz.x[i] - camX;
-    const y = hz.y[i] - camY;
-    ctx.fillStyle = hz.owner[i] === 0 ? "rgba(61,217,235,0.14)" : "rgba(255,92,122,0.18)";
-    ctx.strokeStyle = hz.owner[i] === 0 ? "rgba(61,217,235,0.5)" : "rgba(255,92,122,0.6)";
-    ctx.lineWidth = 2;
+  const h = w.hazards;
+  for (let i = 0; i < h.cap; i++) {
+    if (!h.alive[i]) continue;
+    const x = vx(h.x[i]);
+    const y = vy(h.y[i]);
+    if (x < -200 || x > CFG.view.w + 200 || y < -200 || y > CFG.view.h + 200) continue;
+    const kind = h.kind[i];
+    const color =
+      kind === HZ.enemy ? t.danger : kind === HZ.pull ? t.boss : kind === HZ.burn ? t.accent : kind === HZ.honey ? t.hp : t.xp;
+    const life = h.life[i] / Math.max(0.001, h.max[i]);
+    ctx.save();
+    neon(ctx, t, color, 16);
+    ctx.fillStyle = alpha(color, 0.16 + 0.1 * life);
     ctx.beginPath();
-    ctx.arc(x, y, hz.r[i], 0, Math.PI * 2);
+    ctx.arc(x, y, h.r[i], 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = alpha(color, 0.7);
+    ctx.lineWidth = 2;
     ctx.stroke();
+    ctx.restore();
   }
 
-  // XP 조각
-  const o = w.orbs;
+  // 장애물
+  const o = w.obstacles;
   for (let i = 0; i < o.cap; i++) {
     if (!o.alive[i]) continue;
-    ctx.drawImage(s.orb, o.x[i] - camX - 7, o.y[i] - camY - 7);
+    const x = vx(o.x[i]) - o.w[i] / 2;
+    const y = vy(o.y[i]) - o.h[i] / 2;
+    if (x < -120 || x > CFG.view.w + 120 || y < -120 || y > CFG.view.h + 120) continue;
+    const hurt = o.hp[i] / o.maxHp[i];
+    ctx.fillStyle = o.flash[i] > 0 ? "#FFFFFF" : alpha(t.obstacle, 0.5 + hurt * 0.5);
+    ctx.fillRect(x, y, o.w[i], o.h[i]);
+    ctx.strokeStyle = alpha(t.text, t.glow ? 0.18 : 0.35);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, o.w[i], o.h[i]);
+    if (o.kind[i] === 2) {
+      ctx.fillStyle = alpha(t.danger, 0.8);
+      ctx.fillRect(x + o.w[i] / 2 - 3, y + 4, 6, o.h[i] - 8);
+    }
+  }
+
+  // XP·체력 조각
+  const orbs = w.orbs;
+  for (let i = 0; i < orbs.cap; i++) {
+    if (!orbs.alive[i]) continue;
+    const x = vx(orbs.x[i]);
+    const y = vy(orbs.y[i]);
+    if (x < -20 || x > CFG.view.w + 20 || y < -20 || y > CFG.view.h + 20) continue;
+    const s = orbSprite(t, orbs.kind[i]);
+    ctx.drawImage(s, x - s.width / 2, y - s.height / 2);
+  }
+
+  // 투사체 (잔상 포함)
+  const b = w.bullets;
+  for (let i = 0; i < b.cap; i++) {
+    if (!b.alive[i]) continue;
+    const x = vx(b.x[i]);
+    const y = vy(b.y[i]);
+    if (x < -60 || x > CFG.view.w + 60 || y < -60 || y > CFG.view.h + 60) continue;
+    const s = bulletSprite(t, b.look[i]);
+    if (!w.reduced && (b.vx[i] !== 0 || b.vy[i] !== 0)) {
+      ctx.globalAlpha = 0.25;
+      ctx.drawImage(s, x - b.vx[i] * 0.02 - s.width / 2, y - b.vy[i] * 0.02 - s.height / 2);
+      ctx.globalAlpha = 0.5;
+      ctx.drawImage(s, x - b.vx[i] * 0.01 - s.width / 2, y - b.vy[i] * 0.01 - s.height / 2);
+      ctx.globalAlpha = 1;
+    }
+    ctx.drawImage(s, x - s.width / 2, y - s.height / 2);
   }
 
   // 적
   const e = w.enemies;
   for (let i = 0; i < e.cap; i++) {
     if (!e.alive[i]) continue;
-    const x = e.x[i] - camX;
-    const y = e.y[i] - camY;
-    if (x < -80 || x > W + 80 || y < -80 || y > H + 80) continue;
-    const sprite = s.enemies[e.kind[i]];
-    if (e.flash[i] > 0) {
-      ctx.globalAlpha = 0.85;
-      ctx.globalCompositeOperation = "lighter";
+    const x = vx(e.x[i]);
+    const y = vy(e.y[i]);
+    if (x < -80 || x > CFG.view.w + 80 || y < -80 || y > CFG.view.h + 80) continue;
+
+    if (e.hideT[i] > 0) {
+      ctx.globalAlpha = 0.25;
     }
-    ctx.drawImage(sprite, x - sprite.width / 2, y - sprite.height / 2);
+
+    const s = enemySprite(t, e.sides[i], e.r[i], e.rank[i]);
+    ctx.drawImage(s, x - s.width / 2, y - s.height / 2);
+
+    // 피격 백색 플래시 — 타격감의 90%가 여기서 나온다 (§10.3)
+    if (e.flash[i] > 0) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, e.flash[i] / CFG.feedback.hitFlashSec);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.translate(x, y);
+      ctx.beginPath();
+      for (let k = 0; k < e.sides[i]; k++) {
+        const a = (Math.PI * 2 * k) / e.sides[i] - Math.PI / 2;
+        const px = Math.cos(a) * e.r[i];
+        const py = Math.sin(a) * e.r[i];
+        if (k) ctx.lineTo(px, py);
+        else ctx.moveTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
     ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = "source-over";
-    e.flash[i] = Math.max(0, e.flash[i] - 1 / 60);
-    // 엘리트·보스 체력바
-    if (e.maxHp[i] >= 300) {
+
+    // 상태이상 표시
+    if (e.slowT[i] > 0 || e.burnT[i] > 0 || e.stunT[i] > 0 || e.markT[i] > 0) {
+      ctx.strokeStyle = e.burnT[i] > 0 ? t.accent : e.stunT[i] > 0 ? t.dim : e.markT[i] > 0 ? t.danger : t.xp;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, e.r[i] + 5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 엘리트·보스 체력 바
+    if (e.rank[i] >= 1) {
+      const bw = e.r[i] * 2.2;
       const ratio = Math.max(0, e.hp[i] / e.maxHp[i]);
-      const bw = e.r[i] * 2.4;
-      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillStyle = alpha(t.text, 0.25);
       ctx.fillRect(x - bw / 2, y - e.r[i] - 14, bw, 5);
-      ctx.fillStyle = "#FF5C7A";
+      ctx.fillStyle = e.rank[i] >= 2 ? t.boss : t.danger;
       ctx.fillRect(x - bw / 2, y - e.r[i] - 14, bw * ratio, 5);
     }
   }
 
-  // 투사체
-  const b = w.bullets;
-  for (let i = 0; i < b.cap; i++) {
-    if (!b.alive[i]) continue;
-    const x = b.x[i] - camX;
-    const y = b.y[i] - camY;
-    if (x < -60 || x > W + 60 || y < -60 || y > H + 60) continue;
-    const sprite = s.bullets[b.kind[i]];
-    const angle = Math.atan2(b.vy[i], b.vx[i]);
-    ctx.save();
-    ctx.translate(x, y);
-    if (b.vx[i] || b.vy[i]) ctx.rotate(angle);
-    const scale = b.r[i] > 0 ? Math.max(0.6, (b.r[i] * 2) / sprite.width) : 1;
-    ctx.scale(scale, scale);
-    ctx.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
-    ctx.restore();
-  }
-
   // 플레이어
   const p = w.player;
-  const px = W / 2;
-  const py = H / 2;
-  if (p.iframe > 0 && Math.floor(p.iframe * 20) % 2 === 0) ctx.globalAlpha = 0.5;
-  ctx.drawImage(s.player, px - s.player.width / 2, py - s.player.height / 2);
-  ctx.globalAlpha = 1;
+  if (p.alive || w.t % 0.2 < 0.1) {
+    const s = owlSprite(t);
+    const px = vx(p.x);
+    const py = vy(p.y);
+    if (p.iframe > 0 || p.invuln > 0) ctx.globalAlpha = 0.55;
+    ctx.drawImage(s, px - s.width / 2, py - s.height / 2);
+    ctx.globalAlpha = 1;
+
+    if (p.invuln > 0) {
+      ctx.strokeStyle = alpha(t.hp, 0.9);
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(px, py, CFG.player.radius + 10 + Math.sin(w.t * 18) * 2, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    if (p.shield) {
+      ctx.strokeStyle = alpha(t.xp, 0.8);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(px, py, CFG.player.radius + 7, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
 
   // 파티클
-  const q = w.parts;
+  const q = w.particles;
   for (let i = 0; i < q.cap; i++) {
     if (!q.alive[i]) continue;
+    const key = PARTICLE_COLORS[q.color[i]] ?? "player";
     ctx.globalAlpha = Math.max(0, q.life[i] / q.max[i]);
-    ctx.fillStyle = PARTICLE_COLORS[q.color[i] % PARTICLE_COLORS.length];
-    ctx.fillRect(q.x[i] - camX, q.y[i] - camY, q.r[i], q.r[i]);
+    ctx.fillStyle = t[key as keyof Theme] as string;
+    ctx.fillRect(vx(q.x[i]) - q.r[i] / 2, vy(q.y[i]) - q.r[i] / 2, q.r[i], q.r[i]);
   }
   ctx.globalAlpha = 1;
+
   ctx.restore();
 
-  if (w.flash > 0 && !reduced) {
-    ctx.fillStyle = `rgba(255,92,122,${w.flash * 0.5})`;
-    ctx.fillRect(0, 0, W, H);
-  }
-  // 체력 낮을 때 비네트
-  if (w.player.hp <= w.player.maxHp * 0.3) {
-    const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.8);
-    g.addColorStop(0, "rgba(255,60,60,0)");
-    g.addColorStop(1, "rgba(255,60,60,0.35)");
+  /* ── 화면 효과 ── */
+
+  // 체력 30% 이하 — 가장자리 적색 맥동 (§9.1)
+  const hpRatio = p.hp / Math.max(1, p.maxHp);
+  const low = hpRatio <= CFG.feedback.lowHpRatio ? 0.25 + Math.sin(w.t * 6) * 0.1 : 0;
+  const vig = Math.max(w.vignette * 0.5, low);
+  if (vig > 0.01) {
+    const g = ctx.createRadialGradient(
+      CFG.view.w / 2, CFG.view.h / 2, CFG.view.h * 0.25,
+      CFG.view.w / 2, CFG.view.h / 2, CFG.view.h * 0.75,
+    );
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, alpha(t.danger, vig));
     ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, 0, CFG.view.w, CFG.view.h);
   }
-}
 
-function drawGrid(ctx: CanvasRenderingContext2D, camX: number, camY: number): void {
-  const step = 80;
-  ctx.strokeStyle = "rgba(120,150,220,0.07)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  const ox = -(camX % step);
-  const oy = -(camY % step);
-  for (let x = ox; x < W; x += step) {
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, H);
+  // reduced-motion 이면 흔들림 대신 테두리 플래시 (§9.1)
+  if (w.reduced && w.shake > 0) {
+    ctx.strokeStyle = alpha(t.danger, Math.min(0.9, w.shake * 3));
+    ctx.lineWidth = 8;
+    ctx.strokeRect(4, 4, CFG.view.w - 8, CFG.view.h - 8);
   }
-  for (let y = oy; y < H; y += step) {
-    ctx.moveTo(0, y);
-    ctx.lineTo(W, y);
-  }
-  ctx.stroke();
-}
 
-/** 테스트·핫리로드에서 스프라이트를 다시 만들 때 */
-export function resetSprites(): void {
-  sprites = null;
+  if (w.flash > 0) {
+    ctx.fillStyle = `rgba(255,255,255,${Math.min(0.5, w.flash)})`;
+    ctx.fillRect(0, 0, CFG.view.w, CFG.view.h);
+  }
+
+  // 🌑 무한 구간 '시야 제한'
+  if (w.info.rule === "dark") {
+    const g = ctx.createRadialGradient(
+      vx(p.x), vy(p.y), 60, vx(p.x), vy(p.y), 320,
+    );
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(0,0,0,0.85)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, CFG.view.w, CFG.view.h);
+  }
 }

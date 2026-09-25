@@ -111,17 +111,22 @@ export async function fetchMyPosition(): Promise<number | null> {
 }
 
 /** 아울 서바이버즈 난이도 해금 단계 (profiles.meta.survive_unlock) */
-export async function fetchSurviveUnlock(): Promise<number> {
+/**
+ * 아울 서바이버즈 진행도 (v2) — profiles.meta.survive_stage / survive_theme.
+ * `stage` 는 **클리어한 최고 스테이지**다 (0 = 아직 없음). 선택 가능한 건 stage + 1 까지.
+ */
+export async function fetchSurviveProgress(): Promise<{ stage: number; theme: "dark" | "light" }> {
   const supabase = getBrowserSupabase();
-  if (!supabase) return 3; // 데모에서는 전부 열어둔다
+  if (!supabase) return { stage: 4, theme: "dark" }; // 데모에서는 5스테이지까지 열어둔다
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return 1;
+  if (!user) return { stage: 0, theme: "dark" };
   const { data } = await supabase.from("profiles").select("meta").eq("id", user.id).maybeSingle();
   const meta = (data?.meta ?? {}) as Record<string, unknown>;
-  const raw = Number(meta.survive_unlock ?? 1);
-  return Number.isFinite(raw) ? Math.max(1, Math.min(3, raw)) : 1;
+  const raw = Number(meta.survive_stage ?? 0);
+  const theme = meta.survive_theme === "light" ? "light" : "dark";
+  return { stage: Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0, theme };
 }
 
 export type UnclaimedDraw = {
