@@ -43,13 +43,14 @@ function gameStats(game: GameId, meta: Record<string, unknown> | null): { label:
   }
   if (game === "survive") {
     const stats = [
+      { label: "스테이지", value: `STAGE ${n("stage")}${meta.cleared ? " 클리어" : ""}` },
       { label: "생존", value: `${formatNumber(n("duration_s"))}초` },
-      { label: "처치", value: formatNumber(n("kills")) },
+      { label: "처치", value: `${formatNumber(n("kills"))} (장애물 ${n("obstacles")})` },
       { label: "레벨", value: `Lv.${n("level")}` },
-      { label: "도달 단계", value: `STAGE ${n("stage_max") || n("zones_cleared") + 1}` },
       { label: "진화", value: `${formatNumber(n("evolutions"))}개` },
+      { label: "피격", value: n("damage_taken") === 0 ? "무피격 ✨" : `${n("damage_taken")}회` },
     ];
-    if (meta.boss_killed) stats.push({ label: "보스", value: "처치 ✅" });
+    if (n("revives_used") > 0) stats.push({ label: "부활", value: `${n("revives_used")}회` });
     return stats;
   }
   if (game === "typer") {

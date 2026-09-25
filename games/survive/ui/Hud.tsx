@@ -1,122 +1,170 @@
 "use client";
 
-// 아울 서바이버즈 HUD (기획서 §13) — 화면 면적 15% 이하, 조이스틱 영역과 겹치지 않게.
-import { CFG } from "../config";
-import { cn } from "@/lib/cn";
-import { stageColor, stageLabel, STAGE_COUNT } from "@/lib/stages";
-import type { PassiveId, WeaponId } from "../types";
+// 🦉 아울 서바이버즈 v2 — HUD + 전투 로그 (기획서 §9.2 · §10.2)
+// HUD 총 면적 15% 이하. 색은 전부 테마에서 온다 (다크/라이트 둘 다 대비 확보).
+
+import type { Theme } from "../theme";
+import type { LogLine, LogTag } from "../types";
 
 export type HudState = {
   hp: number;
   maxHp: number;
-  timeLeft: number;
-  zone: number;
-  stage15: number;
-  stageProgress: number;
+  elapsed: number;
+  stage: number;
+  stageName: string;
+  kills: number;
   level: number;
   xp: number;
   xpNext: number;
-  kills: number;
-  score: number;
-  weapons: { id: WeaponId; level: number; emoji: string; evolved: boolean }[];
-  passives: { id: PassiveId; level: number; emoji: string }[];
-  banner: { text: string; sub?: string } | null;
-  rerolls: number;
+  actives: { emoji: string; lv: number; evolved: boolean }[];
+  passives: { emoji: string; lv: number }[];
+  boss: { name: string; emoji: string; hp: number; maxHp: number; phase: number } | null;
+  banner: { text: string; sub: string } | null;
+  log: LogLine[];
+  rule: string | null;
 };
 
-export function Hud({ hud }: { hud: HudState }) {
+const LOG_COLOR: Record<LogTag, (t: Theme) => string> = {
+  INFO: (t) => t.dim,
+  WARN: (t) => t.accent,
+  CRIT: (t) => t.xp,
+  DROP: (t) => t.hp,
+  EVO: () => "#FACC15",
+  ALERT: (t) => t.boss,
+  FATAL: (t) => t.danger,
+};
+
+function fmtTime(sec: number): string {
+  const s = Math.max(0, Math.floor(sec));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+export function Hud({ hud, theme }: { hud: HudState; theme: Theme }) {
   const hpRatio = Math.max(0, hud.hp / hud.maxHp);
   const xpRatio = Math.max(0, Math.min(1, hud.xp / hud.xpNext));
-  const color = stageColor(hud.stage15);
+  const low = hpRatio <= 0.3;
 
   return (
     <div className="pointer-events-none absolute inset-0 select-none">
-      {/* 상단: 체력 · 타이머 · 구역/단계 */}
-      <div className="absolute inset-x-0 top-0 px-3 pt-2">
-        <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="h-3 overflow-hidden rounded-full border border-line bg-night/80">
+      {/* 상단바 */}
+      <div
+        className="flex items-center gap-3 px-3 py-1.5"
+        style={{ background: `linear-gradient(${theme.bg}dd, transparent)` }}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <div className="h-2.5 w-28 overflow-hidden rounded-full sm:w-40" style={{ background: `${theme.dim}40` }}>
               <div
-                className={cn("h-full rounded-full transition-[width] duration-150", hpRatio > 0.3 ? "bg-ok" : "bg-alert")}
-                style={{ width: `${hpRatio * 100}%`, boxShadow: `0 0 10px ${hpRatio > 0.3 ? "#6BF0A0" : "#FF5C7A"}` }}
+                className="h-full rounded-full transition-[width] duration-150"
+                style={{ width: `${hpRatio * 100}%`, background: low ? theme.danger : theme.hp }}
               />
             </div>
-            <p className="num mt-0.5 text-[10px] text-mute">
-              {Math.max(0, Math.ceil(hud.hp))} / {hud.maxHp}
-            </p>
-          </div>
-
-          <p className="arcade text-xl text-ink">{Math.max(0, Math.ceil(hud.timeLeft))}</p>
-
-          <div className="min-w-0 flex-1 text-right">
-            <p className="arcade text-[11px]" style={{ color }}>
-              {stageLabel(hud.stage15)}
-              <span className="ml-1 text-[9px] text-mute">/{STAGE_COUNT}</span>
-            </p>
-            <p className="num text-[10px] text-mute">{CFG.zones[hud.zone].name}</p>
-          </div>
-        </div>
-
-        {/* 단계 진행 + XP */}
-        <div className="mt-1.5 flex items-center gap-2">
-          <span className="num text-[10px] font-bold text-neon">Lv.{hud.level}</span>
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-panel">
-            <div className="h-full rounded-full bg-neon" style={{ width: `${xpRatio * 100}%` }} />
-          </div>
-          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-panel" title="다음 단계까지">
-            <div className="h-full rounded-full" style={{ width: `${hud.stageProgress * 100}%`, background: color }} />
-          </div>
-        </div>
-      </div>
-
-      {/* 우상단: 처치 수·점수 */}
-      <div className="absolute right-3 top-16 text-right">
-        <p className="arcade text-sm text-alert">{hud.kills.toLocaleString()} KILL</p>
-        <p className="arcade mt-1 text-[11px] text-neon">{hud.score.toLocaleString()}</p>
-      </div>
-
-      {/* 좌하단: 무기·패시브 슬롯 */}
-      <div className="absolute bottom-3 left-3 flex flex-col gap-1.5">
-        <div className="flex gap-1.5">
-          {hud.weapons.map((w) => (
-            <span
-              key={w.id}
-              className={cn(
-                "grid size-9 place-items-center rounded-lg border bg-night/80 text-base",
-                w.evolved ? "border-neon shadow-[0_0_12px_rgba(255,176,32,0.6)]" : "border-line",
-              )}
-              title={`${w.id} Lv${w.level}`}
-            >
-              {w.emoji}
-              <span className="num absolute mt-6 text-[9px] text-mute">{w.level}</span>
+            <span className="num text-[11px] font-bold" style={{ color: low ? theme.danger : theme.text }}>
+              {Math.max(0, Math.round(hud.hp))}/{Math.round(hud.maxHp)}
             </span>
-          ))}
+          </div>
         </div>
-        <div className="flex gap-1.5">
-          {hud.passives.map((p) => (
-            <span
-              key={p.id}
-              className="grid size-7 place-items-center rounded-lg border border-line bg-night/70 text-xs"
-              title={`${p.id} Lv${p.level}`}
-            >
-              {p.emoji}
-            </span>
-          ))}
+
+        <span className="num text-lg font-black tabular-nums" style={{ color: theme.text }}>
+          {fmtTime(hud.elapsed)}
+        </span>
+
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+          <span className="arcade text-[10px]" style={{ color: theme.accent }}>
+            STAGE {hud.stage}
+          </span>
+          <span className="num text-[11px]" style={{ color: theme.dim }}>
+            KILL {hud.kills}
+          </span>
         </div>
       </div>
+
+      {/* XP 바 */}
+      <div className="mx-3 h-2 overflow-hidden rounded-full" style={{ background: `${theme.dim}33` }}>
+        <div className="h-full rounded-full" style={{ width: `${xpRatio * 100}%`, background: theme.xp }} />
+      </div>
+      <div className="flex items-center justify-between px-3 pt-0.5">
+        <span className="num text-[10px]" style={{ color: theme.dim }}>
+          Lv.{hud.level} · {hud.stageName}
+        </span>
+        {hud.rule && (
+          <span className="num text-[10px]" style={{ color: theme.boss }}>
+            특수 규칙 {hud.rule}
+          </span>
+        )}
+      </div>
+
+      {/* 보스 HP */}
+      {hud.boss && (
+        <div className="mx-auto mt-2 w-[min(520px,80%)]">
+          <div className="flex items-center justify-between px-1 pb-1">
+            <span className="text-xs font-bold" style={{ color: theme.boss }}>
+              {hud.boss.emoji} {hud.boss.name}
+            </span>
+            <span className="num text-[10px]" style={{ color: theme.dim }}>
+              PHASE {hud.boss.phase + 1}
+            </span>
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full" style={{ background: `${theme.dim}40` }}>
+            <div
+              className="h-full rounded-full transition-[width] duration-100"
+              style={{ width: `${Math.max(0, (hud.boss.hp / hud.boss.maxHp) * 100)}%`, background: theme.boss }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 배너 */}
       {hud.banner && (
-        <div className="absolute left-1/2 top-1/3 -translate-x-1/2 animate-pop text-center">
-          <p
-            className="rounded-2xl border bg-night/85 px-5 py-2.5 text-lg font-black"
-            style={{ borderColor: color, color }}
-          >
+        <div className="absolute inset-x-0 top-1/3 text-center">
+          <p className="animate-pop text-3xl font-black" style={{ color: theme.accent }}>
             {hud.banner.text}
           </p>
-          {hud.banner.sub && <p className="mt-1.5 text-sm font-bold text-ink drop-shadow">{hud.banner.sub}</p>}
+          <p className="arcade mt-1 text-xs" style={{ color: theme.dim }}>
+            {hud.banner.sub}
+          </p>
         </div>
       )}
+
+      {/* 하단 왼쪽: 스킬 슬롯 */}
+      <div className="absolute bottom-2 left-3 flex max-w-[55%] flex-wrap gap-1">
+        {hud.actives.map((s, i) => (
+          <span
+            key={`a${i}`}
+            className="flex h-8 w-8 flex-col items-center justify-center rounded-lg text-sm"
+            style={{
+              background: `${theme.surface}cc`,
+              border: `1.5px solid ${s.evolved ? "#FACC15" : `${theme.dim}66`}`,
+            }}
+          >
+            {s.emoji}
+            <span className="num text-[7px] leading-none" style={{ color: theme.dim }}>
+              {"•".repeat(s.lv)}
+            </span>
+          </span>
+        ))}
+        {hud.passives.map((s, i) => (
+          <span
+            key={`p${i}`}
+            className="flex h-8 w-8 flex-col items-center justify-center rounded-lg text-sm opacity-80"
+            style={{ background: `${theme.surface}99`, border: `1px solid ${theme.dim}44` }}
+          >
+            {s.emoji}
+            <span className="num text-[7px] leading-none" style={{ color: theme.dim }}>
+              {"•".repeat(s.lv)}
+            </span>
+          </span>
+        ))}
+      </div>
+
+      {/* 하단 오른쪽: 전투 로그 (터미널) */}
+      <div className="absolute bottom-2 right-3 w-[min(300px,45%)] text-right">
+        {hud.log.map((l, i) => (
+          <p key={`${l.t}-${i}`} className="num truncate text-[10px] leading-tight" style={{ color: LOG_COLOR[l.tag](theme) }}>
+            <span style={{ opacity: 0.75 }}>[{l.tag}]</span> {l.text}
+          </p>
+        ))}
+      </div>
     </div>
   );
 }

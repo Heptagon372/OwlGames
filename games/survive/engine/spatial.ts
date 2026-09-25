@@ -23,7 +23,7 @@ export function createGrid(capacity: number): Grid {
     starts: new Int32Array(BUCKETS + 1),
     items: new Int32Array(capacity),
     cursor: new Int32Array(BUCKETS),
-    cell: CFG.gridCell,
+    cell: CFG.perf.gridCell,
   };
 }
 

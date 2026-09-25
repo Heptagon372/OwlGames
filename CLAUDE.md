@@ -23,8 +23,12 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 - **모든 게임은 `lib/stages.ts`의 공통 15단계를 쓴다.** 점수는 무한히 쌓이되 난이도는 단계마다
   `1.16`배씩 **곱**으로 붙고 15단계에서 고정된다. 게임은 자기 진행도를 0~1로 바꿔 `stageFromRatio`에 넘기고,
   HUD·결과에 `STAGE n/15`를 띄운다. 단계 배율을 **점수에 곱하려면 서버 재계산식도 같이** 고쳐야 한다.
-- **아울 서바이버즈(`games/survive/`)는 SoA 타입배열 풀 + 공간 해시**다. 런 중에는 절대 `new` 하지 않는다
-  (풀 크기는 `config.ts`의 `CFG.pool`). 로직/렌더/HUD가 분리돼 있고 헤드리스 봇 테스트가 `tests/survive-engine.test.ts`.
+- **아울 서바이버즈(`games/survive/`, v2)는 한 스테이지 = 한 런**이다. 보스를 잡아야 다음 스테이지가 열린다
+  (`profiles.meta.survive_stage`). SoA 타입배열 풀 + 공간 해시를 쓰고 런 중에는 절대 `new` 하지 않는다
+  (풀 크기는 `config.ts`의 `CFG.perf`). 스킬 50종은 **데이터(`data/skills.ts`) + 유형별 핸들러(`engine/skills.ts`)**,
+  보스 15종은 **패턴 12종의 조합(`data/stages.ts`)**이다. 헤드리스 봇 테스트는 `tests/survive-engine.test.ts`.
+- 서바이버즈는 **가로 고정 960×540**이고 테마(다크 네온 / 라이트)를 진입 시 고른다. 라이트에서는 발광 대신
+  외곽선으로 그린다 — 렌더에서 색을 직접 쓰지 말고 `theme.ts`의 `neon()`/`outline()`을 거칠 것.
 - **아울 로직(`games/logic/`)은 엔진(`engine/`)과 SVG UI(`ui/`)가 분리**돼 있다. 문제는 절차적으로 생성하고
   솔버가 유일해·최소 게이트 수를 검증한다 (`tests/logic-sim.test.ts`가 1만 문제를 돌린다).
 - **아울러닝(`games/flight/`)은 고정 타임스텝(1/60) + 청크 기반 레벨**이다. 로직(`engine/`)과 렌더(`engine/render.ts`),
@@ -56,7 +60,9 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 아울러닝 레벨 디자인 | `games/flight/chunks/p0~p4.json` → `npm run verify:chunks`로 통과 가능성 검증 |
 | 공통 15단계 곡선 | `lib/stages.ts` (`STAGE_STEP`) — 바꾸면 5게임 전부 난이도가 바뀐다 |
 | 아울 로직 튜닝 | `games/logic/config.ts`의 `CFG`·`TIER_SHAPE` (문제 형태·시간·콤보·점수) |
-| 아울 서바이버즈 튜닝 | `games/survive/config.ts`의 `CFG` + 적 스펙은 `engine/enemies.ts`의 `ENEMY_SPEC` |
+| 아울 서바이버즈 튜닝 | `games/survive/config.ts`의 `CFG` + 적 스펙·보스는 `data/stages.ts` |
+| 서바이버즈 스킬 추가·수정 | `games/survive/data/skills.ts` (동작은 `engine/skills.ts`의 유형 핸들러) |
+| 서바이버즈 거부 기준 | `app_config.game_guards.survive` (DB) — 배포 없이 조정 가능 |
 | 뽑기 확률·상품 | `app_config.gacha_table`, `prizes` 테이블 (관리자 화면에서 재고 수정) |
 | 단어·피싱 카드 추가 | `data/typer-words.ts`, `data/phish-cards.ts` (형식은 `tests/data.test.ts`가 검증) |
 | 부스 위치 안내 | `app_config.booth_location` |
