@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { RankBadge } from "./RankBadge";
 import { rankInfo } from "@/lib/rank";
 
@@ -16,6 +17,8 @@ type Props = {
 
 /** 랭크업 연출 (§13): 풀스크린 암전 → 뱃지 확대 → 🎟️ 뽑기 티켓 +1 */
 export function LevelUpOverlay({ open, kind, level, rankIdx, ticketsGained = 0, onDone }: Props) {
+  const tl = useTranslations("levelUp");
+  const tr = useTranslations("ranks");
   useEffect(() => {
     if (!open) return;
     const t = setTimeout(onDone, kind === "rank" ? 4200 : 2200);
@@ -29,7 +32,7 @@ export function LevelUpOverlay({ open, kind, level, rankIdx, ticketsGained = 0, 
     <button
       type="button"
       onClick={onDone}
-      aria-label="계속"
+      aria-label={tl("continueAria")}
       className="fixed inset-0 z-[70] flex cursor-default flex-col items-center justify-center gap-6 bg-night/95 px-6 backdrop-blur-md"
     >
       {/* 빛줄기 */}
@@ -44,7 +47,7 @@ export function LevelUpOverlay({ open, kind, level, rankIdx, ticketsGained = 0, 
       />
 
       <p className="animate-rise font-mono text-sm tracking-[0.4em] text-aqua">
-        {kind === "rank" ? "RANK UP" : "LEVEL UP"}
+        {kind === "rank" ? tl("rankUp") : tl("levelUp")}
       </p>
 
       <div className="relative animate-pop">
@@ -60,14 +63,14 @@ export function LevelUpOverlay({ open, kind, level, rankIdx, ticketsGained = 0, 
       <div className="animate-rise text-center" style={{ animationDelay: "0.25s" }}>
         {kind === "rank" ? (
           <>
-            <p className="text-3xl font-black text-glow" style={{ color: r.colors[0] }}>
-              {r.name}
+            <p className="rank-ink text-3xl font-black text-glow" style={{ color: r.colors[0] }}>
+              {tr(String(rankIdx))}
             </p>
-            <p className="mt-1 font-mono text-sm text-mute">Lv {level} 달성</p>
+            <p className="mt-1 font-mono text-sm text-mute">{tl("reached", { level })}</p>
           </>
         ) : (
           <p className="text-2xl font-black">
-            레벨 <span className="num text-neon">{level}</span> 달성!
+            {tl.rich("levelReached", { level, n: (c) => <span className="num text-neon">{c}</span> })}
           </p>
         )}
       </div>
@@ -77,11 +80,11 @@ export function LevelUpOverlay({ open, kind, level, rankIdx, ticketsGained = 0, 
           className="animate-pop rounded-2xl border border-amber/50 bg-amber/10 px-6 py-3 text-xl font-extrabold text-amber-soft shadow-amber"
           style={{ animationDelay: "0.7s" }}
         >
-          🎟️ 뽑기 티켓 +{ticketsGained}
+          {tl("ticket", { count: ticketsGained })}
         </div>
       )}
 
-      <p className="absolute bottom-10 font-mono text-xs text-dim">화면을 누르면 계속</p>
+      <p className="absolute bottom-10 font-mono text-xs text-dim">{tl("continue")}</p>
     </button>
   );
 }

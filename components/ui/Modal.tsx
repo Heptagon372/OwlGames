@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 
 type Props = {
@@ -16,6 +17,7 @@ type Props = {
 
 /** 모바일에서는 아래에서 올라오는 시트, 넓은 화면에서는 가운데 모달 */
 export function Modal({ open, onClose, title, children, className, dismissible = true }: Props) {
+  const t = useTranslations("modal");
   useEffect(() => {
     if (!open || !dismissible) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose?.();
@@ -29,7 +31,7 @@ export function Modal({ open, onClose, title, children, className, dismissible =
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal>
       <button
         type="button"
-        aria-label="닫기"
+        aria-label={t("close")}
         className="absolute inset-0 cursor-default bg-black/65 backdrop-blur-sm"
         onClick={dismissible ? onClose : undefined}
       />
@@ -47,7 +49,7 @@ export function Modal({ open, onClose, title, children, className, dismissible =
                 type="button"
                 onClick={onClose}
                 className="-m-2 grid size-11 place-items-center rounded-xl text-mute hover:bg-white/5 hover:text-ink"
-                aria-label="닫기"
+                aria-label={t("close")}
               >
                 <X className="size-5" />
               </button>

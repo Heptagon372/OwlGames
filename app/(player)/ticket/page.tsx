@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Clock, MapPin } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { TicketIssuer } from "./TicketIssuer";
 import { PlayerShell } from "@/components/PlayerShell";
 import { GachaOdds } from "@/components/GachaOdds";
@@ -9,18 +10,22 @@ import { Card, TermLabel } from "@/components/ui/Card";
 import { getAppConfig, getMyActiveCode, getMyProfile, getOwlEnergy, getMyTickets, getPrizes } from "@/lib/queries";
 import { rankInfo, tierFromRank } from "@/lib/rank";
 
-export const metadata: Metadata = { title: "뽑기 티켓" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("ticket");
+  return { title: t("title") };
+}
 
 export default async function TicketPage() {
   const profile = await getMyProfile();
   if (!profile) redirect("/auth/login");
 
-  const [tickets, activeCode, config, prizes, energy] = await Promise.all([
+  const [tickets, activeCode, config, prizes, energy, t] = await Promise.all([
     getMyTickets(),
     getMyActiveCode(),
     getAppConfig(),
     getPrizes(),
     getOwlEnergy(),
+    getTranslations("ticket"),
   ]);
 
   const unused = tickets.filter((t) => t.status === "unused").length;
@@ -32,17 +37,17 @@ export default async function TicketPage() {
   return (
     <PlayerShell profile={profile} energy={energy} current="/ticket">
       <TermLabel>tickets --mine</TermLabel>
-      <h1 className="mb-4 mt-1 text-2xl font-black">뽑기 티켓</h1>
+      <h1 className="display mb-4 mt-1 text-3xl">{t("title")}</h1>
 
       <Card className="flex items-center gap-4">
         <div className="text-5xl">🎟️</div>
         <div className="flex-1">
-          <p className="num text-3xl font-black text-neon">{unused}장</p>
-          <p className="text-xs text-mute">사용 가능 · 지금까지 {tickets.length}장 획득 / {used}장 사용</p>
+          <p className="num text-3xl font-black text-neon">{t("count", { count: unused })}</p>
+          <p className="text-xs text-mute">{t("summary", { total: tickets.length, used })}</p>
         </div>
         <div className="text-right">
           <RankBadge rankIdx={profile.rank_idx} size="md" />
-          <p className="num mt-1 text-[11px]" style={{ color: r.colors[0] }}>
+          <p className="rank-ink num mt-1 text-[11px]" style={{ color: r.colors[0] }}>
             T{tier}
           </p>
         </div>
@@ -51,20 +56,19 @@ export default async function TicketPage() {
       <TicketIssuer unused={unused} initialCode={activeCode} ttlMin={config.redeem_code_ttl_min} />
 
       <section className="mt-8">
-        <TermLabel>gacha --odds</TermLabel>
-        <h2 className="mb-3 mt-1 text-lg font-extrabold">뽑기 확률</h2>
+        <TermLabel>{t("oddsLabel")}</TermLabel>
+        <h2 className="mb-3 mt-1 text-lg font-extrabold">{t("oddsTitle")}</h2>
         <Card>
           <GachaOdds table={config.gacha_table} currentTier={tier} prizes={prizes} />
         </Card>
         <p className="mt-3 rounded-tile border border-aqua/25 bg-aqua/5 px-4 py-3 text-xs leading-relaxed text-aqua">
-          확률은 <span className="font-bold">뽑는 시점의 랭크</span> 기준이에요. 티켓을 모아뒀다가 랭크를 올린 뒤
-          뽑으면 더 좋은 확률로 뽑을 수 있어요.
+          {t.rich("oddsNote", { b: (c) => <span className="font-bold">{c}</span> })}
         </p>
       </section>
 
       <section className="mt-8">
-        <TermLabel>booth --location</TermLabel>
-        <h2 className="mb-3 mt-1 text-lg font-extrabold">부스로 오세요</h2>
+        <TermLabel>{t("boothLabel")}</TermLabel>
+        <h2 className="mb-3 mt-1 text-lg font-extrabold">{t("boothTitle")}</h2>
         <Card className="grid gap-3">
           <p className="flex items-center gap-2 font-bold">
             <MapPin className="size-4 text-neon" />
@@ -76,10 +80,10 @@ export default async function TicketPage() {
           </p>
           {booth.map_url && (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={booth.map_url} alt="부스 위치 지도" className="rounded-tile border border-line" />
+            <img src={booth.map_url} alt={t("mapAlt")} className="rounded-tile border border-line" />
           )}
           <p className="text-xs text-dim">
-            {booth.note ?? "뽑기는 부스에서만 진행돼요. 부원에게 코드를 보여주세요."}
+            {booth.note ?? t("boothNote")}
           </p>
         </Card>
       </section>

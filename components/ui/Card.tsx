@@ -4,15 +4,23 @@ export function Card({
   className,
   solid,
   glow,
+  neon,
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & {
   solid?: boolean;
   /** 시안→바이올렛 헤어라인 + 바깥 글로우 (강조 카드) */
   glow?: boolean;
+  /** 파랑→바이올렛 채움 + 발광 테두리 (게임 카드처럼 눈에 띄어야 하는 타일) */
+  neon?: boolean;
 }) {
   return (
     <div
-      className={cn(solid ? "card-solid" : "card", glow && "grad-line glow-iris", "p-5", className)}
+      className={cn(
+        neon ? "card-neon" : solid ? "card-solid" : "card",
+        glow && !neon && "grad-line glow-iris",
+        "p-5",
+        className,
+      )}
       {...props}
     />
   );

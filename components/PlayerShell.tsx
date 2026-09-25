@@ -1,23 +1,26 @@
 import Link from "next/link";
-import { Gamepad2, Ticket, Trophy, UserRound } from "lucide-react";
+import { Gamepad2, Settings, Ticket, Trophy, UserRound } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Logo } from "./brand/Logo";
 import { RankBadge } from "./RankBadge";
 import { ExpBar } from "./ExpBar";
 import { DemoBanner } from "./DemoBanner";
 import { OwlEnergyBar } from "./OwlEnergyBar";
+import { ThemeToggle } from "./ThemeToggle";
 import { cn } from "@/lib/cn";
 import { rankInfo } from "@/lib/rank";
 import type { OwlEnergy, Profile } from "@/lib/types";
 
 const NAV = [
-  { href: "/lobby", label: "로비", icon: Gamepad2 },
-  { href: "/rank", label: "랭킹", icon: Trophy },
-  { href: "/ticket", label: "티켓", icon: Ticket },
-  { href: "/me", label: "내 기록", icon: UserRound },
-];
+  { href: "/lobby", key: "lobby", icon: Gamepad2 },
+  { href: "/rank", key: "rank", icon: Trophy },
+  { href: "/ticket", key: "ticket", icon: Ticket },
+  { href: "/me", key: "me", icon: UserRound },
+  { href: "/settings", key: "settings", icon: Settings },
+] as const;
 
 /** 로비·랭킹·티켓·내기록 공통 셸 (모바일 우선: 하단 탭바) */
-export function PlayerShell({
+export async function PlayerShell({
   profile,
   energy,
   current,
@@ -28,18 +31,26 @@ export function PlayerShell({
   current: string;
   children: React.ReactNode;
 }) {
-  const r = rankInfo(profile.rank_idx);
+  const [r, t, tr, tc] = [
+    rankInfo(profile.rank_idx),
+    await getTranslations("nav"),
+    await getTranslations("ranks"),
+    await getTranslations("common"),
+  ];
   return (
     <div className="mx-auto flex min-h-dvh-safe w-full max-w-2xl flex-col">
       {/* 유리 헤더: 아래쪽에만 시안→바이올렛 헤어라인이 깔린다 */}
       <header className="sticky top-0 z-30 bg-night/60 backdrop-blur-xl backdrop-saturate-150">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
-          <Logo size="sm" href="/lobby" />
+          <Logo size="sm" href="/lobby" compact />
+          <span className="ml-auto">
+            <ThemeToggle />
+          </span>
           <Link href="/me" className="flex items-center gap-2 rounded-2xl px-2 py-1 transition-colors hover:bg-white/5">
             <div className="text-right leading-tight">
               <p className="text-sm font-bold">{profile.name}</p>
-              <p className="num text-[11px]" style={{ color: r.colors[0] }}>
-                {r.name} · Lv {profile.level}
+              <p className="rank-ink num text-[11px]" style={{ color: r.colors[0] }}>
+                {tr(String(profile.rank_idx))} · {tc("level", { level: profile.level })}
               </p>
             </div>
             <RankBadge rankIdx={profile.rank_idx} size="sm" />
@@ -59,8 +70,8 @@ export function PlayerShell({
       {/* 유리 탭바: 선택된 탭만 바이올렛으로 빛나고 위에 그라데이션 헤어라인 */}
       <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-2xl bg-night/70 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150">
         <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-neon/45 to-transparent" />
-        <ul className="grid grid-cols-4">
-          {NAV.map(({ href, label, icon: Icon }) => {
+        <ul className="grid grid-cols-5">
+          {NAV.map(({ href, key, icon: Icon }) => {
             const active = current === href;
             return (
               <li key={href}>
@@ -76,7 +87,7 @@ export function PlayerShell({
                     <span className="grad-fill pointer-events-none absolute left-1/2 top-0 h-0.5 w-10 -translate-x-1/2 rounded-full shadow-[0_0_14px_rgb(167_139_250/0.9)]" />
                   )}
                   <Icon className={cn("relative size-5", active && "drop-shadow-[0_0_10px_rgb(167_139_250/0.9)]")} />
-                  <span className="relative">{label}</span>
+                  <span className="relative">{t(key)}</span>
                 </Link>
               </li>
             );

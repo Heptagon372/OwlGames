@@ -26,9 +26,19 @@ HUD와 결과 화면에 `STAGE n/15`와 **전체 등수 변동**(`14위 → 11�
 ## 스택
 
 - **Next.js 15 (App Router) + TypeScript + Tailwind CSS v4**
+- **next-intl** — 한국어/English 전환 (URL은 그대로, 쿠키로 고름)
 - **Supabase** — Auth / Postgres / Realtime. 점수·포인트·레벨·티켓·추첨은 전부 `security definer` RPC에서 처리
 - 게임은 **Canvas 2D + requestAnimationFrame** 직접 구현 (게임 엔진 라이브러리 없음)
 - 폰트: Pretendard(본문) · JetBrains Mono(숫자·코드)
+
+## 설정 (`/settings`)
+
+로그인 없이도 열립니다. 바꾼 값은 **그 기기에만** 저장되고 점수·랭크에는 영향이 없어요.
+
+- 🌗 **테마** — 다크/라이트. 스위치를 누르면 해가 호를 그리며 뜨고 집니다
+- 🔎 **화면 크기** — 90 / 100 / 112 / 125% (글자와 버튼이 같이 커져요)
+- 🔊 **소리** — 효과음 on/off + 음량 (오디오 파일 없이 WebAudio로 합성합니다)
+- 🌐 **언어** — 한국어 / English (플레이어가 보는 화면 전부. 관리자·부스 화면은 한국어)
 
 ## 빠르게 실행
 

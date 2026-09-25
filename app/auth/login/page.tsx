@@ -1,29 +1,34 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { LoginForm } from "./LoginForm";
 import { Logo } from "@/components/brand/Logo";
 import { DemoBanner } from "@/components/DemoBanner";
 
-export const metadata: Metadata = { title: "로그인" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("auth");
+  return { title: t("login") };
+}
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const t = await getTranslations("auth");
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-16">
       <DemoBanner />
       <header className="py-5">
         <Logo size="sm" />
       </header>
-      <h1 className="mb-1 mt-4 text-2xl font-black">로그인</h1>
-      <p className="mb-6 text-sm text-mute">학번과 비밀번호로 들어와요.</p>
+      <h1 className="display mb-1 mt-4 text-4xl">{t("login")}</h1>
+      <p className="mb-6 text-sm text-mute">{t("loginHint")}</p>
       <LoginForm />
       <p className="mt-6 text-center text-sm text-mute">
-        아직 계정이 없나요?{" "}
+        {t("noAccount")}{" "}
         <Link href="/auth/signup" className="font-bold text-aqua hover:underline">
-          회원가입
+          {t("signup")}
         </Link>
       </p>
       <p className="mt-2 text-center text-xs text-dim">
-        비밀번호를 잊었다면 S.OWL 부스로 문의해주세요.
+        {t("forgot")}
       </p>
     </div>
   );

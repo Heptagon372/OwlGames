@@ -8,7 +8,7 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 
 ## 스택 / 실행
 
-- Next.js 15 App Router + TypeScript + Tailwind CSS v4 + Supabase(Auth/Postgres/Realtime)
+- Next.js 15 App Router + TypeScript + Tailwind CSS v4 + Supabase(Auth/Postgres/Realtime) + next-intl(ko/en)
 - `npm run dev` · `npm run lint` · `npm run typecheck` · `npm test` · `npm run build`
 - `.env.local`이 없으면 **데모 모드**(`lib/env.ts`의 `isDemo`)로 동작한다. 새 화면을 만들 때도
   Supabase 없이 렌더되게 유지할 것 — 조회는 `lib/queries.ts`(서버)·`lib/client-queries.ts`(클라이언트)에
@@ -40,6 +40,10 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
   HUD(DOM, `hud/`)를 분리해 두었고, 같은 물리 함수를 청크 검증기(`chunks/verify.ts`)와 봇(`engine/bot.ts`)이 공유한다.
   레벨을 추가하면 `npm run verify:chunks`가 S·M·L 모두에게 통과 경로가 있는지 확인한다.
 - 모바일 우선. 버튼 최소 터치 영역 44px(`components/ui/Button.tsx`의 size 토큰이 보장).
+- **플레이어가 보는 문구는 코드에 직접 쓰지 말고 `messages/ko.json`·`messages/en.json`에 넣는다**
+  (서버는 `getTranslations`, 클라이언트는 `useTranslations`). 관리자·부스·전광판은 한국어 그대로 둔다.
+- 화면 크기(`--ui-scale`)·소리·테마는 `/settings`에서 바꾸고 기기에만 저장된다 (`lib/prefs.ts`·`lib/theme.ts`).
+  효과음은 파일 없이 WebAudio로 합성한다 (`lib/sound.ts`) — 새 소리를 넣으려면 `PATTERNS`에 음만 적으면 된다.
 - 플랫폼 UI는 이미지 에셋 없이 SVG·도형으로 그린다 (`components/brand/OwlMark.tsx`, `RankBadge.tsx`, `GachaMachine.tsx`).
 - **아울러닝만 외부 CC0 에셋을 쓴다** — `games/flight/engine/assets.ts`가 `public/assets/`의 Kenney 텍스처를
   로드해 틴팅/패턴으로 캔버스에 얹는다. 로딩 전에는 항상 도형 폴백으로 그려야 한다(에셋 없이도 게임이 돈다).
@@ -49,15 +53,19 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 
 - **리퀴드 글래스**다 (DECISIONS §5-10). 어두운 네이비 위에 반투명 유리판을 띄우고, 테두리는 1px
   시안→바이올렛→마젠타 헤어라인, 강조는 바깥 글로우로 준다.
+- **다크/라이트는 `<html data-theme>` 하나로 갈린다** (§5-11). `@theme` 값이 다크 기본값이고
+  `:root[data-theme="light"]`가 **같은 토큰의 값만** 덮어쓴다 — 화면 코드는 한 벌이면 된다.
+  색이 아닌 표면 값(유리·배경·그레인)은 `--surface-*`/`--sky-*`/`--grain-*`를 쓴다.
 - 토큰은 `app/globals.css`의 `@theme`: `night`(배경 #070b18) · `panel`(#101832) · **`neon`(바이올렛 #a78bfa, 주 강조색)** ·
   `aqua`(#22d3ee) · `magenta`(#e879f9) · **`amber`(#ffb020 — 부엉이·아울 에너지·티켓 전용)** ·
   `alert` · `ok` · `ink` / `mute` / `dim`, 반경 `rounded-card`(22px) · `rounded-tile`(16px).
-- 유틸: `.card`·`.glass`(유리판) / `.card-solid`(불투명, 모달) / `.grad-line`(그라데이션 헤어라인) /
-  `.glow-iris`·`.glow-aqua`(바깥 글로우) / `.grad-text`·`.grad-fill`(그라데이션 글자·채움) /
-  `.num`(JetBrains Mono + tabular-nums) · `.text-glow` · `.grid-bg` · `.hex`.
+- 유틸: `.card`·`.glass`(유리판) / `.card-neon`(발광 타일 — 게임 카드처럼 **눈이 먼저 가야 하는 곳만**) /
+  `.card-solid`(불투명, 모달) / `.grad-line`(그라데이션 헤어라인) / `.glow-iris`·`.glow-aqua`(바깥 글로우) /
+  `.grad-text`·`.grad-fill`(그라데이션 글자·채움) / `.display`(큰 제목) / `.input-glass`(입력칸) /
+  `.num`(JetBrains Mono + tabular-nums) · `.text-glow` · `.hex`.
 - 버튼은 `primary`=`grad-fill`+글로우, `outline`=`grad-line`+유리. 강조 카드는 `<Card glow>`.
-- 배경은 `body`에 깔리는 `.night-sky`(색 블룸 + 옅은 격자 + 느린 광선) + `.scanlines`(필름 그레인).
-  페이지에서 따로 배경을 칠하지 말 것.
+- 배경은 `body`에 깔리는 `.night-sky`(성운 블룸 + **별밭** + 대각선 광선) + `.sky-day`(라이트용 낮 하늘) +
+  `.scanlines`(필름 그레인). 페이지에서 따로 배경을 칠하지 말 것 (§5-12).
 - 폰트: 한글 Pretendard(`next/font/local`, `node_modules/pretendard`), 숫자·코드 JetBrains Mono(`next/font/google`).
   **canvas에서는 CSS 변수를 못 쓰므로 `games/core/canvas.ts`의 `font(weight, size)`를 사용한다.**
 - 랭크 뱃지는 17종 모두 `lib/rank.ts`의 `RANKS` 색/효과 테이블에서 나온다 (신화=무지개, 초월자=발광, 챌린저=앰버 발광+파티클).
@@ -83,6 +91,10 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 아울 에너지(스태미나) | `app_config.owl_energy` (DB) · 표시 기본값은 `lib/config.ts` · 게임 내 드롭은 각 게임 `config.ts`의 `CFG.owlEnergy` (서버 조건과 같은 값이어야 한다) |
 | 실시간 등수·변동 표시 | `components/RankDelta.tsx` · `components/LiveRefresh.tsx` · `games/core/useGameSession.ts`의 `position` |
 | 플랫폼 색·유리 질감 | `app/globals.css`의 `@theme` + `.card`/`.grad-line` — 캔버스 쪽 복제본은 `games/core/canvas.ts`의 `COLORS`, 게임 테마는 `games/*/theme.ts` |
+| 라이트 테마 색 | `app/globals.css`의 `:root[data-theme="light"]` 한 블록 |
+| 화면 문구(한/영) | `messages/ko.json` · `messages/en.json` (두 파일의 키가 **같아야** 한다) |
+| 설정 항목 추가 | `components/SettingsScreen.tsx` + 저장은 `lib/prefs.ts`(기기) / `lib/locale.ts`(쿠키) |
+| 효과음 | `lib/sound.ts`의 `PATTERNS` (파일 없이 WebAudio 합성) |
 | 관리자 화면 | `components/admin/AdminPanel.tsx` (대시보드·승인·유저·재고·설정·로그) |
 | 운영 값을 화면에서 바꾸기 | `admin_set_config` 화이트리스트(`supabase/migrations/20260927000100_admin_system.sql`) + `lib/rpc.ts`의 `setConfigValue` |
 | 관리자 대시보드 집계 | `admin_stats()` RPC — 항목을 늘리면 `lib/types.ts`의 `AdminStats`와 데모값도 같이 고친다 |

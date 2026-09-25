@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Minus, Plus, RefreshCw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
 import { Card, TermLabel } from "@/components/ui/Card";
 import { formatCountdown } from "@/lib/format";
@@ -14,6 +15,7 @@ type Props = { unused: number; initialCode: RedeemCodeRow | null; ttlMin: number
 
 /** 코드 발급 + QR (§8.1). 만료되면 티켓은 서버에서 자동으로 미사용 상태로 돌아온다 */
 export function TicketIssuer({ unused, initialCode, ttlMin }: Props) {
+  const t = useTranslations("issuer");
   const router = useRouter();
   const [count, setCount] = useState(Math.max(1, Math.min(unused, 1)));
   const [code, setCode] = useState<IssuedCode | null>(
@@ -51,7 +53,7 @@ export function TicketIssuer({ unused, initialCode, ttlMin }: Props) {
       setCode(await issueRedeemCode(count));
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "코드 발급에 실패했어요");
+      setError(e instanceof Error ? e.message : t("failed"));
     } finally {
       setPending(false);
     }
@@ -60,7 +62,7 @@ export function TicketIssuer({ unused, initialCode, ttlMin }: Props) {
   if (unused === 0 && !code) {
     return (
       <Card className="mt-4 text-center text-sm text-mute">
-        아직 사용할 티켓이 없어요. 게임을 플레이해서 <span className="font-bold text-ink">랭크를 올리면</span> 티켓을 받아요.
+        {t.rich("noTicket", { b: (c) => <span className="font-bold text-ink">{c}</span> })}
       </Card>
     );
   }
@@ -69,19 +71,23 @@ export function TicketIssuer({ unused, initialCode, ttlMin }: Props) {
     return (
       <Card className="mt-4 text-center">
         <TermLabel className="text-left">redeem --code</TermLabel>
-        <p className="mt-3 text-sm text-mute">🦉 S.OWL 부스로 와서 이 코드를 보여주세요</p>
+        <p className="mt-3 text-sm text-mute">{t("showCode")}</p>
         <p className="num mt-3 text-[40px] font-black tracking-[0.25em] text-neon text-glow">{code.code}</p>
         <div className="mx-auto mt-4 w-fit rounded-2xl bg-white p-3">
           <QRCodeSVG value={code.code} size={148} level="M" marginSize={0} />
         </div>
         <p className="mt-4 text-sm">
-          뽑기 <span className="num font-bold text-ink">{code.ticket_count}회</span> ·{" "}
-          <span className="num font-bold text-aqua">{formatCountdown(remainSec)}</span> 후 만료
+          {t.rich("draws", {
+            count: code.ticket_count,
+            time: formatCountdown(remainSec),
+            n: (c) => <span className="num font-bold text-ink">{c}</span>,
+            t: (c) => <span className="num font-bold text-aqua">{c}</span>,
+          })}
         </p>
-        <p className="mt-1 text-xs text-dim">만료되면 티켓은 자동으로 돌아오니 다시 발급받으면 돼요.</p>
+        <p className="mt-1 text-xs text-dim">{t("expiryNote")}</p>
         <Button variant="outline" size="sm" className="mt-4" onClick={issue} disabled={pending}>
           <RefreshCw className="size-4" />
-          다시 발급 (이전 코드 무효)
+          {t("reissue")}
         </Button>
         {error && <p className="mt-2 text-sm text-alert">{error}</p>}
       </Card>
@@ -91,13 +97,13 @@ export function TicketIssuer({ unused, initialCode, ttlMin }: Props) {
   return (
     <Card className="mt-4">
       <TermLabel>redeem --issue</TermLabel>
-      <p className="mb-4 mt-2 text-sm text-mute">부스에서 사용할 코드를 발급해요. 몇 회 뽑을까요?</p>
+      <p className="mb-4 mt-2 text-sm text-mute">{t("prompt")}</p>
       <div className="flex items-center justify-center gap-5">
         <Button
           variant="outline"
           size="sm"
           className="size-12 rounded-full p-0"
-          aria-label="줄이기"
+          aria-label={t("minus")}
           onClick={() => setCount((c) => Math.max(1, c - 1))}
           disabled={count <= 1}
         >
@@ -108,17 +114,17 @@ export function TicketIssuer({ unused, initialCode, ttlMin }: Props) {
           variant="outline"
           size="sm"
           className="size-12 rounded-full p-0"
-          aria-label="늘리기"
+          aria-label={t("plus")}
           onClick={() => setCount((c) => Math.min(unused, c + 1))}
           disabled={count >= unused}
         >
           <Plus className="size-5" />
         </Button>
       </div>
-      <p className="mt-2 text-center text-xs text-dim">보유 {unused}장 중 선택</p>
+      <p className="mt-2 text-center text-xs text-dim">{t("held", { count: unused })}</p>
       {error && <p className="mt-3 text-center text-sm text-alert">{error}</p>}
       <Button className="mt-5" size="lg" block onClick={issue} disabled={pending || unused === 0}>
-        {pending ? "발급 중..." : `뽑기 코드 발급 (${ttlMin}분 유효)`}
+        {pending ? t("pending") : t("issue", { min: ttlMin })}
       </Button>
     </Card>
   );

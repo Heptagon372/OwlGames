@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import { formatNumber } from "@/lib/format";
 import { DEFAULT_CURVE, levelProgress, type LevelCurve } from "@/lib/rank";
@@ -19,6 +20,7 @@ type Props = {
 
 /** 경험치 바 — 결과 모달에서는 레벨을 넘길 때마다 바가 가득 찼다가 다시 시작한다 */
 export function ExpBar({ points, fromPoints, curve = DEFAULT_CURVE, durationMs = 1400, onLevelUp, className, compact }: Props) {
+  const t = useTranslations("expBar");
   const [shown, setShown] = useState(fromPoints ?? points);
   const lastLevel = useRef(levelProgress(fromPoints ?? points, curve).level);
   const onLevelUpRef = useRef(onLevelUp);
@@ -58,7 +60,7 @@ export function ExpBar({ points, fromPoints, curve = DEFAULT_CURVE, durationMs =
             Lv <span className="num text-sm">{p.level}</span>
           </span>
           <span className="num text-mute">
-            {maxed ? "MAX" : `${formatNumber(p.into)} / ${formatNumber(p.need)} P`}
+            {maxed ? t("max") : `${formatNumber(p.into)} / ${formatNumber(p.need)} P`}
           </span>
         </div>
       )}

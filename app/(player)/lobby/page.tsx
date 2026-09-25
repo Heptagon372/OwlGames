@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRight, Sparkles, Ticket as TicketIcon, TriangleAlert } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { LiveRefresh } from "@/components/LiveRefresh";
 import { OwlEnergyBar } from "@/components/OwlEnergyBar";
 import { RankDelta } from "@/components/RankDelta";
@@ -14,7 +15,10 @@ import { GAMES } from "@/lib/games";
 import { getIsOpen, getLeaderboard, getMyPosition, getMyProfile, getOwlEnergy, getMyTickets } from "@/lib/queries";
 import { rankInfo, rankLevelRange } from "@/lib/rank";
 
-export const metadata: Metadata = { title: "로비" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("nav");
+  return { title: t("lobby") };
+}
 
 /** 게임 카드마다 다른 색이 유리 너머로 번진다 (accent → blur 색) */
 const BLOOM: Record<string, string> = {
@@ -31,13 +35,18 @@ export default async function LobbyPage({
   const profile = await getMyProfile();
   if (!profile) redirect("/auth/login");
 
-  const [{ closed }, open, tickets, top, myPos, energy] = await Promise.all([
+  const [{ closed }, open, tickets, top, myPos, energy, t, tc, tg, te, tr] = await Promise.all([
     searchParams,
     getIsOpen(),
     getMyTickets(),
     getLeaderboard(10),
     getMyPosition(profile.id),
     getOwlEnergy(),
+    getTranslations("lobby"),
+    getTranslations("common"),
+    getTranslations("games"),
+    getTranslations("energy"),
+    getTranslations("ranks"),
   ]);
 
   const unused = tickets.filter((t) => t.status === "unused").length;
@@ -52,12 +61,12 @@ export default async function LobbyPage({
       {(!open || closed) && (
         <div className="mb-4 flex items-center gap-2 rounded-tile border border-alert/40 bg-alert/10 px-4 py-3 text-sm text-alert backdrop-blur-sm">
           <TriangleAlert className="size-4 shrink-0" />
-          지금은 운영시간이 아니라 게임을 시작할 수 없어요.
+          {tc("closedNow")}
         </div>
       )}
 
       {/* 내 랭크 — 유리판 위로 랭크 색이 번진다 */}
-      <Card glow className="relative overflow-hidden">
+      <Card neon className="relative overflow-hidden">
         <div
           className="pointer-events-none absolute -right-14 -top-20 size-56 rounded-full blur-3xl"
           style={{ background: r.colors[0], opacity: 0.2 }}
@@ -65,14 +74,14 @@ export default async function LobbyPage({
         <div className="relative flex items-center gap-4">
           <RankBadge rankIdx={profile.rank_idx} size="lg" />
           <div className="min-w-0 flex-1">
-            <p className="text-xl font-black tracking-tight" style={{ color: r.colors[0] }}>
-              {r.name}
+            <p className="rank-ink display text-2xl" style={{ color: r.colors[0] }}>
+              {tr(String(profile.rank_idx))}
             </p>
             <p className="num mt-0.5 text-xs text-mute">
-              {rankLevelRange(profile.rank_idx)} · 티어 T{r.tier}
+              {t("tierRange", { range: rankLevelRange(profile.rank_idx), tier: r.tier })}
             </p>
             <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-              <span className="text-mute">누적</span>
+              <span className="text-mute">{t("total")}</span>
               <span className="num font-black text-ink">{formatNumber(profile.total_points)}P</span>
               {myPos && <RankDelta position={myPos.position} />}
             </p>
@@ -90,14 +99,14 @@ export default async function LobbyPage({
           <TicketIcon className="relative size-6 shrink-0 text-amber" />
           <div className="relative min-w-0 flex-1">
             <p className="font-extrabold text-amber-soft">
-              {unused > 0 ? `사용 가능한 뽑기 티켓 ${unused}장` : "아직 뽑기 티켓이 없어요"}
+              {unused > 0 ? t("ticketHave", { count: unused }) : t("ticketNone")}
             </p>
             <p className="truncate text-xs text-mute">
               {unused > 0
-                ? "부스에서 쓸 코드를 발급받으세요"
+                ? t("ticketHintHave")
                 : reserved > 0
-                  ? `발급된 코드에 ${reserved}장 예약중`
-                  : "랭크가 오를 때마다 1장씩 받아요"}
+                  ? t("ticketHintReserved", { count: reserved })
+                  : t("ticketHintNone")}
             </p>
           </div>
           <ChevronRight className="relative size-5 shrink-0 text-dim transition-transform group-hover:translate-x-0.5" />
@@ -106,27 +115,27 @@ export default async function LobbyPage({
 
       {/* 게임 */}
       <section className="mt-8">
-        <TermLabel>games --play</TermLabel>
-        <h2 className="mb-3 mt-1 text-lg font-extrabold tracking-tight">뭐 하고 놀까요?</h2>
+        <TermLabel>{t("gamesLabel")}</TermLabel>
+        <h2 className="display mb-4 mt-1 text-[26px]">{t("gamesTitle")}</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {Object.values(GAMES).map((g) => (
-            <Card key={g.id} className="relative flex flex-col overflow-hidden p-4">
+            <Card key={g.id} neon className="relative flex flex-col overflow-hidden p-4">
               <div
                 className={`pointer-events-none absolute -right-10 -top-12 size-40 rounded-full blur-3xl ${BLOOM[g.accent]}`}
               />
               <div className="relative flex items-start gap-3.5">
-                <div className="grad-line grid size-14 shrink-0 place-items-center rounded-tile bg-white/5 text-3xl backdrop-blur-sm">
+                <div className="grid size-14 shrink-0 place-items-center rounded-tile border border-white/25 bg-white/10 text-3xl shadow-[inset_0_1px_0_rgb(255_255_255/0.3)] backdrop-blur-sm">
                   {g.emoji}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-base font-extrabold tracking-tight">{g.title}</p>
-                  <p className="mt-0.5 text-[13px] leading-snug text-mute">{g.tagline}</p>
+                  <p className="display text-lg">{tg(`${g.id}.title`)}</p>
+                  <p className="mt-0.5 text-[13px] leading-snug text-mute">{tg(`${g.id}.tagline`)}</p>
                 </div>
               </div>
 
               <div className="relative mt-3 flex flex-wrap items-center gap-1.5">
-                <Chip className="num text-[10px]">{g.durationLabel}</Chip>
-                <Chip className="num text-[10px]">30~300P</Chip>
+                <Chip className="num text-[10px]">{tg(`${g.id}.duration`)}</Chip>
+                <Chip className="num text-[10px]">{t("pointRange")}</Chip>
                 <Chip tone="amber" className="num text-[10px]">
                   🦉 {energy.cost}
                 </Chip>
@@ -135,15 +144,15 @@ export default async function LobbyPage({
               <div className="relative mt-3 flex-1 content-end">
                 {!open ? (
                   <div className="grid min-h-12 place-items-center rounded-2xl border border-line bg-white/5 text-sm text-dim">
-                    운영시간에 열려요
+                    {t("closedGame")}
                   </div>
                 ) : !playable ? (
                   <div className="grid min-h-12 place-items-center rounded-2xl border border-alert/40 bg-alert/10 text-sm text-alert">
-                    🦉 아울 에너지가 부족해요
+                    {te("low")}
                   </div>
                 ) : (
-                  <ButtonLink href={`/game/${g.id}`} block variant={g.accent === "cyan" ? "outline" : "primary"}>
-                    플레이
+                  <ButtonLink href={`/game/${g.id}`} block>
+                    {tc("play")}
                   </ButtonLink>
                 )}
               </div>
@@ -155,16 +164,16 @@ export default async function LobbyPage({
       {/* 미니 랭킹 */}
       <section className="mt-8">
         <SectionTitle
-          label="ranking --top 10"
+          label={t("rankLabel")}
           title={
             <span className="flex items-center gap-2">
-              실시간 랭킹
+              {t("rankTitle")}
               <Sparkles className="size-4 text-neon" />
             </span>
           }
           action={
             <Link href="/rank" className="flex items-center gap-1 text-sm font-bold text-aqua hover:underline">
-              전체 보기 <ChevronRight className="size-4" />
+              {tc("seeAll")} <ChevronRight className="size-4" />
             </Link>
           }
         />
@@ -188,9 +197,13 @@ export default async function LobbyPage({
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold">
                     {row.masked_name}
-                    {me && <Chip tone="neon" className="ml-2">나</Chip>}
+                    {me && (
+                      <Chip tone="neon" className="ml-2">
+                        {tc("me")}
+                      </Chip>
+                    )}
                   </p>
-                  <p className="num text-[11px] text-mute">Lv {row.level}</p>
+                  <p className="num text-[11px] text-mute">{tc("level", { level: row.level })}</p>
                 </div>
                 <span className="num shrink-0 text-sm font-bold text-ink">
                   {formatNumber(row.total_points)}P
@@ -198,7 +211,7 @@ export default async function LobbyPage({
               </div>
             );
           })}
-          {top.length === 0 && <p className="px-4 py-8 text-center text-sm text-dim">아직 기록이 없어요</p>}
+          {top.length === 0 && <p className="px-4 py-8 text-center text-sm text-dim">{t("empty")}</p>}
         </Card>
       </section>
     </PlayerShell>

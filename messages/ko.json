@@ -1,0 +1,402 @@
+{
+  "common": {
+    "play": "플레이",
+    "retry": "다시하기",
+    "close": "닫기",
+    "back": "뒤로",
+    "toLobby": "로비로",
+    "seeAll": "전체 보기",
+    "me": "나",
+    "level": "Lv {level}",
+    "points": "{points}P",
+    "settings": "설정",
+    "loading": "loading...",
+    "closedNow": "지금은 운영시간이 아니라 게임을 시작할 수 없어요.",
+    "demoNote": "DEMO · 점수는 저장되지 않아요",
+    "scoreUnit": "점",
+    "appName": "아울게임즈 OWL GAMES",
+    "appShort": "아울게임즈",
+    "appDesc": "S.OWL 부스 미니게임 — 플레이하고 랭크를 올려 부스에서 뽑기에 도전하세요."
+  },
+  "nav": {
+    "lobby": "로비",
+    "rank": "랭킹",
+    "ticket": "티켓",
+    "me": "내 기록",
+    "settings": "설정"
+  },
+  "energy": {
+    "title": "아울 에너지",
+    "full": "가득 참",
+    "next": "다음 충전 {time}",
+    "note": "게임 한 판에 {cost}개 · {cap}개까지 자동 충전 · 부스 미션으로도 받을 수 있어요",
+    "low": "🦉 아울 에너지가 부족해요"
+  },
+  "settings": {
+    "title": "설정",
+    "subtitle": "화면·소리·언어를 이 기기에 맞게 바꿔요.",
+    "back": "뒤로",
+    "storedOnDevice": "설정은 이 기기에만 저장돼요. 점수·랭크에는 영향이 없어요.",
+    "display": {
+      "title": "화면",
+      "theme": "테마",
+      "themeHint": "밤에는 다크, 밝은 곳에서는 라이트",
+      "size": "화면 크기",
+      "sizeHint": "글자와 버튼이 같이 커져요",
+      "sizes": {
+        "small": "작게",
+        "normal": "기본",
+        "large": "크게",
+        "xlarge": "아주 크게"
+      }
+    },
+    "sound": {
+      "title": "소리",
+      "master": "효과음",
+      "masterHint": "버튼·결과 화면의 짧은 소리",
+      "on": "켜짐",
+      "off": "꺼짐",
+      "volume": "음량",
+      "previewOk": "성공음",
+      "previewCoin": "획득음",
+      "previewLevel": "레벨업"
+    },
+    "language": {
+      "title": "언어",
+      "hint": "화면 글자가 바뀌어요. 게임 안내와 부스 안내도 같이 바뀝니다."
+    }
+  },
+  "landing": {
+    "tagline": "밤에 깨어있는 부엉이처럼.",
+    "tagline2": "게임하고 랭크를 올려 <b>부스에서 뽑기</b>에 도전하세요.",
+    "goLobby": "로비로 가기",
+    "start": "시작하기",
+    "haveAccount": "이미 계정이 있어요",
+    "closed": "지금은 운영시간이 아니에요 — {start}~{end}에 만나요",
+    "gamesLabel": "games --list",
+    "gamesTitle": "미니게임 6종",
+    "howLabel": "how-it-works",
+    "howTitle": "이렇게 진행돼요",
+    "steps": {
+      "play": {
+        "title": "게임 플레이",
+        "desc": "미니게임 6종으로 포인트 획득"
+      },
+      "rank": {
+        "title": "레벨 · 랭크 상승",
+        "desc": "나무부터 챌린저까지 17단계"
+      },
+      "ticket": {
+        "title": "뽑기 티켓 획득",
+        "desc": "랭크가 오를 때마다 1장"
+      },
+      "booth": {
+        "title": "S.OWL 부스 방문",
+        "desc": "부스에서 코드 보여주고 뽑기"
+      }
+    },
+    "offlineOnly": "뽑기는 온라인에서 할 수 없어요. 티켓 코드를 받아 S.OWL 부스로 오세요 🦉",
+    "ranksLabel": "ranks --all 17",
+    "ranksTitle": "17단계 랭크",
+    "prizesLabel": "prizes --stock",
+    "prizesTitle": "부스 상품",
+    "place": "{place}등",
+    "stock": "남은 수량 {stock}",
+    "soldOut": "소진",
+    "footer": "S.OWL 동아리 부스 행사 · 운영 {start}~{end} (KST)",
+    "settingsAria": "설정"
+  },
+  "lobby": {
+    "tierRange": "{range} · 티어 T{tier}",
+    "total": "누적",
+    "ticketHave": "사용 가능한 뽑기 티켓 {count}장",
+    "ticketNone": "아직 뽑기 티켓이 없어요",
+    "ticketHintHave": "부스에서 쓸 코드를 발급받으세요",
+    "ticketHintReserved": "발급된 코드에 {count}장 예약중",
+    "ticketHintNone": "랭크가 오를 때마다 1장씩 받아요",
+    "gamesLabel": "games --play",
+    "gamesTitle": "뭐 하고 놀까요?",
+    "pointRange": "30~300P",
+    "closedGame": "운영시간에 열려요",
+    "rankLabel": "ranking --top 10",
+    "rankTitle": "실시간 랭킹",
+    "empty": "아직 기록이 없어요"
+  },
+  "gameShell": {
+    "duration": "{duration} · 한 판 30~300P",
+    "start": "시작하기",
+    "starting": "세션 준비 중...",
+    "submitting": "SUBMITTING...",
+    "errorRetry": "다시 시도"
+  },
+  "result": {
+    "title": "{title} 결과",
+    "rejectedTitle": "기록이 인정되지 않았어요",
+    "rejectedDefault": "플레이 시간이 정상 범위를 벗어났어요.",
+    "rejectedNote": "포인트는 지급되지 않았어요. 다시 한 판 해볼까요?",
+    "raw": "원점수",
+    "gained": "획득 포인트",
+    "position": "전체 등수",
+    "positionValue": "{n}위",
+    "totalPoints": "누적 {points}P",
+    "energyGained": "🦉 아울 에너지 +{count}",
+    "energyHave": "보유 {count}",
+    "ticketGained": "🎟️ 뽑기 티켓 +{count}",
+    "stats": {
+      "distance": "거리",
+      "comboMax": "최고 콤보",
+      "nearMiss": "NEAR MISS",
+      "items": "아이템",
+      "phase": "도달 페이즈",
+      "special": "특수 구간",
+      "specialValue": "{count}회 완주",
+      "solved": "해결",
+      "solvedValue": "{count}문제",
+      "optimal": "최적화",
+      "times": "{count}회",
+      "tierMax": "최고 티어",
+      "hints": "힌트",
+      "avgSolve": "평균 풀이",
+      "seconds": "{sec}초",
+      "stage": "스테이지",
+      "stageValue": "STAGE {stage}",
+      "stageCleared": "STAGE {stage} 클리어",
+      "survived": "생존",
+      "kills": "처치",
+      "killsWithObstacles": "{kills} (장애물 {obstacles})",
+      "graze": "GRAZE",
+      "livesLeft": "남은 생명",
+      "none": "없음",
+      "damage": "피격",
+      "noDamage": "무피격 ✨",
+      "bossKilled": "보스",
+      "bossKilledValue": "격파 ✅",
+      "levelReached": "레벨",
+      "evolutions": "진화",
+      "count": "{count}개",
+      "revives": "부활",
+      "destroyed": "파괴",
+      "missed": "놓침",
+      "correct": "정답",
+      "wrong": "오답",
+      "maxStreak": "최고 연속"
+    }
+  },
+  "games": {
+    "typer": {
+      "title": "나이트 타이퍼",
+      "tagline": "떨어지는 명령어를 쳐서 방화벽을 뚫어라",
+      "duration": "60초",
+      "rules": [
+        "떨어지는 명령어를 정확히 입력하고 Enter",
+        "바닥에 닿으면 방화벽 게이지 +20%, 100%면 종료",
+        "연속 성공 시 콤보 ×1.2 → ×1.5 → ×2.0"
+      ]
+    },
+    "phish": {
+      "title": "피싱 헌터",
+      "tagline": "진짜일까 피싱일까? 보안관 부엉이의 판별",
+      "duration": "90초",
+      "rules": [
+        "← 왼쪽 스와이프 = 🚨 피싱",
+        "→ 오른쪽 스와이프 = ✅ 정상",
+        "연속 정답 보너스, 오답은 −5초",
+        "카드마다 제한시간 — 단계가 오를수록 짧아져요"
+      ]
+    },
+    "flight": {
+      "title": "아울러닝",
+      "tagline": "색을 맞추고, 몸집을 고르고, 날갯짓을 아끼며 더 멀리",
+      "duration": "최대 180초",
+      "rules": [
+        "꾹 누르면 상승 · 떼면 활공 (에너지는 날갯짓할 때만 줄어요)",
+        "색 게이트는 같은 색·도형으로 통과 — 틀려도 죽지 않고 에너지만 깎여요",
+        "🪶 에너지 · 🟢🔵 크기 · 🛡️🌈 버프를 챙기며 더 멀리"
+      ]
+    },
+    "logic": {
+      "title": "아울 로직",
+      "tagline": "게이트를 끼워 잠긴 인증 회로를 복구하라",
+      "duration": "70초부터 (풀면 늘어나요)",
+      "rules": [
+        "부품을 탭 → 빈 슬롯을 탭하면 회로가 바로 돌아가요",
+        "목표 진리표가 전부 맞으면 자동으로 클리어",
+        "최소 부품으로 풀면 최적화 보너스, 5연속이면 OVERDRIVE"
+      ]
+    },
+    "space": {
+      "title": "아울스페이스",
+      "tagline": "맞으면 끝, 스치면 점수",
+      "duration": "최대 180초",
+      "rules": [
+        "드래그로 회피 — 발사는 자동 (세로 화면)",
+        "적 탄을 스치면 GRAZE 점수 + 칩이 쌓여요",
+        "생명 3개. 위험하면 💣 봄으로 전탄 소거"
+      ]
+    },
+    "survive": {
+      "title": "아울 서바이버즈",
+      "tagline": "살아남아 보스를 잡아라",
+      "duration": "최대 180초",
+      "rules": [
+        "이동만 하세요 — 공격은 전부 자동 (가로 화면)",
+        "레벨업마다 스킬 카드 3장 중 1장 선택",
+        "보스를 잡아야 다음 스테이지가 열려요"
+      ]
+    }
+  },
+  "ranks": {
+    "0": "나무",
+    "1": "돌",
+    "2": "아이언",
+    "3": "브론즈",
+    "4": "실버",
+    "5": "골드",
+    "6": "플래티넘",
+    "7": "에메랄드",
+    "8": "다이아몬드",
+    "9": "루비",
+    "10": "사파이어",
+    "11": "흑요석",
+    "12": "마스터",
+    "13": "그랜드 마스터",
+    "14": "초월자",
+    "15": "신화",
+    "16": "챌린저"
+  },
+  "theme": {
+    "dark": "다크",
+    "light": "라이트",
+    "aria": "화면 테마 바꾸기",
+    "hint": "화면 테마 (다크 / 라이트)"
+  },
+  "open": {
+    "on": "운영중",
+    "off": "운영시간 아님"
+  },
+  "auth": {
+    "signOut": "로그아웃",
+    "login": "로그인",
+    "loginHint": "학번과 비밀번호로 들어와요.",
+    "loginPending": "확인 중...",
+    "noAccount": "아직 계정이 없나요?",
+    "signup": "회원가입",
+    "forgot": "비밀번호를 잊었다면 S.OWL 부스로 문의해주세요.",
+    "signupHint": "학번으로 가입한 뒤, S.OWL 부스에서 학생증 확인을 받으면 바로 플레이할 수 있어요.",
+    "signupPending": "가입 중...",
+    "signupSubmit": "가입하고 인증 대기",
+    "haveAccount": "이미 계정이 있나요?",
+    "name": "이름",
+    "namePlaceholder": "홍길동",
+    "studentId": "학번",
+    "studentIdHint": "숫자 9자리 · 학생증 확인에 사용돼요",
+    "password": "비밀번호",
+    "passwordHint": "6자 이상",
+    "password2": "비밀번호 확인",
+    "errName": "이름을 2~20자로 입력해주세요.",
+    "errStudentId": "학번 형식이 올바르지 않아요. (숫자 9자리)",
+    "errPassword": "비밀번호는 6자 이상이어야 해요.",
+    "errPasswordMatch": "비밀번호가 서로 달라요.",
+    "errServer": "서버 설정이 올바르지 않아요.",
+    "errSignupFailed": "가입에 실패했어요: {reason}",
+    "errSignedUpNoLogin": "가입은 됐지만 로그인에 실패했어요. 로그인 화면에서 다시 시도해주세요.",
+    "errEmpty": "학번과 비밀번호를 입력해주세요.",
+    "errBadLogin": "학번 또는 비밀번호가 올바르지 않아요.",
+    "errDuplicate": "이미 등록된 학번입니다. S.OWL 부스/관리자에게 문의하세요."
+  },
+  "expBar": {
+    "max": "MAX"
+  },
+  "rankDelta": {
+    "same": "변동 없음",
+    "overall": "전체 {position}위"
+  },
+  "levelUp": {
+    "rankUp": "RANK UP",
+    "levelUp": "LEVEL UP",
+    "reached": "Lv {level} 달성",
+    "levelReached": "레벨 <n>{level}</n> 달성!",
+    "ticket": "🎟️ 뽑기 티켓 +{count}",
+    "continue": "화면을 누르면 계속",
+    "continueAria": "계속"
+  },
+  "rank": {
+    "title": "랭킹",
+    "label": "ranking --board {tab}",
+    "autoRefresh": "20초마다 자동 갱신",
+    "tabAll": "누적 포인트",
+    "empty": "아직 기록이 없어요",
+    "maskNote": "이름은 개인정보 보호를 위해 가운데 글자를 가려요."
+  },
+  "ticket": {
+    "title": "뽑기 티켓",
+    "count": "{count}장",
+    "summary": "사용 가능 · 지금까지 {total}장 획득 / {used}장 사용",
+    "oddsLabel": "gacha --odds",
+    "oddsTitle": "뽑기 확률",
+    "oddsNote": "확률은 <b>뽑는 시점의 랭크</b> 기준이에요. 티켓을 모아뒀다가 랭크를 올린 뒤 뽑으면 더 좋은 확률로 뽑을 수 있어요.",
+    "boothLabel": "booth --location",
+    "boothTitle": "부스로 오세요",
+    "mapAlt": "부스 위치 지도",
+    "boothNote": "뽑기는 부스에서만 진행돼요. 부원에게 코드를 보여주세요."
+  },
+  "me": {
+    "title": "내 기록",
+    "statPoints": "누적 포인트",
+    "statPlays": "플레이 수",
+    "statBest": "한 판 최고",
+    "plays": "{count}회",
+    "kiosk": "부스 키오스크",
+    "admin": "관리자",
+    "drawsLabel": "draws --history",
+    "drawsTitle": "뽑기 내역",
+    "drawPlace": "{place}등 · {prize}",
+    "drawMiss": "꽝",
+    "claimed": "수령 완료",
+    "unclaimed": "미수령",
+    "noDraws": "아직 뽑기 내역이 없어요",
+    "playsLabel": "plays --recent 30",
+    "playsTitle": "플레이 기록",
+    "rawScore": "원점수 {score}",
+    "rejected": "기록 미인정",
+    "expired": "만료",
+    "noPlays": "아직 플레이 기록이 없어요"
+  },
+  "pending": {
+    "title": "학번 인증 대기중",
+    "body": "S.OWL 부스에서 <b>학생증</b>을 보여주면 부원이 확인 후 바로 승인해드려요.",
+    "hello": "{name} 님, ",
+    "watching": "승인되면 자동으로 로비로 이동합니다",
+    "boothLabel": "booth --location"
+  },
+  "demo": {
+    "banner": "DEMO MODE · Supabase 미설정 — 가짜 데이터로 돌아가며 저장되지 않아요 (운영시간 제한 없음)"
+  },
+  "browser": {
+    "notice": "브라우저가 오래돼서 화면이 조금 깨져 보일 수 있어요. 크롬·사파리 최신 버전을 권장합니다.",
+    "close": "닫기"
+  },
+  "odds": {
+    "tier": "티어",
+    "place": "{place}등",
+    "mine": "내 티어",
+    "note": "표에 없는 확률은 꽝이에요. 재고가 없는 등수는 추첨에서 제외되고 그 확률은 꽝으로 처리돼요."
+  },
+  "issuer": {
+    "failed": "코드 발급에 실패했어요",
+    "noTicket": "아직 사용할 티켓이 없어요. 게임을 플레이해서 <b>랭크를 올리면</b> 티켓을 받아요.",
+    "showCode": "🦉 S.OWL 부스로 와서 이 코드를 보여주세요",
+    "draws": "뽑기 <n>{count}회</n> · <t>{time}</t> 후 만료",
+    "expiryNote": "만료되면 티켓은 자동으로 돌아오니 다시 발급받으면 돼요.",
+    "reissue": "다시 발급 (이전 코드 무효)",
+    "prompt": "부스에서 사용할 코드를 발급해요. 몇 회 뽑을까요?",
+    "minus": "줄이기",
+    "plus": "늘리기",
+    "held": "보유 {count}장 중 선택",
+    "pending": "발급 중...",
+    "issue": "뽑기 코드 발급 ({min}분 유효)"
+  },
+  "modal": {
+    "close": "닫기"
+  }
+}
