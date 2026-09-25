@@ -70,7 +70,7 @@ export const DEMO_LEADERBOARD: LeaderboardRow[] = (() => {
   return rows.sort((a, b) => b.total_points - a.total_points).map((r, i) => ({ ...r, position: i + 1 }));
 })();
 
-const BEST_BASE: Record<GameId, number> = { typer: 1080, flight: 5200, phish: 2700 };
+const BEST_BASE: Record<GameId, number> = { typer: 1080, flight: 5200, phish: 2700, logic: 4100, survive: 6800 };
 
 export function demoGameBests(game: GameId): GameBestRow[] {
   return NAMES.slice(0, 15).map((n, i) => ({
@@ -85,7 +85,9 @@ export function demoGameBests(game: GameId): GameBestRow[] {
 
 export const DEMO_SESSIONS: GameSessionRow[] = [
   { game: "typer", raw: 812, pts: 233, m: 6 },
+  { game: "survive", raw: 3420, pts: 144, m: 9 },
   { game: "phish", raw: 1830, pts: 213, m: 14 },
+  { game: "logic", raw: 2960, pts: 178, m: 18 },
   { game: "flight", raw: 402, pts: 164, m: 21 },
   { game: "typer", raw: 640, pts: 190, m: 33 },
   { game: "flight", raw: 90, pts: 0, m: 38, rejected: true },

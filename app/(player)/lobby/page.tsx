@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRight, Ticket as TicketIcon, TriangleAlert } from "lucide-react";
+import { LiveRefresh } from "@/components/LiveRefresh";
 import { OwlEnergyBar } from "@/components/OwlEnergyBar";
+import { RankDelta } from "@/components/RankDelta";
 import { PlayerShell } from "@/components/PlayerShell";
 import { RankBadge } from "@/components/RankBadge";
 import { Card, Chip, SectionTitle, TermLabel } from "@/components/ui/Card";
@@ -37,6 +39,8 @@ export default async function LobbyPage({
 
   return (
     <PlayerShell profile={profile} energy={energy} current="/lobby">
+      {/* 남이 올린 점수가 바로 반영되도록 주기적으로 갱신 */}
+      <LiveRefresh intervalMs={30000} />
       {(!open || closed) && (
         <div className="mb-4 flex items-center gap-2 rounded-tile border border-alert/40 bg-alert/10 px-4 py-3 text-sm text-alert">
           <TriangleAlert className="size-4 shrink-0" />
@@ -56,7 +60,7 @@ export default async function LobbyPage({
           </p>
           <p className="mt-2 text-sm">
             누적 <span className="num font-bold text-neon">{formatNumber(profile.total_points)}P</span>
-            {myPos && <span className="ml-2 text-mute">전체 {myPos.position}위</span>}
+            {myPos && <RankDelta position={myPos.position} className="ml-2" />}
           </p>
         </div>
       </Card>
@@ -99,7 +103,7 @@ export default async function LobbyPage({
                   <p className="text-lg font-extrabold">{g.title}</p>
                   <p className="mt-0.5 text-sm text-mute">{g.tagline}</p>
                   <p className="num mt-1.5 text-[11px] text-dim">
-                    {g.id === "flight" ? `최대 ${g.duration}초` : `${g.duration}초`} · 30~300P · 🦉 {energy.cost}
+                    {g.durationLabel} · 30~300P · 🦉 {energy.cost}
                   </p>
                 </div>
               </div>

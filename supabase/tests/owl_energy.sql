@@ -341,7 +341,8 @@ begin
 
   select array_agg(k order by k) into v_keys from jsonb_object_keys(v_r) as k;
   assert v_keys = array['level_after', 'level_before', 'owl_energy', 'owl_energy_gained', 'points',
-                         'rank_after', 'rank_before', 'raw_score', 'status', 'tickets_gained', 'total_points'],
+                         'rank_after', 'rank_before', 'raw_score', 'status', 'tickets_gained', 'total_points',
+                         'unlocked_stage'],
          format('ok 응답 키 구성이 다름: %s', v_r);
 
   update public.game_sessions set submitted_at = now() - interval '1 hour'
@@ -392,7 +393,7 @@ begin
   select array_agg(k order by k) into v_keys from jsonb_object_keys(v_r) as k;
   assert v_keys = array['level_after', 'level_before', 'owl_energy', 'owl_energy_gained', 'points',
                          'rank_after', 'rank_before', 'raw_score', 'reason', 'status', 'tickets_gained',
-                         'total_points'],
+                         'total_points', 'unlocked_stage'],
          format('rejected 응답 키 구성이 다름: %s', v_r);
 
   -- 6.6 non-flight(typer) 는 조건을 다 만족해도 지급되지 않는다
