@@ -77,6 +77,21 @@ export const GAMES: Record<GameId, GameMeta> = {
     scoreUnit: "점",
     accent: "cyan",
   },
+  space: {
+    id: "space",
+    title: "아울스페이스",
+    emoji: "🚀",
+    tagline: "맞으면 끝, 스치면 점수",
+    rules: [
+      "드래그로 회피 — 발사는 자동 (세로 화면)",
+      "적 탄을 스치면 GRAZE 점수 + 칩이 쌓여요",
+      "생명 3개. 위험하면 💣 봄으로 전탄 소거",
+    ],
+    duration: 180,
+    durationLabel: "최대 180초",
+    scoreUnit: "점",
+    accent: "cyan",
+  },
   survive: {
     id: "survive",
     title: "아울 서바이버즈",

@@ -2,7 +2,8 @@
 
 S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAMES_SPEC.md`](OWLGAMES_SPEC.md),
 게임 설계는 [`OWLRUNNING_GDD.md`](OWLRUNNING_GDD.md)(=`flight`) ·
-[`OWLLOGIC_GDD.md`](OWLLOGIC_GDD.md)(=`logic`) · [`OWLSURVIVORS_GDD.md`](OWLSURVIVORS_GDD.md)(=`survive`)가 원본이고,
+[`OWLLOGIC_GDD.md`](OWLLOGIC_GDD.md)(=`logic`) · [`OWLSURVIVORS_GDD.md`](OWLSURVIVORS_GDD.md)(=`survive`) ·
+[`OWLSPACE_GDD.md`](OWLSPACE_GDD.md)(=`space`)가 원본이고,
 명세에 없어서 판단한 것들은 [`DECISIONS.md`](DECISIONS.md)에 기록한다. **새 결정은 반드시 DECISIONS.md에 추가할 것.**
 
 ## 스택 / 실행
@@ -27,6 +28,10 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
   (`profiles.meta.survive_stage`). SoA 타입배열 풀 + 공간 해시를 쓰고 런 중에는 절대 `new` 하지 않는다
   (풀 크기는 `config.ts`의 `CFG.perf`). 스킬 50종은 **데이터(`data/skills.ts`) + 유형별 핸들러(`engine/skills.ts`)**,
   보스 15종은 **패턴 12종의 조합(`data/stages.ts`)**이다. 헤드리스 봇 테스트는 `tests/survive-engine.test.ts`.
+- **아울스페이스(`games/space/`)는 세로 고정 540×960 탄막 슈팅**이다. 보스 패턴은 전부
+  `data/patterns.ts` 의 **DSL 데이터**이고 `engine/emitter.ts` 가 실행한다 — 패턴을 코드로 쓰지 말 것.
+  각도 규약은 **0도 = 아래쪽**. 충돌은 판정점 1개 vs 탄 900발이라 거리 제곱 비교만 쓴다(그리드 금지).
+  **내 탄(가늘고 긴 사이안)과 적 탄(둥근 구체 + 외곽선)은 절대 같아 보이면 안 된다** — 색은 `theme.ts` 에서만.
 - 서바이버즈는 **가로 고정 960×540**이고 테마(다크 네온 / 라이트)를 진입 시 고른다. 라이트에서는 발광 대신
   외곽선으로 그린다 — 렌더에서 색을 직접 쓰지 말고 `theme.ts`의 `neon()`/`outline()`을 거칠 것.
 - **아울 로직(`games/logic/`)은 엔진(`engine/`)과 SVG UI(`ui/`)가 분리**돼 있다. 문제는 절차적으로 생성하고
@@ -61,6 +66,8 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 공통 15단계 곡선 | `lib/stages.ts` (`STAGE_STEP`) — 바꾸면 5게임 전부 난이도가 바뀐다 |
 | 아울 로직 튜닝 | `games/logic/config.ts`의 `CFG`·`TIER_SHAPE` (문제 형태·시간·콤보·점수) |
 | 아울 서바이버즈 튜닝 | `games/survive/config.ts`의 `CFG` + 적 스펙·보스는 `data/stages.ts` |
+| 아울스페이스 튜닝 | `games/space/config.ts`의 `CFG` + 보스 패턴은 `data/patterns.ts` |
+| 스페이스 보스 패턴 추가 | `data/patterns.ts`에 선언 → `data/stages.ts`의 `boss.phases`에 id를 넣는다 |
 | 서바이버즈 스킬 추가·수정 | `games/survive/data/skills.ts` (동작은 `engine/skills.ts`의 유형 핸들러) |
 | 서바이버즈 거부 기준 | `app_config.game_guards.survive` (DB) — 배포 없이 조정 가능 |
 | 뽑기 확률·상품 | `app_config.gacha_table`, `prizes` 테이블 (관리자 화면에서 재고 수정) |

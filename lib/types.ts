@@ -1,7 +1,7 @@
 // DB 행 / RPC 응답 타입 (supabase/migrations 와 1:1)
 
 export type UserRole = "user" | "staff" | "admin";
-export type GameId = "typer" | "flight" | "phish" | "logic" | "survive";
+export type GameId = "typer" | "flight" | "phish" | "logic" | "survive" | "space";
 
 export type Profile = {
   id: string;

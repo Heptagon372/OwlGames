@@ -129,6 +129,21 @@ export async function fetchSurviveProgress(): Promise<{ stage: number; theme: "d
   return { stage: Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0, theme };
 }
 
+/** 아울스페이스 진행도 — profiles.meta.space_stage / space_theme (§15) */
+export async function fetchSpaceProgress(): Promise<{ stage: number; theme: "dark" | "light" }> {
+  const supabase = getBrowserSupabase();
+  if (!supabase) return { stage: 4, theme: "dark" }; // 데모에서는 5스테이지까지 열어둔다
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { stage: 0, theme: "dark" };
+  const { data } = await supabase.from("profiles").select("meta").eq("id", user.id).maybeSingle();
+  const meta = (data?.meta ?? {}) as Record<string, unknown>;
+  const raw = Number(meta.space_stage ?? 0);
+  const theme = meta.space_theme === "light" ? "light" : "dark";
+  return { stage: Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0, theme };
+}
+
 export type UnclaimedDraw = {
   id: string;
   place: number | null;

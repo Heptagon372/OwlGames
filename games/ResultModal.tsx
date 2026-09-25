@@ -41,6 +41,18 @@ function gameStats(game: GameId, meta: Record<string, unknown> | null): { label:
     ];
     return stats;
   }
+  if (game === "space") {
+    const stats = [
+      { label: "스테이지", value: `STAGE ${n("stage")}${meta.cleared ? " 클리어" : ""}` },
+      { label: "생존", value: `${formatNumber(n("duration_s"))}초` },
+      { label: "처치", value: formatNumber(n("kills")) },
+      { label: "GRAZE", value: `${formatNumber(n("graze"))} ⭐` },
+      { label: "남은 생명", value: "🦉".repeat(Math.max(0, n("lives_left"))) || "없음" },
+      { label: "피격", value: n("damage_taken") === 0 ? "무피격 ✨" : `${n("damage_taken")}회` },
+    ];
+    if (meta.boss_killed) stats.push({ label: "보스", value: "격파 ✅" });
+    return stats;
+  }
   if (game === "survive") {
     const stats = [
       { label: "스테이지", value: `STAGE ${n("stage")}${meta.cleared ? " 클리어" : ""}` },
