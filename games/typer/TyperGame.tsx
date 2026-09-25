@@ -129,6 +129,7 @@ export function TyperGame({ onEnd }: GameComponentProps) {
         max_combo: maxStreak,
         firewall,
         duration_sec: Math.round(elapsed),
+        stage_max: stageFromRatio(elapsed / DURATION),
       });
     };
 
