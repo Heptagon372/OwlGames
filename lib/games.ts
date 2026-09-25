@@ -6,8 +6,10 @@ export type GameMeta = {
   emoji: string;
   tagline: string;
   rules: string[];
-  /** 제한 시간(초). flight는 최대 생존 시간 */
+  /** 제한 시간(초). flight·survive는 최대 생존 시간 */
   duration: number;
+  /** 화면에 그대로 쓰는 시간 표기 (게임마다 "최대"·"부터"가 달라서 문구로 들고 있는다) */
+  durationLabel: string;
   /** 원점수 단위 */
   scoreUnit: string;
   accent: "amber" | "cyan" | "rose";
@@ -25,8 +27,25 @@ export const GAMES: Record<GameId, GameMeta> = {
       "연속 성공 시 콤보 ×1.2 → ×1.5 → ×2.0",
     ],
     duration: 60,
+    durationLabel: "60초",
     scoreUnit: "점",
     accent: "amber",
+  },
+  phish: {
+    id: "phish",
+    title: "피싱 헌터",
+    emoji: "🎣",
+    tagline: "진짜일까 피싱일까? 보안관 부엉이의 판별",
+    rules: [
+      "← 왼쪽 스와이프 = 🚨 피싱",
+      "→ 오른쪽 스와이프 = ✅ 정상",
+      "연속 정답 보너스, 오답은 −5초",
+      "카드마다 제한시간 — 단계가 오를수록 짧아져요",
+    ],
+    duration: 90,
+    durationLabel: "90초",
+    scoreUnit: "점",
+    accent: "rose",
   },
   flight: {
     id: "flight",
@@ -39,20 +58,37 @@ export const GAMES: Record<GameId, GameMeta> = {
       "🪶 에너지 · 🟢🔵 크기 · 🛡️🌈 버프를 챙기며 더 멀리",
     ],
     duration: 180,
+    durationLabel: "최대 180초",
     scoreUnit: "점",
     accent: "cyan",
   },
-  phish: {
-    id: "phish",
-    title: "피싱 헌터",
-    emoji: "🎣",
-    tagline: "진짜일까 피싱일까? 보안관 부엉이의 판별",
+  logic: {
+    id: "logic",
+    title: "아울 로직",
+    emoji: "🔌",
+    tagline: "게이트를 끼워 잠긴 인증 회로를 복구하라",
     rules: [
-      "← 왼쪽 스와이프 = 🚨 피싱",
-      "→ 오른쪽 스와이프 = ✅ 정상",
-      "연속 정답 보너스, 오답은 −5초",
+      "부품을 탭 → 빈 슬롯을 탭하면 회로가 바로 돌아가요",
+      "목표 진리표가 전부 맞으면 자동으로 클리어",
+      "최소 부품으로 풀면 최적화 보너스, 5연속이면 OVERDRIVE",
     ],
-    duration: 90,
+    duration: 70,
+    durationLabel: "70초부터 (풀면 늘어나요)",
+    scoreUnit: "점",
+    accent: "cyan",
+  },
+  survive: {
+    id: "survive",
+    title: "아울 서바이버즈",
+    emoji: "🛡️",
+    tagline: "3분 안에 빌드를 완성해서 서버를 지켜라",
+    rules: [
+      "이동만 하세요 — 공격은 전부 자동",
+      "레벨업마다 카드 3장 중 1장 선택",
+      "무기 MAX + 짝 패시브 = ⭐ 진화",
+    ],
+    duration: 180,
+    durationLabel: "180초",
     scoreUnit: "점",
     accent: "rose",
   },

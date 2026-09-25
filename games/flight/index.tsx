@@ -11,6 +11,7 @@ import { createFx, updateFx } from "./engine/fx";
 import { startFixedLoop } from "./engine/loop";
 import { render } from "./engine/render";
 import { Hud, type HudState } from "./hud/Hud";
+import { stageFromRatio } from "@/lib/stages";
 import type { GameComponentProps } from "../core/types";
 
 const END_DELAY = 1.1; // 사망 원인을 1초 이상 보여준 뒤 결과로 (기획서 §12)
@@ -39,6 +40,8 @@ function snapshot(g: Game): HudState {
     status: g.status,
     special: g.special?.label ?? null,
     speed: speedKmh(g),
+    // 3,000m를 15단계로 나눠 표시 (그 뒤로는 15단계 유지 — 무한 스테이지)
+    stage: stageFromRatio(g.meters / 3000),
   };
 }
 
@@ -203,7 +206,6 @@ export function FlightGame({ onEnd }: GameComponentProps) {
       document.removeEventListener("visibilitychange", onVisibility);
       loopRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onEnd]);
 
   // 길게 누르기(컨텍스트 메뉴) 방지

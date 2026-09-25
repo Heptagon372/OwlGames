@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { LiveRefresh } from "@/components/LiveRefresh";
 import { PlayerShell } from "@/components/PlayerShell";
+import { RankDelta } from "@/components/RankDelta";
 import { RankBadge } from "@/components/RankBadge";
 import { Card, Chip, TermLabel } from "@/components/ui/Card";
 import { formatNumber } from "@/lib/format";
@@ -53,8 +55,15 @@ export default async function RankPage({ searchParams }: { searchParams: Promise
 
   return (
     <PlayerShell profile={profile} energy={energy} current="/rank">
+      <LiveRefresh intervalMs={20000} />
       <TermLabel>ranking --board {active}</TermLabel>
-      <h1 className="mb-4 mt-1 text-2xl font-black">랭킹</h1>
+      <div className="mb-4 mt-1 flex items-end justify-between gap-2">
+        <h1 className="text-2xl font-black">랭킹</h1>
+        <span className="flex items-center gap-1.5 text-xs text-dim">
+          <span className="inline-block size-1.5 animate-pulse rounded-full bg-ok" />
+          20초마다 자동 갱신
+        </span>
+      </div>
 
       <div className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4">
         {TABS.map((t) => (
@@ -82,6 +91,7 @@ export default async function RankPage({ searchParams }: { searchParams: Promise
               {profile.name} <Chip tone="neon" className="ml-1">나</Chip>
             </p>
             <p className="num text-xs text-mute">Lv {myPos.level}</p>
+            <RankDelta position={myPos.position} className="mt-1 text-[11px]" />
           </div>
           <span className="num font-black text-neon">{formatNumber(myPos.total_points)}P</span>
         </Card>

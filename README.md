@@ -3,8 +3,23 @@
 S.OWL 동아리 부스 행사용 웹 미니게임 플랫폼.
 게임 플레이 → 포인트 → 레벨·랭크 상승 → 뽑기 티켓 → **S.OWL 부스 방문** → 부스에서 뽑기.
 
-설계 근거는 [`OWLGAMES_SPEC.md`](OWLGAMES_SPEC.md)(플랫폼)와 [`OWLRUNNING_GDD.md`](OWLRUNNING_GDD.md)(아울러닝 게임 기획),
+설계 근거는 [`OWLGAMES_SPEC.md`](OWLGAMES_SPEC.md)(플랫폼)와 게임 기획서
+[`OWLRUNNING_GDD.md`](OWLRUNNING_GDD.md) · [`OWLLOGIC_GDD.md`](OWLLOGIC_GDD.md) · [`OWLSURVIVORS_GDD.md`](OWLSURVIVORS_GDD.md),
 구현하며 내린 결정은 [`DECISIONS.md`](DECISIONS.md)에 있습니다.
+
+## 게임 5종
+
+| 게임 | 한 판 | 조작 | 특징 |
+|---|---|---|---|
+| ⌨️ 나이트 타이퍼 | 60초 | 타이핑 | 보안 키워드를 받아쳐 방화벽을 올린다 |
+| 🦉 아울러닝 | 최대 180초 | 한 손가락 (꾹 눌러 상승) | 청크 기반 무한 레벨 · 색 맞추기 · 크기 변화 |
+| 🎣 피싱 헌터 | 90초 | 좌우 스와이프 | 피싱/정상 메시지 판별 |
+| 🔌 아울 로직 | 70초~ | 탭 | 빈 칸에 논리 게이트를 꽂아 진리표 맞추기 (풀면 시간이 늘어난다) |
+| 🛡️ 아울 서바이버즈 | 180초 | 가상 조이스틱 | 공격은 자동, 레벨업마다 카드 3장 중 하나 선택 |
+
+모든 게임은 **점수는 무한히 쌓이지만 체감 난이도는 15단계**로 끊어 올라갑니다
+(`lib/stages.ts` — 단계마다 난이도가 1.16배씩 **곱**으로 붙고, 15단계를 넘으면 배율이 고정됩니다).
+HUD와 결과 화면에 `STAGE n/15`와 **전체 등수 변동**(`14위 → 11위 ▲3`)이 함께 표시됩니다.
 
 ## 스택
 
@@ -58,7 +73,7 @@ npm run dev:lan      # 같은 와이파이의 폰·아이폰에서 http://<PC의
 | 자동 충전 | **10분마다 1개**, 최대 **10개** |
 | 게임 1판 | 1개 소모 (`start_game_session`이 서버에서 차감) |
 | 부스 충전 | S.OWL 부스 미션 성공 시 부원이 `/booth` → 🦉 에너지 충전 탭에서 지급 (1~5개, 상한 20개까지) |
-| 게임 중 획득 | 아울러닝에서 **P3(900m) 이상**까지 가면 낮은 확률로 에너지가 등장 (하루 5개까지) |
+| 게임 중 획득 | 높은 단계까지 가면 낮은 확률로 등장 (하루 5개까지) — 아울러닝 **P3(900m) 이상** · 아울 로직 **T4 이상** · 서바이버즈 **구역 3 돌파 또는 보스 처치** |
 
 - 계산은 전부 서버(`profiles.owl_energy` + `owl_energy_status()` RPC)에서 하고, 클라이언트는 표시만 합니다.
 - 값 조정은 `app_config.owl_energy` (충전 간격·상한·비용·드롭 조건) 한 곳에서 합니다.
@@ -71,8 +86,8 @@ npm run dev:lan      # 같은 와이파이의 폰·아이폰에서 http://<PC의
 | `/` | 전체 | 랜딩 · 운영시간 · 게임/상품 안내 |
 | `/auth/signup` `/auth/login` | 비로그인 | 이름·학번·비밀번호 |
 | `/pending` | 미인증 | 학번 인증 대기 (승인되면 Realtime으로 자동 이동) |
-| `/lobby` | 인증 유저 | 랭크·경험치·티켓 배너·게임 3종·미니 랭킹 |
-| `/game/typer` `/game/flight` `/game/phish` | 인증 유저 | 나이트 타이퍼 · 아울러닝 · 피싱 헌터 → 결과 모달 |
+| `/lobby` | 인증 유저 | 랭크·경험치·아울 에너지·티켓 배너·게임 5종·미니 랭킹 (30초마다 자동 갱신) |
+| `/game/typer` `/game/flight` `/game/phish` `/game/logic` `/game/survive` | 인증 유저 | 게임 5종 → 결과 모달(등수 변동 포함) |
 | `/rank` `/ticket` `/me` | 인증 유저 | 랭킹 · 코드 발급 · 내 기록 |
 | `/booth` | staff+ | 부스 키오스크 (코드 조회 · 추첨 · 수령 · 가입 승인) |
 | `/board` | 공개 | 부스 전광판 (랭킹 · 통계 · 재고 · 티커) |
@@ -87,6 +102,7 @@ npm run typecheck      # next typegen → tsc --noEmit
 npm test               # vitest 전체
 npm run verify:chunks  # 아울러닝 청크가 통과 가능한지 물리 시뮬로 검증
 npm run sim:flight     # 아울러닝 자동 봇 시뮬레이션 (SIM_RUNS=1000 으로 늘려 튜닝)
+                       # 로직·서바이버즈도 같은 방식: SIM_RUNS=30 npx vitest run tests/logic-sim.test.ts
 npm run build          # 프로덕션 빌드
 ```
 
@@ -103,6 +119,7 @@ DB 검증 스크립트는 `supabase/tests/`에 있습니다 (레벨 곡선, 추�
 | iOS 15.3 이하 · IE | ❌ (Tailwind v4가 `color-mix` 등 최신 CSS를 쓰기 때문) |
 
 - 아울러닝은 **가로 화면 전용**입니다. 세로로 들면 "가로로 돌려주세요" 안내가 뜹니다.
+- 서바이버즈는 세로도 되지만, 가로로 들면 보이는 범위가 넓어 훨씬 유리합니다.
 - 부스 키오스크의 **QR 스캔은 `https` 주소에서만** 카메라가 열립니다 (브라우저 정책). 코드 직접 입력은 항상 가능합니다.
 - 화면 어디서 오류가 나도 흰 화면 대신 안내 화면(`app/error.tsx`)이 뜨고, 오류 코드가 표시됩니다.
 - `.env.local` 없이 띄우면 **데모 모드**라 운영시간과 무관하게 전부 눌러볼 수 있습니다.
@@ -117,8 +134,10 @@ DB 검증 스크립트는 `supabase/tests/`에 있습니다 (레벨 곡선, 추�
 ```
 app/          # 라우트 (route group (player)에 로비·랭킹·티켓·내기록)
 components/   # UI · 랭크 뱃지 · 경험치 바 · 뽑기 기계 · 전광판 · 부스 · 관리자
-games/        # core(루프·캔버스·세션) + typer / flight(아울러닝) / phish
-              #   flight/: config(튜닝 상수) · engine(물리·에너지·청크·점수·렌더) · chunks(레벨 프리팹) · hud
+games/        # core(루프·캔버스·세션) + typer / flight(아울러닝) / phish / logic / survive
+              #   flight/:  config(튜닝 상수) · engine(물리·에너지·청크·점수·렌더) · chunks(레벨 프리팹) · hud
+              #   logic/:   engine(게이트·회로·판정·생성기·솔버·점수) · ui(SVG 회로도·진리표·부품)
+              #   survive/: engine(월드 SoA 풀·공간해시·적·무기·레벨업·보스·스포너) · ui(조이스틱·HUD·카드)
 data/         # 타이퍼 단어, 피싱 카드
 lib/          # supabase 클라이언트, 랭크·설정·포맷, 조회·RPC 래퍼, 데모 데이터
 public/assets/ # 외부 CC0 에셋 (Kenney 파티클·텍스처·라이트 마스크, Orbitron 폰트)

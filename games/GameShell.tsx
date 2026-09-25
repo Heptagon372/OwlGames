@@ -22,13 +22,15 @@ const GAME_COMPONENTS: Record<GameId, React.ComponentType<GameComponentProps>> =
   typer: dynamic(() => import("./typer/TyperGame").then((m) => m.TyperGame), { ssr: false, loading: Loading }),
   flight: dynamic(() => import("./flight").then((m) => m.FlightGame), { ssr: false, loading: Loading }),
   phish: dynamic(() => import("./phish/PhishGame").then((m) => m.PhishGame), { ssr: false, loading: Loading }),
+  logic: dynamic(() => import("./logic").then((m) => m.LogicGame), { ssr: false, loading: Loading }),
+  survive: dynamic(() => import("./survive").then((m) => m.SurviveGame), { ssr: false, loading: Loading }),
 };
 
 /** 인트로 → 카운트다운 → 플레이 → 제출 → 결과 */
 export function GameShell({ game }: { game: GameId }) {
   const gameMeta = GAMES[game];
   const router = useRouter();
-  const { phase, result, meta, error, start, finish, reset } = useGameSession(game);
+  const { phase, result, meta, position, error, start, finish, reset } = useGameSession(game);
   const [count, setCount] = useState<number | null>(null);
   const GameComponent = GAME_COMPONENTS[game];
 
@@ -83,7 +85,7 @@ export function GameShell({ game }: { game: GameId }) {
                 ))}
               </ul>
               <p className="num mt-4 text-xs text-dim">
-                {game === "flight" ? `최대 ${gameMeta.duration}초` : `${gameMeta.duration}초`} · 한 판 30~300P
+                {gameMeta.durationLabel} · 한 판 30~300P
               </p>
               <Button size="lg" block className="mt-5" onClick={start} disabled={phase === "starting"}>
                 <Play className="size-5" />
@@ -130,7 +132,7 @@ export function GameShell({ game }: { game: GameId }) {
         )}
       </div>
 
-      {phase === "result" && result && <ResultModal game={game} result={result} meta={meta} onRetry={start} />}
+      {phase === "result" && result && <ResultModal game={game} result={result} meta={meta} position={position} onRetry={start} />}
     </div>
   );
 }

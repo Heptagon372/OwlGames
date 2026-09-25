@@ -12,7 +12,7 @@ import { getAppConfig, getIsOpen, getMyProfile, getPrizes } from "@/lib/queries"
 import { RANKS } from "@/lib/rank";
 
 const STEPS = [
-  { icon: Sparkles, title: "게임 플레이", desc: "미니게임 3종으로 포인트 획득" },
+  { icon: Sparkles, title: "게임 플레이", desc: "미니게임 5종으로 포인트 획득" },
   { icon: Trophy, title: "레벨 · 랭크 상승", desc: "나무부터 챌린저까지 17단계" },
   { icon: Ticket, title: "뽑기 티켓 획득", desc: "랭크가 오를 때마다 1장" },
   { icon: Gift, title: "S.OWL 부스 방문", desc: "부스에서 코드 보여주고 뽑기" },
@@ -69,10 +69,10 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* 게임 3종 */}
+      {/* 게임 5종 */}
       <section className="mt-10">
         <TermLabel>games --list</TermLabel>
-        <h2 className="mt-1 mb-3 text-lg font-extrabold">미니게임 3종</h2>
+        <h2 className="mt-1 mb-3 text-lg font-extrabold">미니게임 5종</h2>
         <div className="grid gap-3">
           {Object.values(GAMES).map((g) => (
             <Card key={g.id} className="flex items-center gap-4">

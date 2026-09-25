@@ -5,6 +5,7 @@ import { RotateCcw, Home, Ticket } from "lucide-react";
 import { ExpBar } from "@/components/ExpBar";
 import { LevelUpOverlay } from "@/components/LevelUpOverlay";
 import { RankBadge } from "@/components/RankBadge";
+import { DeltaChip, recordPosition } from "@/components/RankDelta";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { formatNumber } from "@/lib/format";
@@ -29,6 +30,28 @@ function gameStats(game: GameId, meta: Record<string, unknown> | null): { label:
     if (n("special_cleared") > 0) stats.push({ label: "특수 구간", value: `${n("special_cleared")}회 완주` });
     return stats;
   }
+  if (game === "logic") {
+    const stats = [
+      { label: "해결", value: `${formatNumber(n("solved"))}문제` },
+      { label: "최적화", value: `${formatNumber(n("optimal"))}회` },
+      { label: "최고 티어", value: `T${n("tier_max")}` },
+      { label: "최고 콤보", value: formatNumber(n("combo_max")) },
+      { label: "힌트", value: `${formatNumber(n("hints"))}회` },
+      { label: "평균 풀이", value: `${(n("avg_solve_ms") / 1000).toFixed(1)}초` },
+    ];
+    return stats;
+  }
+  if (game === "survive") {
+    const stats = [
+      { label: "생존", value: `${formatNumber(n("duration_s"))}초` },
+      { label: "처치", value: formatNumber(n("kills")) },
+      { label: "레벨", value: `Lv.${n("level")}` },
+      { label: "도달 단계", value: `STAGE ${n("stage_max") || n("zones_cleared") + 1}` },
+      { label: "진화", value: `${formatNumber(n("evolutions"))}개` },
+    ];
+    if (meta.boss_killed) stats.push({ label: "보스", value: "처치 ✅" });
+    return stats;
+  }
   if (game === "typer") {
     return [
       { label: "파괴", value: `${formatNumber(n("hits"))}개` },
@@ -48,11 +71,14 @@ export function ResultModal({
   game,
   result,
   meta,
+  position,
   onRetry,
 }: {
   game: GameId;
   result: SubmitResult;
   meta?: Record<string, unknown> | null;
+  /** 제출 전/후 전체 등수 */
+  position?: { before: number | null; after: number | null };
   onRetry: () => void;
 }) {
   const rankUp = result.rank_after > result.rank_before;
@@ -73,6 +99,11 @@ export function ResultModal({
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [result]);
+
+  // 등수가 확정되면 다음 판을 위해 기록해 둔다
+  useEffect(() => {
+    if (typeof position?.after === "number") recordPosition(position.after);
+  }, [position?.after]);
 
   // 경험치 바가 다 찬 뒤 랭크업 연출
   useEffect(() => {
@@ -132,6 +163,19 @@ export function ResultModal({
                 </div>
               ))}
             </dl>
+          )}
+
+          {typeof position?.after === "number" && (
+            <div className="flex items-center justify-between gap-3 rounded-tile border border-aqua/40 bg-aqua/10 px-4 py-3">
+              <span className="text-sm font-bold text-aqua">전체 등수</span>
+              <span className="flex items-center gap-2">
+                {typeof position.before === "number" && position.before !== position.after && (
+                  <span className="num text-sm text-mute line-through">{position.before}위</span>
+                )}
+                <span className="num text-xl font-black text-aqua">{position.after}위</span>
+                <DeltaChip from={position.before} to={position.after} />
+              </span>
+            </div>
           )}
 
           <div className="rounded-tile border border-line bg-night/60 p-4">

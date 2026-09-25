@@ -1,7 +1,8 @@
 # 아울게임즈 (OWL GAMES)
 
 S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAMES_SPEC.md`](OWLGAMES_SPEC.md),
-아울러닝(=`flight`) 게임 설계는 [`OWLRUNNING_GDD.md`](OWLRUNNING_GDD.md)가 원본이고,
+게임 설계는 [`OWLRUNNING_GDD.md`](OWLRUNNING_GDD.md)(=`flight`) ·
+[`OWLLOGIC_GDD.md`](OWLLOGIC_GDD.md)(=`logic`) · [`OWLSURVIVORS_GDD.md`](OWLSURVIVORS_GDD.md)(=`survive`)가 원본이고,
 명세에 없어서 판단한 것들은 [`DECISIONS.md`](DECISIONS.md)에 기록한다. **새 결정은 반드시 DECISIONS.md에 추가할 것.**
 
 ## 스택 / 실행
@@ -18,7 +19,14 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
   클라이언트는 `lib/rpc.ts` 래퍼로만 호출하고, 결과를 표시만 한다.
 - `lib/rank.ts`는 DB 함수(`level_from_points` 등)와 **같은 수식**이어야 한다. 바꾸면 양쪽 + `tests/rank.test.ts`를 함께 고친다.
 - 게임은 Canvas 2D + rAF 직접 구현(엔진 금지). 공통 루프·캔버스 헬퍼는 `games/core/`.
-  피싱 헌터만 한글 가독성·접근성 때문에 카드 UI를 DOM으로 그린다.
+  피싱 헌터(카드)·아울 로직(회로 SVG + 진리표)만 한글 가독성·접근성 때문에 DOM/SVG로 그린다.
+- **모든 게임은 `lib/stages.ts`의 공통 15단계를 쓴다.** 점수는 무한히 쌓이되 난이도는 단계마다
+  `1.16`배씩 **곱**으로 붙고 15단계에서 고정된다. 게임은 자기 진행도를 0~1로 바꿔 `stageFromRatio`에 넘기고,
+  HUD·결과에 `STAGE n/15`를 띄운다. 단계 배율을 **점수에 곱하려면 서버 재계산식도 같이** 고쳐야 한다.
+- **아울 서바이버즈(`games/survive/`)는 SoA 타입배열 풀 + 공간 해시**다. 런 중에는 절대 `new` 하지 않는다
+  (풀 크기는 `config.ts`의 `CFG.pool`). 로직/렌더/HUD가 분리돼 있고 헤드리스 봇 테스트가 `tests/survive-engine.test.ts`.
+- **아울 로직(`games/logic/`)은 엔진(`engine/`)과 SVG UI(`ui/`)가 분리**돼 있다. 문제는 절차적으로 생성하고
+  솔버가 유일해·최소 게이트 수를 검증한다 (`tests/logic-sim.test.ts`가 1만 문제를 돌린다).
 - **아울러닝(`games/flight/`)은 고정 타임스텝(1/60) + 청크 기반 레벨**이다. 로직(`engine/`)과 렌더(`engine/render.ts`),
   HUD(DOM, `hud/`)를 분리해 두었고, 같은 물리 함수를 청크 검증기(`chunks/verify.ts`)와 봇(`engine/bot.ts`)이 공유한다.
   레벨을 추가하면 `npm run verify:chunks`가 S·M·L 모두에게 통과 경로가 있는지 확인한다.
@@ -46,10 +54,14 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 게임 밸런스(K값·제한시간) | `app_config.game_k` / `game_limits` (DB), 표시는 `lib/config.ts` |
 | 아울러닝 물리·에너지·점수 튜닝 | `games/flight/config.ts`의 `CFG` 한 곳 (매직넘버 금지) |
 | 아울러닝 레벨 디자인 | `games/flight/chunks/p0~p4.json` → `npm run verify:chunks`로 통과 가능성 검증 |
+| 공통 15단계 곡선 | `lib/stages.ts` (`STAGE_STEP`) — 바꾸면 5게임 전부 난이도가 바뀐다 |
+| 아울 로직 튜닝 | `games/logic/config.ts`의 `CFG`·`TIER_SHAPE` (문제 형태·시간·콤보·점수) |
+| 아울 서바이버즈 튜닝 | `games/survive/config.ts`의 `CFG` + 적 스펙은 `engine/enemies.ts`의 `ENEMY_SPEC` |
 | 뽑기 확률·상품 | `app_config.gacha_table`, `prizes` 테이블 (관리자 화면에서 재고 수정) |
 | 단어·피싱 카드 추가 | `data/typer-words.ts`, `data/phish-cards.ts` (형식은 `tests/data.test.ts`가 검증) |
 | 부스 위치 안내 | `app_config.booth_location` |
-| 아울 에너지(스태미나) | `app_config.owl_energy` (DB) · 표시 기본값은 `lib/config.ts` · 게임 내 드롭은 `games/flight/config.ts`의 `CFG.owlEnergy` |
+| 아울 에너지(스태미나) | `app_config.owl_energy` (DB) · 표시 기본값은 `lib/config.ts` · 게임 내 드롭은 각 게임 `config.ts`의 `CFG.owlEnergy` (서버 조건과 같은 값이어야 한다) |
+| 실시간 등수·변동 표시 | `components/RankDelta.tsx` · `components/LiveRefresh.tsx` · `games/core/useGameSession.ts`의 `position` |
 
 ## 주의
 
