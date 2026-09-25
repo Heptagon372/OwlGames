@@ -9,6 +9,7 @@ import { estimatePoints } from "./games";
 import { levelFromPoints, rankFromLevel } from "./rank";
 import { getBrowserSupabase } from "./supabase/client";
 import type {
+  AdminStats,
   BoothDrawResult,
   BoothLookup,
   EnergyGrantResult,
@@ -189,4 +190,25 @@ export async function setUserEnergy(userId: string, value: number): Promise<void
 export async function setStock(place: number, stock: number): Promise<void> {
   if (demo()) return;
   await call<null>("admin_set_stock", { p_place: place, p_stock: stock });
+}
+
+/**
+ * 운영 설정 변경 (§운영). 서버가 키 화이트리스트와 값의 모양을 검사한다 —
+ * 여기서 막는 게 아니라, 서버가 막은 이유를 그대로 보여주는 게 목적이다.
+ */
+export async function setConfigValue(key: string, value: unknown): Promise<void> {
+  if (demo()) {
+    await wait(200);
+    return;
+  }
+  await call<{ status: string }>("admin_set_config", { p_key: key, p_value: value });
+}
+
+export async function fetchAdminStats(): Promise<AdminStats> {
+  if (demo()) {
+    const { DEMO_ADMIN_STATS } = await import("./demo");
+    await wait(150);
+    return DEMO_ADMIN_STATS;
+  }
+  return call<AdminStats>("admin_stats");
 }
