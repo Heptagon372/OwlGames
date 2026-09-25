@@ -63,6 +63,7 @@ export function PhishGame({ onEnd }: GameComponentProps) {
       correct: statsRef.current.correct,
       wrong: statsRef.current.wrong,
       max_streak: statsRef.current.maxStreak,
+      stage_max: stageFromRatio(indexRef.current / STAGE_CARDS),
     });
   }, [onEnd]);
 

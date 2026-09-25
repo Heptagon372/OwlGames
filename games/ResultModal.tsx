@@ -57,12 +57,14 @@ function gameStats(game: GameId, meta: Record<string, unknown> | null): { label:
       { label: "파괴", value: `${formatNumber(n("hits"))}개` },
       { label: "놓침", value: `${formatNumber(n("misses"))}개` },
       { label: "최고 콤보", value: formatNumber(n("max_combo")) },
+      { label: "도달 단계", value: `STAGE ${n("stage_max") || 1}` },
     ];
   }
   return [
     { label: "정답", value: `${formatNumber(n("correct"))}개` },
     { label: "오답", value: `${formatNumber(n("wrong"))}개` },
     { label: "최고 연속", value: formatNumber(n("max_streak")) },
+    { label: "도달 단계", value: `STAGE ${n("stage_max") || 1}` },
   ];
 }
 
