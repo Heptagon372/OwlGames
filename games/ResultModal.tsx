@@ -156,21 +156,21 @@ export function ResultModal({
       <Modal open title={`${gameMeta.emoji} ${gameMeta.title} 결과`} dismissible={false}>
         <div className="grid gap-4">
           <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-tile border border-line bg-night/60 p-4 text-center">
+            <div className="glass rounded-tile p-4 text-center">
               <p className="text-xs text-mute">원점수</p>
               <p className="num mt-1 text-2xl font-black">
                 {formatNumber(result.raw_score)}
                 <span className="ml-1 text-sm text-mute">{gameMeta.scoreUnit}</span>
               </p>
             </div>
-            <div className="rounded-tile border border-neon/40 bg-neon/10 p-4 text-center">
+            <div className="grad-line glow-iris glass rounded-tile p-4 text-center">
               <p className="text-xs text-neon-soft">획득 포인트</p>
-              <p className="num mt-1 text-2xl font-black text-neon">+{formatNumber(points)}P</p>
+              <p className="num grad-text mt-1 text-2xl font-black">+{formatNumber(points)}P</p>
             </div>
           </div>
 
           {stats.length > 0 && (
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-tile border border-line bg-night/60 px-4 py-3 text-sm">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 glass rounded-tile px-4 py-3 text-sm">
               {stats.map((s) => (
                 <div key={s.label} className="flex items-center justify-between gap-2">
                   <dt className="text-mute">{s.label}</dt>
@@ -193,7 +193,7 @@ export function ResultModal({
             </div>
           )}
 
-          <div className="rounded-tile border border-line bg-night/60 p-4">
+          <div className="glass rounded-tile p-4">
             <div className="mb-3 flex items-center gap-3">
               <RankBadge rankIdx={result.rank_after} size="md" />
               <div className="min-w-0 flex-1">
@@ -214,7 +214,7 @@ export function ResultModal({
           </div>
 
           {(result.owl_energy_gained ?? 0) > 0 && (
-            <div className="flex items-center gap-2 rounded-tile border border-aqua/50 bg-aqua/10 px-4 py-3 font-extrabold text-aqua">
+            <div className="flex items-center gap-2 rounded-tile border border-amber/50 bg-amber/10 px-4 py-3 font-extrabold text-amber-soft">
               🦉 아울 에너지 +{result.owl_energy_gained}
               {typeof result.owl_energy === "number" && (
                 <span className="num ml-auto text-sm font-bold text-mute">보유 {result.owl_energy}</span>
@@ -223,7 +223,7 @@ export function ResultModal({
           )}
 
           {result.tickets_gained > 0 && (
-            <div className="flex items-center gap-2 rounded-tile border border-neon/50 bg-neon/10 px-4 py-3 font-extrabold text-neon">
+            <div className="flex items-center gap-2 rounded-tile border border-amber/50 bg-amber/10 px-4 py-3 font-extrabold text-amber-soft">
               <Ticket className="size-5" />
               🎟️ 뽑기 티켓 +{result.tickets_gained}
             </div>

@@ -10,7 +10,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           minHeight: "100vh",
           display: "grid",
           placeItems: "center",
-          background: "#0b1020",
+          background: "#070b18",
           color: "#e8ecf8",
           fontFamily: "system-ui, -apple-system, sans-serif",
           padding: "24px",
@@ -36,7 +36,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
               borderRadius: "16px",
               border: "none",
               background: "#ffb020",
-              color: "#0b1020",
+              color: "#070b18",
               fontWeight: 700,
               fontSize: "15px",
             }}

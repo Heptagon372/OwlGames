@@ -5,13 +5,17 @@ type Variant = "primary" | "aqua" | "ghost" | "danger" | "outline";
 type Size = "md" | "lg" | "sm";
 
 const base =
-  "relative inline-flex select-none items-center justify-center gap-2 font-bold transition-[transform,box-shadow,background-color,color,opacity] duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40";
+  "relative inline-flex select-none items-center justify-center gap-2 font-bold transition-[transform,box-shadow,background-color,color,opacity,filter] duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40";
 
 const variants: Record<Variant, string> = {
+  // 시안→바이올렛 그라데이션 + 바깥 글로우 (레퍼런스의 Primary Button)
   primary:
-    "bg-neon text-night shadow-neon hover:bg-neon-soft hover:shadow-[0_0_0_1px_rgb(255_176_32/0.7),0_10px_36px_-4px_rgb(255_176_32/0.7)]",
+    "grad-fill text-night shadow-[0_0_0_1px_rgb(167_139_250/0.5),0_12px_38px_-10px_rgb(124_58_237/0.85)] " +
+    "hover:brightness-110 hover:shadow-[0_0_0_1px_rgb(167_139_250/0.7),0_16px_44px_-8px_rgb(124_58_237/0.95)]",
   aqua: "bg-aqua text-night shadow-aqua hover:brightness-110",
-  outline: "border border-line-strong bg-panel/60 text-ink hover:border-aqua/60 hover:text-aqua",
+  // 유리 + 그라데이션 헤어라인 (Secondary)
+  outline:
+    "grad-line glass text-ink hover:text-aqua hover:shadow-[0_0_24px_-8px_rgb(34_211_238/0.6),var(--shadow-card)]",
   ghost: "text-mute hover:bg-white/5 hover:text-ink",
   danger: "border border-alert/50 bg-alert/10 text-alert hover:bg-alert/20",
 };

@@ -69,7 +69,7 @@ export function OwlEnergyBar({
     return (
       <span className={cn("inline-flex items-center gap-1.5", className)} title="아울 에너지">
         <span className="text-sm">🦉</span>
-        <span className="num text-sm font-bold text-neon">
+        <span className="num text-sm font-bold text-amber-soft">
           {status.energy}
           <span className="text-[10px] text-mute">/{status.cap}</span>
         </span>
@@ -79,11 +79,11 @@ export function OwlEnergyBar({
   }
 
   return (
-    <div className={cn("rounded-tile border border-line bg-night/60 px-4 py-3", className)}>
+    <div className={cn("glass rounded-tile px-4 py-3", className)}>
       <div className="mb-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-sm font-bold">
           🦉 아울 에너지
-          <span className="num text-neon">
+          <span className="num text-amber-soft">
             {status.energy}
             <span className="text-xs text-mute">/{status.cap}</span>
           </span>
@@ -100,9 +100,9 @@ export function OwlEnergyBar({
               "h-2.5 flex-1 rounded-full transition-colors",
               i < status.energy
                 ? i >= status.cap
-                  ? "bg-aqua shadow-[0_0_8px_rgba(61,217,235,0.7)]"
-                  : "bg-neon shadow-[0_0_8px_rgba(255,176,32,0.6)]"
-                : "bg-panel-2",
+                  ? "bg-linear-to-b from-aqua-soft to-aqua shadow-[0_0_10px_rgb(34_211_238/0.7)]"
+                  : "bg-linear-to-b from-amber-soft to-amber shadow-[0_0_10px_rgb(255_176_32/0.6)]"
+                : "bg-white/8",
             )}
           />
         ))}

@@ -6,7 +6,7 @@ export type GachaState = "idle" | "spinning" | "reveal";
 
 const CAPSULES = [
   { x: 52, y: 58, c: "#FFB020", d: "0s" },
-  { x: 78, y: 52, c: "#3DD9EB", d: "0.08s" },
+  { x: 78, y: 52, c: "#22d3ee", d: "0.08s" },
   { x: 104, y: 60, c: "#FF5C7A", d: "0.16s" },
   { x: 64, y: 80, c: "#6BF0A0", d: "0.24s" },
   { x: 92, y: 82, c: "#CDA8FF", d: "0.32s" },
@@ -24,17 +24,17 @@ export function GachaMachine({ state, className }: { state: GachaState; classNam
         <defs>
           <radialGradient id="dome" cx="0.35" cy="0.3" r="0.8">
             <stop offset="0" stopColor="#ffffff" stopOpacity="0.28" />
-            <stop offset="0.6" stopColor="#3dd9eb" stopOpacity="0.1" />
-            <stop offset="1" stopColor="#0b1020" stopOpacity="0.5" />
+            <stop offset="0.6" stopColor="#22d3ee" stopOpacity="0.1" />
+            <stop offset="1" stopColor="#070b18" stopOpacity="0.5" />
           </radialGradient>
           <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#2a3665" />
-            <stop offset="1" stopColor="#141b33" />
+            <stop offset="1" stopColor="#101832" />
           </linearGradient>
         </defs>
 
         {/* 유리 돔 */}
-        <circle cx="80" cy="80" r="62" fill="url(#dome)" stroke="#3dd9eb" strokeOpacity="0.45" strokeWidth="2" />
+        <circle cx="80" cy="80" r="62" fill="url(#dome)" stroke="#22d3ee" strokeOpacity="0.45" strokeWidth="2" />
         <g className={spinning ? "animate-jitter" : undefined}>
           {CAPSULES.map((c, i) => (
             <g key={i} style={{ animationDelay: c.d }} className={spinning ? "animate-jitter" : undefined}>
@@ -47,15 +47,15 @@ export function GachaMachine({ state, className }: { state: GachaState; classNam
         <path d="M44 48 a48 48 0 0 1 30 -22" stroke="#fff" strokeOpacity="0.35" strokeWidth="5" strokeLinecap="round" fill="none" />
 
         {/* 본체 */}
-        <rect x="26" y="136" width="108" height="66" rx="12" fill="url(#body)" stroke="#3dd9eb" strokeOpacity="0.35" strokeWidth="2" />
-        <rect x="18" y="200" width="124" height="14" rx="7" fill="#232e55" />
+        <rect x="26" y="136" width="108" height="66" rx="12" fill="url(#body)" stroke="#22d3ee" strokeOpacity="0.35" strokeWidth="2" />
+        <rect x="18" y="200" width="124" height="14" rx="7" fill="#1e2a52" />
         {/* 손잡이 */}
         <g className={spinning ? "animate-spin" : undefined} style={{ transformOrigin: "80px 156px", transformBox: "view-box" }}>
-          <circle cx="80" cy="156" r="13" fill="#0b1020" stroke="#ffb020" strokeWidth="3" />
+          <circle cx="80" cy="156" r="13" fill="#070b18" stroke="#ffb020" strokeWidth="3" />
           <rect x="78" y="145" width="4" height="22" rx="2" fill="#ffb020" />
         </g>
         {/* 배출구 */}
-        <rect x="56" y="176" width="48" height="18" rx="6" fill="#0b1020" stroke="#3dd9eb" strokeOpacity="0.4" strokeWidth="1.5" />
+        <rect x="56" y="176" width="48" height="18" rx="6" fill="#070b18" stroke="#22d3ee" strokeOpacity="0.4" strokeWidth="1.5" />
 
         {/* 떨어지는 캡슐 */}
         {state === "reveal" && (

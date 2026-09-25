@@ -12,7 +12,7 @@ import { getAppConfig, getIsOpen, getMyProfile, getPrizes } from "@/lib/queries"
 import { RANKS } from "@/lib/rank";
 
 const STEPS = [
-  { icon: Sparkles, title: "게임 플레이", desc: "미니게임 5종으로 포인트 획득" },
+  { icon: Sparkles, title: "게임 플레이", desc: "미니게임 6종으로 포인트 획득" },
   { icon: Trophy, title: "레벨 · 랭크 상승", desc: "나무부터 챌린저까지 17단계" },
   { icon: Ticket, title: "뽑기 티켓 획득", desc: "랭크가 오를 때마다 1장" },
   { icon: Gift, title: "S.OWL 부스 방문", desc: "부스에서 코드 보여주고 뽑기" },
@@ -35,7 +35,7 @@ export default async function LandingPage() {
       </header>
 
       {/* 히어로 */}
-      <section className="relative mt-4 overflow-hidden rounded-card border border-line bg-linear-to-b from-panel-2/70 to-panel/80 px-6 py-10 text-center">
+      <section className="card grad-line glow-iris relative mt-4 overflow-hidden px-6 py-10 text-center">
         <div className="grid-bg pointer-events-none absolute inset-0 opacity-40" aria-hidden />
         <div className="relative">
           <OwlMark className="mx-auto size-28 animate-float drop-shadow-[0_0_40px_rgb(255_176_32/0.35)]" />
@@ -72,11 +72,11 @@ export default async function LandingPage() {
       {/* 게임 5종 */}
       <section className="mt-10">
         <TermLabel>games --list</TermLabel>
-        <h2 className="mt-1 mb-3 text-lg font-extrabold">미니게임 5종</h2>
+        <h2 className="mt-1 mb-3 text-lg font-extrabold">미니게임 6종</h2>
         <div className="grid gap-3">
           {Object.values(GAMES).map((g) => (
             <Card key={g.id} className="flex items-center gap-4">
-              <div className="grid size-14 shrink-0 place-items-center rounded-tile border border-line bg-night text-3xl">
+              <div className="grad-line grid size-14 shrink-0 place-items-center rounded-tile bg-white/5 text-3xl backdrop-blur-sm">
                 {g.emoji}
               </div>
               <div className="min-w-0">

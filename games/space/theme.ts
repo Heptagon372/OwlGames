@@ -38,17 +38,17 @@ export const THEMES: Record<ThemeId, SpaceTheme> = {
     nebula: "#131C3A",
     star: "#2A3557",
     streak: "#3E4E82",
-    surface: "#141B33",
+    surface: "#101832",
     text: "#E8EDF7",
     dim: "#8A94AD",
     player: "#FFB020",
-    myBullet: "#3DD9EB",
+    myBullet: "#22D3EE",
     enemyBullet: "#FF5C7A",
     enemyBulletEdge: "#FFD9E1",
     enemy: "#C084FC",
     boss: "#F472B6",
     chip: "#4ADE80",
-    graze: "#3DD9EB",
+    graze: "#22D3EE",
     warn: "#FF3B5C",
     danger: "#FF3B5C",
     life: "#FFB020",
@@ -61,7 +61,7 @@ export const THEMES: Record<ThemeId, SpaceTheme> = {
     star: "#C3CCDF",
     streak: "#9AA7C4",
     surface: "#FFFFFF",
-    text: "#141B33",
+    text: "#101832",
     dim: "#5A6479",
     player: "#B45309",
     myBullet: "#0E7490",
@@ -81,7 +81,7 @@ export const THEMES: Record<ThemeId, SpaceTheme> = {
 
 /** 스테이지별 성운 색 (§6 구역 구분) */
 const STAGE_TINT = [
-  "#3DD9EB", "#8B7355", "#A78BFA", "#FB923C", "#F472B6",
+  "#22D3EE", "#8B7355", "#A78BFA", "#FB923C", "#F472B6",
   "#67E8F9", "#FBBF24", "#60A5FA", "#C4B5FD", "#475569",
   "#F87171", "#FACC15", "#2DD4BF", "#818CF8", "#FF5C7A",
 ];

@@ -2,40 +2,56 @@
 
 /* ============================================================
    OWL GAMES 디자인 토큰 (§13)
-   "밤에 깨어있는 부엉이 = 해커" — 다크 네이비 + 네온 앰버, 터미널풍
+   "밤에 깨어있는 부엉이 = 해커" — 리퀴드 글래스:
+   딥 네이비 배경 + 반투명 유리 표면 + 시안→바이올렛 그라데이션 테두리와 글로우.
+   앰버는 브랜드(부엉이·에너지·티켓)에만 남긴다.
    ============================================================ */
 @theme {
-  --color-night: #0b1020;
-  --color-night-2: #0e1428;
-  --color-panel: #141b33;
-  --color-panel-2: #1b2444;
-  --color-panel-3: #232e55;
-  --color-line: rgb(120 150 220 / 0.14);
-  --color-line-strong: rgb(120 150 220 / 0.28);
+  --color-night: #070b18;
+  --color-night-2: #0a1022;
+  --color-panel: #101832;
+  --color-panel-2: #16203f;
+  --color-panel-3: #1e2a52;
+  --color-line: rgb(150 180 255 / 0.12);
+  --color-line-strong: rgb(150 180 255 / 0.26);
 
-  --color-neon: #ffb020;
-  --color-neon-soft: #ffd27a;
-  --color-neon-deep: #d98a00;
-  --color-aqua: #3dd9eb;
-  --color-aqua-deep: #1aa6b8;
+  /* 주 강조 — 바이올렛(neon) ↔ 시안(aqua) 그라데이션이 이 UI의 뼈대 */
+  --color-neon: #a78bfa;
+  --color-neon-soft: #c4b5fd;
+  --color-neon-deep: #7c3aed;
+  --color-aqua: #22d3ee;
+  --color-aqua-soft: #67e8f9;
+  --color-aqua-deep: #0e7490;
+  --color-magenta: #e879f9;
+
+  /* 브랜드 앰버 — 부엉이 마크·아울 에너지·티켓에만 */
+  --color-amber: #ffb020;
+  --color-amber-soft: #ffd27a;
+
   --color-alert: #ff5c7a;
-  --color-ok: #6bf0a0;
+  --color-ok: #4ade80;
 
-  --color-ink: #e8ecf8;
-  --color-mute: #8d97ba;
-  --color-dim: #5b6588;
+  --color-ink: #e9edfb;
+  --color-mute: #98a3c6;
+  --color-dim: #64709a;
 
   --font-sans: var(--font-pretendard), "Pretendard Variable", Pretendard, system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-jetbrains), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   /* 아케이드 HUD (영문·숫자 전용) */
   --font-arcade: var(--font-orbitron), Orbitron, var(--font-jetbrains), monospace;
 
-  --radius-card: 20px;
-  --radius-tile: 14px;
+  --radius-card: 22px;
+  --radius-tile: 16px;
 
-  --shadow-neon: 0 0 0 1px rgb(255 176 32 / 0.5), 0 8px 28px -6px rgb(255 176 32 / 0.55);
-  --shadow-aqua: 0 0 0 1px rgb(61 217 235 / 0.45), 0 8px 28px -8px rgb(61 217 235 / 0.5);
-  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.04) inset, 0 20px 40px -24px rgb(0 0 0 / 0.8);
+  /* 글로우 — 버튼·포커스 링 */
+  --shadow-neon: 0 0 0 1px rgb(167 139 250 / 0.45), 0 10px 34px -8px rgb(124 58 237 / 0.65);
+  --shadow-aqua: 0 0 0 1px rgb(34 211 238 / 0.42), 0 10px 34px -10px rgb(34 211 238 / 0.55);
+  --shadow-amber: 0 0 0 1px rgb(255 176 32 / 0.45), 0 8px 28px -8px rgb(255 176 32 / 0.5);
+  /* 유리 표면 — 위쪽 안쪽 하이라이트 + 깊은 바깥 그림자 */
+  --shadow-card:
+    0 1px 0 0 rgb(255 255 255 / 0.07) inset,
+    0 -1px 0 0 rgb(0 0 0 / 0.35) inset,
+    0 24px 48px -28px rgb(0 0 0 / 0.9);
 
   --animate-twinkle: twinkle 6s ease-in-out infinite;
   --animate-blink: blink 5s infinite;
@@ -117,8 +133,8 @@
     40%, 80% { transform: translateX(6px); }
   }
   @keyframes pulse-glow {
-    0%, 100% { filter: drop-shadow(0 0 6px var(--glow, rgb(255 176 32 / 0.5))); }
-    50% { filter: drop-shadow(0 0 18px var(--glow, rgb(255 176 32 / 0.9))); }
+    0%, 100% { filter: drop-shadow(0 0 6px var(--glow, rgb(167 139 250 / 0.5))); }
+    50% { filter: drop-shadow(0 0 18px var(--glow, rgb(167 139 250 / 0.9))); }
   }
   @keyframes ticker {
     from { transform: translateX(0); }
@@ -147,7 +163,7 @@
     text-size-adjust: 100%;
   }
   ::selection {
-    background: rgb(255 176 32 / 0.35);
+    background: rgb(167 139 250 / 0.35);
   }
   button,
   [role="button"],
@@ -157,63 +173,147 @@
   :focus-visible {
     outline: 2px solid var(--color-aqua);
     outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgb(34 211 238 / 0.18);
   }
 }
 
-/* ---------- 밤하늘 배경 ---------- */
+/* ---------- 배경: 딥 네이비 + 컬러 블룸 ---------- */
+/* 레퍼런스처럼 "유리 뒤에서 색이 번지는" 느낌. 별 대신 큰 블룸 두 개 + 미세 그레인 */
 .night-sky {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60rem 40rem at 85% -10%, rgb(255 176 32 / 0.1), transparent 60%),
-    radial-gradient(50rem 36rem at -10% 110%, rgb(61 217 235 / 0.1), transparent 60%),
-    linear-gradient(180deg, #0b1020 0%, #0a0f1f 55%, #0d1328 100%);
+    radial-gradient(58rem 40rem at 78% -12%, rgb(124 58 237 / 0.28), transparent 62%),
+    radial-gradient(48rem 34rem at -12% 18%, rgb(34 211 238 / 0.16), transparent 60%),
+    radial-gradient(44rem 34rem at 20% 112%, rgb(232 121 249 / 0.12), transparent 62%),
+    linear-gradient(180deg, #080c1c 0%, #070b18 50%, #05080f 100%);
 }
-.night-sky::before,
-.night-sky::after {
+/* 아주 옅은 격자 — 유리판 뒤의 구조물처럼 */
+.night-sky::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-repeat: repeat;
-}
-/* 별 두 겹 (정적 + 반짝임) */
-.night-sky::before {
   background-image:
-    radial-gradient(1px 1px at 20px 30px, rgb(255 255 255 / 0.7), transparent),
-    radial-gradient(1px 1px at 140px 90px, rgb(255 255 255 / 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 260px 40px, rgb(255 226 170 / 0.7), transparent),
-    radial-gradient(1px 1px at 330px 160px, rgb(255 255 255 / 0.4), transparent),
-    radial-gradient(1px 1px at 80px 210px, rgb(180 240 255 / 0.6), transparent);
-  background-size: 380px 260px;
+    linear-gradient(rgb(150 180 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(150 180 255 / 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(70% 60% at 50% 30%, #000 20%, transparent 100%);
+  -webkit-mask-image: radial-gradient(70% 60% at 50% 30%, #000 20%, transparent 100%);
 }
+/* 천천히 도는 빛 한 줄기 — 가장자리를 마스크로 흩어 경계가 보이지 않게 한다 */
 .night-sky::after {
-  background-image:
-    radial-gradient(1.5px 1.5px at 60px 120px, rgb(255 255 255 / 0.9), transparent),
-    radial-gradient(1px 1px at 210px 20px, rgb(255 255 255 / 0.8), transparent),
-    radial-gradient(2px 2px at 300px 230px, rgb(255 210 122 / 0.8), transparent);
-  background-size: 420px 300px;
-  animation: var(--animate-twinkle);
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: conic-gradient(
+    from 210deg at 50% 50%,
+    transparent 0deg,
+    rgb(34 211 238 / 0.05) 60deg,
+    transparent 150deg,
+    rgb(167 139 250 / 0.05) 250deg,
+    transparent 340deg
+  );
+  filter: blur(40px);
+  mask-image: radial-gradient(60% 55% at 50% 45%, #000 0%, transparent 100%);
+  -webkit-mask-image: radial-gradient(60% 55% at 50% 45%, #000 0%, transparent 100%);
+  animation: spin 90s linear infinite;
 }
-/* 터미널 스캔라인 */
+@media (prefers-reduced-motion: reduce) {
+  .night-sky::after {
+    animation: none;
+  }
+}
+
+/* 필름 그레인 — 유리 질감의 핵심. (예전 스캔라인 자리) */
 .scanlines {
   position: fixed;
   inset: 0;
   z-index: 60;
   pointer-events: none;
-  background: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.018) 0 1px, transparent 1px 3px);
+  opacity: 0.35;
+  background-image:
+    radial-gradient(1px 1px at 12px 8px, rgb(255 255 255 / 0.16), transparent),
+    radial-gradient(1px 1px at 46px 30px, rgb(255 255 255 / 0.1), transparent),
+    radial-gradient(1px 1px at 78px 64px, rgb(255 255 255 / 0.12), transparent);
+  background-size: 96px 96px;
   mix-blend-mode: overlay;
 }
 
 /* ---------- 유틸 ---------- */
+/* 유리 표면 — 이 UI의 기본 단위.
+   위쪽이 밝고 아래로 어두워지는 반투명 판 + 헤어라인 + 깊은 그림자. */
 @utility card {
-  background: linear-gradient(180deg, rgb(27 36 68 / 0.72), rgb(20 27 51 / 0.82));
+  position: relative;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.02) 42%, rgb(10 16 34 / 0.5));
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+}
+
+/* 카드와 같지만 합성용 (패딩 없음) */
+@utility glass {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.02) 42%, rgb(10 16 34 / 0.5));
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-card);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+}
+
+/* 시안→바이올렛 그라데이션 헤어라인.
+   mask-composite 를 못 쓰는 브라우저에서는 요소 자신의 border 가 그대로 보인다(폴백). */
+@utility grad-line {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, var(--color-aqua), var(--color-neon) 48%, var(--color-magenta) 100%);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+/* 바깥으로 번지는 네온 — 레퍼런스의 "떠 있는" 느낌 */
+@utility glow-iris {
+  box-shadow:
+    0 0 0 1px rgb(167 139 250 / 0.35),
+    0 0 28px -6px rgb(124 58 237 / 0.55),
+    var(--shadow-card);
+}
+@utility glow-aqua {
+  box-shadow:
+    0 0 0 1px rgb(34 211 238 / 0.32),
+    0 0 26px -6px rgb(34 211 238 / 0.45),
+    var(--shadow-card);
+}
+
+/* 그라데이션 글자 */
+@utility grad-text {
+  background: linear-gradient(100deg, var(--color-aqua-soft), var(--color-neon-soft) 55%, var(--color-magenta));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 그라데이션 채움 (버튼·게이지) */
+@utility grad-fill {
+  background: linear-gradient(100deg, var(--color-aqua), var(--color-neon) 55%, var(--color-magenta));
 }
 
 /* 전체 화면 레이아웃 — dvh를 모르는 브라우저에는 @supports로 vh를 되돌려준다
@@ -225,7 +325,7 @@
   min-height: 100dvh;
 }
 @utility card-solid {
-  background: var(--color-panel);
+  background: linear-gradient(180deg, var(--color-panel-2), var(--color-panel));
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
@@ -242,15 +342,18 @@
   letter-spacing: -0.01em;
 }
 @utility text-glow {
-  text-shadow: 0 0 18px rgb(255 176 32 / 0.55);
+  text-shadow: 0 0 20px rgb(167 139 250 / 0.6);
 }
 @utility text-glow-aqua {
-  text-shadow: 0 0 16px rgb(61 217 235 / 0.55);
+  text-shadow: 0 0 18px rgb(34 211 238 / 0.6);
+}
+@utility text-glow-amber {
+  text-shadow: 0 0 18px rgb(255 176 32 / 0.55);
 }
 @utility grid-bg {
   background-image:
-    linear-gradient(rgb(61 217 235 / 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(61 217 235 / 0.06) 1px, transparent 1px);
+    linear-gradient(rgb(34 211 238 / 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(34 211 238 / 0.06) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 @utility no-scrollbar {
@@ -279,7 +382,7 @@
 
 /* 신화 뱃지 무지개 */
 .rainbow-fill {
-  background: conic-gradient(from 0deg, #ff6fd8, #ffb020, #fff36b, #6bf0a0, #3dd9eb, #7f8cff, #ff6fd8);
+  background: conic-gradient(from 0deg, #e879f9, #a78bfa, #22d3ee, #4ade80, #ffd27a, #ff6fd8, #e879f9);
 }
 
 @supports not (height: 100dvh) {

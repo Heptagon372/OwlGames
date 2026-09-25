@@ -697,7 +697,7 @@ function MasterCard({ config }: { config: AppConfig }) {
           type="checkbox"
           checked={only}
           onChange={(e) => setOnly(e.target.checked)}
-          className="size-4 accent-[#FFB020]"
+          className="size-4 accent-[#a78bfa]"
         />
         관리자가 한 명도 없을 때만 승격 (권장)
       </label>
