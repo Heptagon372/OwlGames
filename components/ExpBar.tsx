@@ -54,7 +54,7 @@ export function ExpBar({ points, fromPoints, curve = DEFAULT_CURVE, durationMs =
     <div className={cn("w-full", className)}>
       {!compact && (
         <div className="mb-1.5 flex items-baseline justify-between font-mono text-xs">
-          <span className="font-bold text-neon">
+          <span className="font-bold text-neon-soft">
             Lv <span className="num text-sm">{p.level}</span>
           </span>
           <span className="num text-mute">
@@ -63,7 +63,7 @@ export function ExpBar({ points, fromPoints, curve = DEFAULT_CURVE, durationMs =
         </div>
       )}
       <div
-        className="relative h-3 overflow-hidden rounded-full border border-line bg-night/80"
+        className="relative h-3 overflow-hidden rounded-full border border-line bg-black/35 backdrop-blur-sm"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}
@@ -71,7 +71,7 @@ export function ExpBar({ points, fromPoints, curve = DEFAULT_CURVE, durationMs =
         aria-label={`레벨 ${p.level} 경험치`}
       >
         <div
-          className="absolute inset-y-0 left-0 rounded-full bg-linear-to-r from-neon-deep via-neon to-neon-soft shadow-[0_0_12px_rgb(255_176_32/0.6)]"
+          className="absolute inset-y-0 left-0 rounded-full bg-linear-to-r from-aqua via-neon to-magenta shadow-[0_0_14px_rgb(167_139_250/0.75)]"
           style={{ width: `${Math.max(3, p.ratio * 100)}%` }}
         >
           <div className="shimmer absolute inset-0 rounded-full" />

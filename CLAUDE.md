@@ -47,10 +47,17 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 
 ## 디자인 시스템 (§13)
 
-- 토큰은 `app/globals.css`의 `@theme`: `night`(배경 #0B1020) · `panel`(#141B33) · `neon`(앰버 #FFB020) ·
-  `aqua`(#3DD9EB) · `alert` · `ok` · `ink` / `mute` / `dim`, 반경 `rounded-card`(20px) · `rounded-tile`(14px).
-- 유틸: `.card` / `.card-solid`(반투명 패널), `.num`(JetBrains Mono + tabular-nums), `.text-glow`, `.grid-bg`, `.hex`.
-- 배경은 `body`에 깔리는 `.night-sky`(별·달빛 그라데이션) + `.scanlines`. 페이지에서 따로 배경을 칠하지 말 것.
+- **리퀴드 글래스**다 (DECISIONS §5-10). 어두운 네이비 위에 반투명 유리판을 띄우고, 테두리는 1px
+  시안→바이올렛→마젠타 헤어라인, 강조는 바깥 글로우로 준다.
+- 토큰은 `app/globals.css`의 `@theme`: `night`(배경 #070b18) · `panel`(#101832) · **`neon`(바이올렛 #a78bfa, 주 강조색)** ·
+  `aqua`(#22d3ee) · `magenta`(#e879f9) · **`amber`(#ffb020 — 부엉이·아울 에너지·티켓 전용)** ·
+  `alert` · `ok` · `ink` / `mute` / `dim`, 반경 `rounded-card`(22px) · `rounded-tile`(16px).
+- 유틸: `.card`·`.glass`(유리판) / `.card-solid`(불투명, 모달) / `.grad-line`(그라데이션 헤어라인) /
+  `.glow-iris`·`.glow-aqua`(바깥 글로우) / `.grad-text`·`.grad-fill`(그라데이션 글자·채움) /
+  `.num`(JetBrains Mono + tabular-nums) · `.text-glow` · `.grid-bg` · `.hex`.
+- 버튼은 `primary`=`grad-fill`+글로우, `outline`=`grad-line`+유리. 강조 카드는 `<Card glow>`.
+- 배경은 `body`에 깔리는 `.night-sky`(색 블룸 + 옅은 격자 + 느린 광선) + `.scanlines`(필름 그레인).
+  페이지에서 따로 배경을 칠하지 말 것.
 - 폰트: 한글 Pretendard(`next/font/local`, `node_modules/pretendard`), 숫자·코드 JetBrains Mono(`next/font/google`).
   **canvas에서는 CSS 변수를 못 쓰므로 `games/core/canvas.ts`의 `font(weight, size)`를 사용한다.**
 - 랭크 뱃지는 17종 모두 `lib/rank.ts`의 `RANKS` 색/효과 테이블에서 나온다 (신화=무지개, 초월자=발광, 챌린저=앰버 발광+파티클).
@@ -75,6 +82,7 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 부스 위치 안내 | `app_config.booth_location` |
 | 아울 에너지(스태미나) | `app_config.owl_energy` (DB) · 표시 기본값은 `lib/config.ts` · 게임 내 드롭은 각 게임 `config.ts`의 `CFG.owlEnergy` (서버 조건과 같은 값이어야 한다) |
 | 실시간 등수·변동 표시 | `components/RankDelta.tsx` · `components/LiveRefresh.tsx` · `games/core/useGameSession.ts`의 `position` |
+| 플랫폼 색·유리 질감 | `app/globals.css`의 `@theme` + `.card`/`.grad-line` — 캔버스 쪽 복제본은 `games/core/canvas.ts`의 `COLORS`, 게임 테마는 `games/*/theme.ts` |
 | 관리자 화면 | `components/admin/AdminPanel.tsx` (대시보드·승인·유저·재고·설정·로그) |
 | 운영 값을 화면에서 바꾸기 | `admin_set_config` 화이트리스트(`supabase/migrations/20260927000100_admin_system.sql`) + `lib/rpc.ts`의 `setConfigValue` |
 | 관리자 대시보드 집계 | `admin_stats()` RPC — 항목을 늘리면 `lib/types.ts`의 `AdminStats`와 데모값도 같이 고친다 |

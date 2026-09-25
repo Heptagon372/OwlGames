@@ -47,18 +47,24 @@ export function mulberry32(seed: number) {
   };
 }
 
+/** app/globals.css의 @theme 토큰과 같은 값 (canvas는 CSS 변수를 못 읽는다) */
 export const COLORS = {
-  night: "#0b1020",
-  panel: "#141b33",
-  panel2: "#1b2444",
-  line: "rgba(120,150,220,0.25)",
-  neon: "#ffb020",
-  neonSoft: "#ffd27a",
-  aqua: "#3dd9eb",
+  night: "#070b18",
+  panel: "#101832",
+  panel2: "#16203f",
+  line: "rgba(150,180,255,0.22)",
+  /** 메인 강조 = 바이올렛 */
+  neon: "#a78bfa",
+  neonSoft: "#c4b5fd",
+  aqua: "#22d3ee",
+  magenta: "#e879f9",
+  /** 앰버는 브랜드(부엉이·에너지·티켓) 전용 */
+  amber: "#ffb020",
+  amberSoft: "#ffd27a",
   alert: "#ff5c7a",
-  ok: "#6bf0a0",
-  ink: "#e8ecf8",
-  mute: "#8d97ba",
+  ok: "#4ade80",
+  ink: "#e9edfb",
+  mute: "#98a3c6",
 } as const;
 
 let cachedMono: string | null = null;

@@ -51,7 +51,7 @@ export function LevelUpOverlay({ open, kind, level, rankIdx, ticketsGained = 0, 
         {kind === "rank" ? (
           <RankBadge rankIdx={rankIdx} size="xl" />
         ) : (
-          <div className="grid size-32 place-items-center rounded-full border-2 border-neon/60 bg-night text-5xl font-black text-neon shadow-[0_0_60px_rgb(255_176_32/0.45)]">
+          <div className="grid size-32 place-items-center rounded-full grad-line glass text-5xl font-black text-neon-soft shadow-[0_0_70px_rgb(167_139_250/0.5)]">
             <span className="num">{level}</span>
           </div>
         )}
@@ -74,7 +74,7 @@ export function LevelUpOverlay({ open, kind, level, rankIdx, ticketsGained = 0, 
 
       {ticketsGained > 0 && (
         <div
-          className="animate-pop rounded-2xl border border-neon/50 bg-neon/10 px-6 py-3 text-xl font-extrabold text-neon shadow-neon"
+          className="animate-pop rounded-2xl border border-amber/50 bg-amber/10 px-6 py-3 text-xl font-extrabold text-amber-soft shadow-amber"
           style={{ animationDelay: "0.7s" }}
         >
           🎟️ 뽑기 티켓 +{ticketsGained}

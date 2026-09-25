@@ -59,14 +59,14 @@ export function RankBadge({ rankIdx, size = "md", withLabel, className }: Props)
         className="hex absolute"
         style={{
           // color-mix를 못 쓰는 브라우저(구형 사파리)에서는 아래 단색 그라데이션이 남는다
-          background: `linear-gradient(170deg, ${dark} 0%, #0b1020 85%)`,
+          background: `linear-gradient(170deg, ${dark} 0%, #070b18 85%)`,
           inset: Math.max(2, px * 0.09),
         }}
       >
         <span
           className="hex absolute inset-0"
           style={{
-            background: `linear-gradient(170deg, color-mix(in srgb, ${dark} 55%, #0b1020) 0%, #0b1020 85%)`,
+            background: `linear-gradient(170deg, color-mix(in srgb, ${dark} 55%, #070b18) 0%, #070b18 85%)`,
           }}
         />
       </span>

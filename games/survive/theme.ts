@@ -28,18 +28,18 @@ export type Theme = {
 export const THEMES: Record<ThemeId, Theme> = {
   dark: {
     id: "dark",
-    bg: "#0B1020",
-    grid: "#151C30",
-    surface: "#141B33",
+    bg: "#070B18",
+    grid: "#121A33",
+    surface: "#101832",
     text: "#E8EDF7",
     dim: "#8A94AD",
     player: "#FFB020",
     enemy: "#FF5C7A",
     boss: "#C084FC",
-    xp: "#3DD9EB",
+    xp: "#22D3EE",
     hp: "#4ADE80",
-    obstacle: "#3A4463",
-    accent: "#FFB020",
+    obstacle: "#2A3357",
+    accent: "#A78BFA",
     danger: "#FF3B5C",
     glow: true,
   },
@@ -48,7 +48,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     bg: "#F4F6FB",
     grid: "#E3E8F2",
     surface: "#FFFFFF",
-    text: "#141B33",
+    text: "#101832",
     dim: "#5A6479",
     player: "#B45309",
     enemy: "#D92B50",
@@ -64,7 +64,7 @@ export const THEMES: Record<ThemeId, Theme> = {
 
 /** 스테이지별 바닥 액센트 (§10.3) — 15개를 돌려 쓰고 무한 구간도 같은 순환 */
 const STAGE_ACCENT = [
-  "#3DD9EB", "#FFB020", "#7DD3FC", "#A78BFA", "#F472B6",
+  "#22D3EE", "#FFB020", "#7DD3FC", "#A78BFA", "#F472B6",
   "#4ADE80", "#FB923C", "#60A5FA", "#F87171", "#C084FC",
   "#FACC15", "#2DD4BF", "#818CF8", "#FB7185", "#F59E0B",
 ];

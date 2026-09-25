@@ -4,7 +4,7 @@ import { isDemo } from "@/lib/env";
 export function DemoBanner() {
   if (!isDemo) return null;
   return (
-    <div className="border-b border-neon/25 bg-neon/10 px-4 py-2 text-center font-mono text-[11px] text-neon-soft">
+    <div className="border-b border-line bg-white/4 px-4 py-2 text-center font-mono text-[11px] text-mute backdrop-blur-sm">
       DEMO MODE · Supabase 미설정 — 가짜 데이터로 돌아가며 저장되지 않아요 (운영시간 제한 없음)
     </div>
   );

@@ -31,10 +31,11 @@ export function PlayerShell({
   const r = rankInfo(profile.rank_idx);
   return (
     <div className="mx-auto flex min-h-dvh-safe w-full max-w-2xl flex-col">
-      <header className="sticky top-0 z-30 border-b border-line bg-night/80 backdrop-blur-md">
+      {/* 유리 헤더: 아래쪽에만 시안→바이올렛 헤어라인이 깔린다 */}
+      <header className="sticky top-0 z-30 bg-night/60 backdrop-blur-xl backdrop-saturate-150">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <Logo size="sm" href="/lobby" />
-          <Link href="/me" className="flex items-center gap-2 rounded-2xl px-2 py-1 hover:bg-white/5">
+          <Link href="/me" className="flex items-center gap-2 rounded-2xl px-2 py-1 transition-colors hover:bg-white/5">
             <div className="text-right leading-tight">
               <p className="text-sm font-bold">{profile.name}</p>
               <p className="num text-[11px]" style={{ color: r.colors[0] }}>
@@ -48,13 +49,16 @@ export function PlayerShell({
           <ExpBar points={profile.total_points} compact className="flex-1" />
           <OwlEnergyBar initial={energy} compact />
         </div>
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-neon/45 to-transparent" />
       </header>
 
       <DemoBanner />
 
       <main className="flex-1 px-4 pb-28 pt-4">{children}</main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-2xl border-t border-line bg-night/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
+      {/* 유리 탭바: 선택된 탭만 바이올렛으로 빛나고 위에 그라데이션 헤어라인 */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-2xl bg-night/70 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150">
+        <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-neon/45 to-transparent" />
         <ul className="grid grid-cols-4">
           {NAV.map(({ href, label, icon: Icon }) => {
             const active = current === href;
@@ -64,12 +68,15 @@ export function PlayerShell({
                   href={href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-h-[56px] flex-col items-center justify-center gap-1 text-[11px] font-bold transition-colors",
-                    active ? "text-neon" : "text-dim hover:text-mute",
+                    "relative flex min-h-[56px] flex-col items-center justify-center gap-1 text-[11px] font-bold transition-colors",
+                    active ? "text-neon-soft" : "text-dim hover:text-mute",
                   )}
                 >
-                  <Icon className={cn("size-5", active && "drop-shadow-[0_0_8px_rgb(255_176_32/0.7)]")} />
-                  {label}
+                  {active && (
+                    <span className="grad-fill pointer-events-none absolute left-1/2 top-0 h-0.5 w-10 -translate-x-1/2 rounded-full shadow-[0_0_14px_rgb(167_139_250/0.9)]" />
+                  )}
+                  <Icon className={cn("relative size-5", active && "drop-shadow-[0_0_10px_rgb(167_139_250/0.9)]")} />
+                  <span className="relative">{label}</span>
                 </Link>
               </li>
             );
