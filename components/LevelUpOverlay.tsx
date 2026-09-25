@@ -60,7 +60,7 @@ export function LevelUpOverlay({ open, kind, level, rankIdx, ticketsGained = 0, 
       <div className="animate-rise text-center" style={{ animationDelay: "0.25s" }}>
         {kind === "rank" ? (
           <>
-            <p className="text-3xl font-black text-glow" style={{ color: r.colors[0] }}>
+            <p className="rank-ink text-3xl font-black text-glow" style={{ color: r.colors[0] }}>
               {r.name}
             </p>
             <p className="mt-1 font-mono text-sm text-mute">Lv {level} 달성</p>

@@ -33,7 +33,7 @@ export default async function MePage() {
         <div className="min-w-0 flex-1">
           <p className="text-lg font-black">{profile.name}</p>
           <p className="num text-xs text-mute">{profile.student_id}</p>
-          <p className="mt-1 text-sm font-bold" style={{ color: r.colors[0] }}>
+          <p className="rank-ink mt-1 text-sm font-bold" style={{ color: r.colors[0] }}>
             {r.name} · Lv {profile.level}
           </p>
         </div>

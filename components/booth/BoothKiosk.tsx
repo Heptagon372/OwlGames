@@ -168,7 +168,7 @@ export function BoothKiosk() {
                   <div className="min-w-0 flex-1">
                     <p className="text-3xl font-black">{lookup.name}</p>
                     <p className="num text-lg text-mute">{lookup.student_id}</p>
-                    <p className="mt-1 font-bold" style={{ color: rankInfo(lookup.rank_idx).colors[0] }}>
+                    <p className="rank-ink mt-1 font-bold" style={{ color: rankInfo(lookup.rank_idx).colors[0] }}>
                       {rankInfo(lookup.rank_idx).name} · Lv {lookup.level} · 티어 T{lookup.tier}
                     </p>
                   </div>

@@ -42,7 +42,7 @@ export default async function TicketPage() {
         </div>
         <div className="text-right">
           <RankBadge rankIdx={profile.rank_idx} size="md" />
-          <p className="num mt-1 text-[11px]" style={{ color: r.colors[0] }}>
+          <p className="rank-ink num mt-1 text-[11px]" style={{ color: r.colors[0] }}>
             T{tier}
           </p>
         </div>

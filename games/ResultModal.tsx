@@ -197,7 +197,7 @@ export function ResultModal({
             <div className="mb-3 flex items-center gap-3">
               <RankBadge rankIdx={result.rank_after} size="md" />
               <div className="min-w-0 flex-1">
-                <p className="font-bold" style={{ color: rankInfo(result.rank_after).colors[0] }}>
+                <p className="rank-ink font-bold" style={{ color: rankInfo(result.rank_after).colors[0] }}>
                   {rankInfo(result.rank_after).name}
                 </p>
                 <p className="num text-xs text-mute">누적 {formatNumber(result.total_points)}P</p>

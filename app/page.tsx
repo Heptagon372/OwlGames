@@ -3,6 +3,7 @@ import { Logo } from "@/components/brand/Logo";
 import { OwlMark } from "@/components/brand/OwlMark";
 import { DemoBanner } from "@/components/DemoBanner";
 import { OpenStatus } from "@/components/OpenStatus";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { RankBadge } from "@/components/RankBadge";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, Chip, TermLabel } from "@/components/ui/Card";
@@ -31,7 +32,10 @@ export default async function LandingPage() {
       <DemoBanner />
       <header className="flex items-center justify-between py-4">
         <Logo size="sm" />
-        <OpenStatus open={open} hours={config.open_hours} />
+        <div className="flex items-center gap-2">
+          <OpenStatus open={open} hours={config.open_hours} />
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* 히어로 */}

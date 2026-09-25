@@ -65,7 +65,7 @@ export default async function LobbyPage({
         <div className="relative flex items-center gap-4">
           <RankBadge rankIdx={profile.rank_idx} size="lg" />
           <div className="min-w-0 flex-1">
-            <p className="text-xl font-black tracking-tight" style={{ color: r.colors[0] }}>
+            <p className="rank-ink text-xl font-black tracking-tight" style={{ color: r.colors[0] }}>
               {r.name}
             </p>
             <p className="num mt-0.5 text-xs text-mute">

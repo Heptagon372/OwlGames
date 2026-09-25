@@ -5,6 +5,7 @@ import { RankBadge } from "./RankBadge";
 import { ExpBar } from "./ExpBar";
 import { DemoBanner } from "./DemoBanner";
 import { OwlEnergyBar } from "./OwlEnergyBar";
+import { ThemeToggle } from "./ThemeToggle";
 import { cn } from "@/lib/cn";
 import { rankInfo } from "@/lib/rank";
 import type { OwlEnergy, Profile } from "@/lib/types";
@@ -35,10 +36,13 @@ export function PlayerShell({
       <header className="sticky top-0 z-30 bg-night/60 backdrop-blur-xl backdrop-saturate-150">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <Logo size="sm" href="/lobby" />
+          <span className="ml-auto">
+            <ThemeToggle />
+          </span>
           <Link href="/me" className="flex items-center gap-2 rounded-2xl px-2 py-1 transition-colors hover:bg-white/5">
             <div className="text-right leading-tight">
               <p className="text-sm font-bold">{profile.name}</p>
-              <p className="num text-[11px]" style={{ color: r.colors[0] }}>
+              <p className="rank-ink num text-[11px]" style={{ color: r.colors[0] }}>
                 {r.name} · Lv {profile.level}
               </p>
             </div>

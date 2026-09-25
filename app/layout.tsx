@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { BrowserSupportNotice } from "@/components/BrowserSupportNotice";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -44,9 +45,19 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" className={`${pretendard.variable} ${jetbrains.variable} ${arcade.variable}`}>
+    <html
+      lang="ko"
+      data-theme="dark"
+      suppressHydrationWarning
+      className={`${pretendard.variable} ${jetbrains.variable} ${arcade.variable}`}
+    >
+      <head>
+        {/* 첫 페인트 전에 테마를 정한다 — 없으면 라이트 사용자에게 어두운 화면이 번쩍인다 */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="antialiased">
         <div className="night-sky" aria-hidden />
+        <div className="sky-day" aria-hidden />
         {children}
         <BrowserSupportNotice />
         <div className="scanlines" aria-hidden />
