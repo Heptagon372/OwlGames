@@ -1,13 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { getAppConfig } from "@/lib/queries";
 import { getAdminSupabase, getServerSupabase } from "@/lib/supabase/server";
 import { isDemo, studentEmail } from "@/lib/env";
 
 export type AuthState = { error?: string } | null;
 
-const DUP_MESSAGE = "이미 등록된 학번입니다. S.OWL 부스/관리자에게 문의하세요.";
 
 function field(form: FormData, key: string): string {
   return String(form.get(key) ?? "").trim();
@@ -25,16 +25,19 @@ function isDuplicateError(message: string): boolean {
 }
 
 export async function signUpAction(_prev: AuthState, form: FormData): Promise<AuthState> {
+  // 안내 문구도 고른 언어로 나가야 한다 (next-intl 은 서버 액션 안에서도 요청 언어를 안다)
+  const t = await getTranslations("auth");
+  const dupMessage = t("errDuplicate");
   const name = field(form, "name");
   const studentId = field(form, "student_id");
   const password = String(form.get("password") ?? "");
   const password2 = String(form.get("password2") ?? "");
 
   const config = await getAppConfig();
-  if (name.length < 2 || name.length > 20) return { error: "이름을 2~20자로 입력해주세요." };
-  if (!new RegExp(config.student_id_pattern).test(studentId)) return { error: "학번 형식이 올바르지 않아요. (숫자 9자리)" };
-  if (password.length < 6) return { error: "비밀번호는 6자 이상이어야 해요." };
-  if (password !== password2) return { error: "비밀번호가 서로 달라요." };
+  if (name.length < 2 || name.length > 20) return { error: t("errName") };
+  if (!new RegExp(config.student_id_pattern).test(studentId)) return { error: t("errStudentId") };
+  if (password.length < 6) return { error: t("errPassword") };
+  if (password !== password2) return { error: t("errPasswordMatch") };
 
   if (isDemo) redirect("/pending");
 
@@ -44,7 +47,7 @@ export async function signUpAction(_prev: AuthState, form: FormData): Promise<Au
   if (admin) {
     // 학번 중복은 auth 단계에서도 걸리지만, 안내 문구를 정확히 주기 위해 먼저 확인한다
     const { data: dup } = await admin.from("profiles").select("id").eq("student_id", studentId).maybeSingle();
-    if (dup) return { error: DUP_MESSAGE };
+    if (dup) return { error: dupMessage };
 
     // service_role로 이메일 확인 없이 생성 (§11 — 학번@owlgames.local 매핑)
     const { error } = await admin.auth.admin.createUser({
@@ -54,45 +57,46 @@ export async function signUpAction(_prev: AuthState, form: FormData): Promise<Au
       user_metadata: { name, student_id: studentId },
     });
     if (error) {
-      if (isDuplicateError(error.message)) return { error: DUP_MESSAGE };
-      return { error: `가입에 실패했어요: ${error.message}` };
+      if (isDuplicateError(error.message)) return { error: dupMessage };
+      return { error: t("errSignupFailed", { reason: error.message }) };
     }
   } else {
     const supabase = await getServerSupabase();
-    if (!supabase) return { error: "서버 설정이 올바르지 않아요." };
+    if (!supabase) return { error: t("errServer") };
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { name, student_id: studentId } },
     });
     if (error) {
-      if (isDuplicateError(error.message)) return { error: DUP_MESSAGE };
-      return { error: `가입에 실패했어요: ${error.message}` };
+      if (isDuplicateError(error.message)) return { error: dupMessage };
+      return { error: t("errSignupFailed", { reason: error.message }) };
     }
   }
 
   const supabase = await getServerSupabase();
   const { error: signInError } = (await supabase?.auth.signInWithPassword({ email, password })) ?? {};
-  if (signInError) return { error: "가입은 됐지만 로그인에 실패했어요. 로그인 화면에서 다시 시도해주세요." };
+  if (signInError) return { error: t("errSignedUpNoLogin") };
 
   redirect("/pending");
 }
 
 export async function signInAction(_prev: AuthState, form: FormData): Promise<AuthState> {
+  const t = await getTranslations("auth");
   const studentId = field(form, "student_id");
   const password = String(form.get("password") ?? "");
-  if (!studentId || !password) return { error: "학번과 비밀번호를 입력해주세요." };
+  if (!studentId || !password) return { error: t("errEmpty") };
 
   if (isDemo) redirect("/lobby");
 
   const supabase = await getServerSupabase();
-  if (!supabase) return { error: "서버 설정이 올바르지 않아요." };
+  if (!supabase) return { error: t("errServer") };
 
   const { error } = await supabase.auth.signInWithPassword({
     email: studentEmail(studentId),
     password,
   });
-  if (error) return { error: "학번 또는 비밀번호가 올바르지 않아요." };
+  if (error) return { error: t("errBadLogin") };
 
   redirect("/lobby");
 }

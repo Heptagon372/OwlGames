@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import { formatCountdown } from "@/lib/format";
 import { owlEnergyStatus } from "@/lib/rpc";
@@ -16,6 +17,7 @@ export function OwlEnergyBar({
   compact?: boolean;
   className?: string;
 }) {
+  const t = useTranslations("energy");
   const [status, setStatus] = useState(initial);
   const [left, setLeft] = useState(initial.next_refill_sec);
   const refreshing = useRef(false);
@@ -67,7 +69,7 @@ export function OwlEnergyBar({
 
   if (compact) {
     return (
-      <span className={cn("inline-flex items-center gap-1.5", className)} title="아울 에너지">
+      <span className={cn("inline-flex items-center gap-1.5", className)} title={t("title")}>
         <span className="text-sm">🦉</span>
         <span className="num text-sm font-bold text-amber-soft">
           {status.energy}
@@ -82,14 +84,14 @@ export function OwlEnergyBar({
     <div className={cn("glass rounded-tile px-4 py-3", className)}>
       <div className="mb-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-sm font-bold">
-          🦉 아울 에너지
+          🦉 {t("title")}
           <span className="num text-amber-soft">
             {status.energy}
             <span className="text-xs text-mute">/{status.cap}</span>
           </span>
         </span>
         <span className="num text-xs text-mute">
-          {full ? "가득 참" : `다음 충전 ${formatCountdown(left)}`}
+          {full ? t("full") : t("next", { time: formatCountdown(left) })}
         </span>
       </div>
       <div className="flex gap-1">
@@ -108,7 +110,7 @@ export function OwlEnergyBar({
         ))}
       </div>
       <p className="mt-2 text-[11px] text-dim">
-        게임 한 판에 {status.cost}개 · {status.cap}개까지 자동 충전 · 부스 미션으로도 받을 수 있어요
+        {t("note", { cost: status.cost, cap: status.cap })}
       </p>
     </div>
   );

@@ -3,6 +3,7 @@
 // 실시간 등수 표시 — 지금 몇 위인지, 지난 판 이후 몇 계단 오르내렸는지.
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Minus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 
 const KEY = "owlgames.lastPosition";
@@ -28,11 +29,12 @@ export function readLastPosition(): number | null {
 
 /** 등수 변동 칩 — 숫자가 작아질수록(1위에 가까울수록) 상승 */
 export function DeltaChip({ from, to, className }: { from: number | null; to: number; className?: string }) {
+  const t = useTranslations("rankDelta");
   if (from === null || from === to) {
     return (
       <span className={cn("inline-flex items-center gap-0.5 text-xs text-dim", className)}>
         <Minus className="size-3" />
-        <span className="num">변동 없음</span>
+        <span className="num">{t("same")}</span>
       </span>
     );
   }
@@ -54,6 +56,7 @@ export function DeltaChip({ from, to, className }: { from: number | null; to: nu
 
 /** 로비용 — 현재 등수 + 지난 판 이후 변동 */
 export function RankDelta({ position, className }: { position: number; className?: string }) {
+  const t = useTranslations("rankDelta");
   const [last, setLast] = useState<number | null>(null);
 
   useEffect(() => {
@@ -62,7 +65,7 @@ export function RankDelta({ position, className }: { position: number; className
 
   return (
     <span className={cn("inline-flex items-center gap-1.5", className)}>
-      <span className="num text-mute">전체 {position}위</span>
+      <span className="num text-mute">{t("overall", { position })}</span>
       <DeltaChip from={last} to={position} />
     </span>
   );

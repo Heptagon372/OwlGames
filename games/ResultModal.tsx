@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RotateCcw, Home, Ticket } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ExpBar } from "@/components/ExpBar";
 import { LevelUpOverlay } from "@/components/LevelUpOverlay";
 import { RankBadge } from "@/components/RankBadge";
@@ -15,69 +16,80 @@ import type { GameId, SubmitResult } from "@/lib/types";
 
 const BAR_MS = 1400;
 
-/** 게임별 상세 기록 (아울러닝 §12 결과 화면) */
-function gameStats(game: GameId, meta: Record<string, unknown> | null): { label: string; value: string }[] {
+type Stat = { label: string; value: string };
+type T = (key: string, values?: Record<string, string | number>) => string;
+
+/** 게임별 상세 기록 (아울러닝 §12 결과 화면). 라벨·단위는 전부 `result.stats` 메시지에서 온다 */
+function gameStats(game: GameId, meta: Record<string, unknown> | null, t: T): Stat[] {
   if (!meta) return [];
   const n = (k: string) => (typeof meta[k] === "number" ? (meta[k] as number) : 0);
+  const stage = () =>
+    meta.cleared ? t("stageCleared", { stage: n("stage") }) : t("stageValue", { stage: n("stage") });
+  const damage = () => (n("damage_taken") === 0 ? t("noDamage") : t("times", { count: n("damage_taken") }));
+
   if (game === "flight") {
     const stats = [
-      { label: "거리", value: `${formatNumber(n("distance_m"))} m` },
-      { label: "최고 콤보", value: formatNumber(n("combo_max")) },
-      { label: "NEAR MISS", value: formatNumber(n("near_miss")) },
-      { label: "아이템", value: `${formatNumber(n("items"))}개` },
-      { label: "도달 페이즈", value: `P${n("phase_max")}` },
+      { label: t("distance"), value: `${formatNumber(n("distance_m"))} m` },
+      { label: t("comboMax"), value: formatNumber(n("combo_max")) },
+      { label: t("nearMiss"), value: formatNumber(n("near_miss")) },
+      { label: t("items"), value: t("count", { count: formatNumber(n("items")) }) },
+      { label: t("phase"), value: `P${n("phase_max")}` },
     ];
-    if (n("special_cleared") > 0) stats.push({ label: "특수 구간", value: `${n("special_cleared")}회 완주` });
+    if (n("special_cleared") > 0) {
+      stats.push({ label: t("special"), value: t("specialValue", { count: n("special_cleared") }) });
+    }
     return stats;
   }
   if (game === "logic") {
-    const stats = [
-      { label: "해결", value: `${formatNumber(n("solved"))}문제` },
-      { label: "최적화", value: `${formatNumber(n("optimal"))}회` },
-      { label: "최고 티어", value: `T${n("tier_max")}` },
-      { label: "최고 콤보", value: formatNumber(n("combo_max")) },
-      { label: "힌트", value: `${formatNumber(n("hints"))}회` },
-      { label: "평균 풀이", value: `${(n("avg_solve_ms") / 1000).toFixed(1)}초` },
+    return [
+      { label: t("solved"), value: t("solvedValue", { count: formatNumber(n("solved")) }) },
+      { label: t("optimal"), value: t("times", { count: formatNumber(n("optimal")) }) },
+      { label: t("tierMax"), value: `T${n("tier_max")}` },
+      { label: t("comboMax"), value: formatNumber(n("combo_max")) },
+      { label: t("hints"), value: t("times", { count: formatNumber(n("hints")) }) },
+      { label: t("avgSolve"), value: t("seconds", { sec: (n("avg_solve_ms") / 1000).toFixed(1) }) },
     ];
-    return stats;
   }
   if (game === "space") {
     const stats = [
-      { label: "스테이지", value: `STAGE ${n("stage")}${meta.cleared ? " 클리어" : ""}` },
-      { label: "생존", value: `${formatNumber(n("duration_s"))}초` },
-      { label: "처치", value: formatNumber(n("kills")) },
-      { label: "GRAZE", value: `${formatNumber(n("graze"))} ⭐` },
-      { label: "남은 생명", value: "🦉".repeat(Math.max(0, n("lives_left"))) || "없음" },
-      { label: "피격", value: n("damage_taken") === 0 ? "무피격 ✨" : `${n("damage_taken")}회` },
+      { label: t("stage"), value: stage() },
+      { label: t("survived"), value: t("seconds", { sec: formatNumber(n("duration_s")) }) },
+      { label: t("kills"), value: formatNumber(n("kills")) },
+      { label: t("graze"), value: `${formatNumber(n("graze"))} ⭐` },
+      { label: t("livesLeft"), value: "🦉".repeat(Math.max(0, n("lives_left"))) || t("none") },
+      { label: t("damage"), value: damage() },
     ];
-    if (meta.boss_killed) stats.push({ label: "보스", value: "격파 ✅" });
+    if (meta.boss_killed) stats.push({ label: t("bossKilled"), value: t("bossKilledValue") });
     return stats;
   }
   if (game === "survive") {
     const stats = [
-      { label: "스테이지", value: `STAGE ${n("stage")}${meta.cleared ? " 클리어" : ""}` },
-      { label: "생존", value: `${formatNumber(n("duration_s"))}초` },
-      { label: "처치", value: `${formatNumber(n("kills"))} (장애물 ${n("obstacles")})` },
-      { label: "레벨", value: `Lv.${n("level")}` },
-      { label: "진화", value: `${formatNumber(n("evolutions"))}개` },
-      { label: "피격", value: n("damage_taken") === 0 ? "무피격 ✨" : `${n("damage_taken")}회` },
+      { label: t("stage"), value: stage() },
+      { label: t("survived"), value: t("seconds", { sec: formatNumber(n("duration_s")) }) },
+      {
+        label: t("kills"),
+        value: t("killsWithObstacles", { kills: formatNumber(n("kills")), obstacles: n("obstacles") }),
+      },
+      { label: t("levelReached"), value: `Lv.${n("level")}` },
+      { label: t("evolutions"), value: t("count", { count: formatNumber(n("evolutions")) }) },
+      { label: t("damage"), value: damage() },
     ];
-    if (n("revives_used") > 0) stats.push({ label: "부활", value: `${n("revives_used")}회` });
+    if (n("revives_used") > 0) stats.push({ label: t("revives"), value: t("times", { count: n("revives_used") }) });
     return stats;
   }
   if (game === "typer") {
     return [
-      { label: "파괴", value: `${formatNumber(n("hits"))}개` },
-      { label: "놓침", value: `${formatNumber(n("misses"))}개` },
-      { label: "최고 콤보", value: formatNumber(n("max_combo")) },
-      { label: "도달 단계", value: `STAGE ${n("stage_max") || 1}` },
+      { label: t("destroyed"), value: t("count", { count: formatNumber(n("hits")) }) },
+      { label: t("missed"), value: t("count", { count: formatNumber(n("misses")) }) },
+      { label: t("comboMax"), value: formatNumber(n("max_combo")) },
+      { label: t("stage"), value: t("stageValue", { stage: n("stage_max") || 1 }) },
     ];
   }
   return [
-    { label: "정답", value: `${formatNumber(n("correct"))}개` },
-    { label: "오답", value: `${formatNumber(n("wrong"))}개` },
-    { label: "최고 연속", value: formatNumber(n("max_streak")) },
-    { label: "도달 단계", value: `STAGE ${n("stage_max") || 1}` },
+    { label: t("correct"), value: t("count", { count: formatNumber(n("correct")) }) },
+    { label: t("wrong"), value: t("count", { count: formatNumber(n("wrong")) }) },
+    { label: t("maxStreak"), value: formatNumber(n("max_streak")) },
+    { label: t("stage"), value: t("stageValue", { stage: n("stage_max") || 1 }) },
   ];
 }
 
@@ -96,6 +108,12 @@ export function ResultModal({
   position?: { before: number | null; after: number | null };
   onRetry: () => void;
 }) {
+  const t = useTranslations("result");
+  const ts = useTranslations("result.stats");
+  const tc = useTranslations("common");
+  const tg = useTranslations("games");
+  const tn = useTranslations("nav");
+  const tr = useTranslations("ranks");
   const rankUp = result.rank_after > result.rank_before;
   const levelUp = result.level_after > result.level_before;
   const [overlay, setOverlay] = useState<null | "rank" | "level">(null);
@@ -128,23 +146,24 @@ export function ResultModal({
   }, [rankUp]);
 
   const gameMeta = GAMES[game];
-  const stats = gameStats(game, meta ?? null);
+  const title = tg(`${game}.title`);
+  const stats = gameStats(game, meta ?? null, ts);
   const before = result.total_points - result.points;
 
   if (result.status === "rejected") {
     return (
-      <Modal open title="기록이 인정되지 않았어요" dismissible={false}>
+      <Modal open title={t("rejectedTitle")} dismissible={false}>
         <p className="text-sm leading-relaxed text-mute">
-          {result.reason ?? "플레이 시간이 정상 범위를 벗어났어요."}
+          {result.reason ?? t("rejectedDefault")}
           <br />
-          포인트는 지급되지 않았어요. 다시 한 판 해볼까요?
+          {t("rejectedNote")}
         </p>
         <div className="mt-6 grid gap-2">
           <Button size="lg" block onClick={onRetry}>
-            <RotateCcw className="size-5" /> 다시하기
+            <RotateCcw className="size-5" /> {tc("retry")}
           </Button>
           <ButtonLink href="/lobby" variant="ghost" block>
-            로비로
+            {tc("toLobby")}
           </ButtonLink>
         </div>
       </Modal>
@@ -153,18 +172,18 @@ export function ResultModal({
 
   return (
     <>
-      <Modal open title={`${gameMeta.emoji} ${gameMeta.title} 결과`} dismissible={false}>
+      <Modal open title={`${gameMeta.emoji} ${t("title", { title })}`} dismissible={false}>
         <div className="grid gap-4">
           <div className="grid grid-cols-2 gap-2">
             <div className="glass rounded-tile p-4 text-center">
-              <p className="text-xs text-mute">원점수</p>
+              <p className="text-xs text-mute">{t("raw")}</p>
               <p className="num mt-1 text-2xl font-black">
                 {formatNumber(result.raw_score)}
                 <span className="ml-1 text-sm text-mute">{gameMeta.scoreUnit}</span>
               </p>
             </div>
-            <div className="grad-line glow-iris glass rounded-tile p-4 text-center">
-              <p className="text-xs text-neon-soft">획득 포인트</p>
+            <div className="card-neon rounded-tile p-4 text-center">
+              <p className="text-xs text-neon-soft">{t("gained")}</p>
               <p className="num grad-text mt-1 text-2xl font-black">+{formatNumber(points)}P</p>
             </div>
           </div>
@@ -182,12 +201,14 @@ export function ResultModal({
 
           {typeof position?.after === "number" && (
             <div className="flex items-center justify-between gap-3 rounded-tile border border-aqua/40 bg-aqua/10 px-4 py-3">
-              <span className="text-sm font-bold text-aqua">전체 등수</span>
+              <span className="text-sm font-bold text-aqua">{t("position")}</span>
               <span className="flex items-center gap-2">
                 {typeof position.before === "number" && position.before !== position.after && (
-                  <span className="num text-sm text-mute line-through">{position.before}위</span>
+                  <span className="num text-sm text-mute line-through">
+                    {t("positionValue", { n: position.before })}
+                  </span>
                 )}
-                <span className="num text-xl font-black text-aqua">{position.after}위</span>
+                <span className="num text-xl font-black text-aqua">{t("positionValue", { n: position.after })}</span>
                 <DeltaChip from={position.before} to={position.after} />
               </span>
             </div>
@@ -198,9 +219,9 @@ export function ResultModal({
               <RankBadge rankIdx={result.rank_after} size="md" />
               <div className="min-w-0 flex-1">
                 <p className="rank-ink font-bold" style={{ color: rankInfo(result.rank_after).colors[0] }}>
-                  {rankInfo(result.rank_after).name}
+                  {tr(String(result.rank_after))}
                 </p>
-                <p className="num text-xs text-mute">누적 {formatNumber(result.total_points)}P</p>
+                <p className="num text-xs text-mute">{t("totalPoints", { points: formatNumber(result.total_points) })}</p>
               </div>
             </div>
             <ExpBar
@@ -215,9 +236,11 @@ export function ResultModal({
 
           {(result.owl_energy_gained ?? 0) > 0 && (
             <div className="flex items-center gap-2 rounded-tile border border-amber/50 bg-amber/10 px-4 py-3 font-extrabold text-amber-soft">
-              🦉 아울 에너지 +{result.owl_energy_gained}
+              {t("energyGained", { count: result.owl_energy_gained ?? 0 })}
               {typeof result.owl_energy === "number" && (
-                <span className="num ml-auto text-sm font-bold text-mute">보유 {result.owl_energy}</span>
+                <span className="num ml-auto text-sm font-bold text-mute">
+                  {t("energyHave", { count: result.owl_energy })}
+                </span>
               )}
             </div>
           )}
@@ -225,20 +248,20 @@ export function ResultModal({
           {result.tickets_gained > 0 && (
             <div className="flex items-center gap-2 rounded-tile border border-amber/50 bg-amber/10 px-4 py-3 font-extrabold text-amber-soft">
               <Ticket className="size-5" />
-              🎟️ 뽑기 티켓 +{result.tickets_gained}
+              {t("ticketGained", { count: result.tickets_gained })}
             </div>
           )}
 
           <div className="grid gap-2">
             <Button size="lg" block onClick={onRetry}>
-              <RotateCcw className="size-5" /> 다시하기
+              <RotateCcw className="size-5" /> {tc("retry")}
             </Button>
             <div className="grid grid-cols-2 gap-2">
               <ButtonLink href="/lobby" variant="outline" block>
-                <Home className="size-4" /> 로비
+                <Home className="size-4" /> {tc("toLobby")}
               </ButtonLink>
               <ButtonLink href="/ticket" variant="outline" block>
-                <Ticket className="size-4" /> 티켓
+                <Ticket className="size-4" /> {tn("ticket")}
               </ButtonLink>
             </div>
           </div>

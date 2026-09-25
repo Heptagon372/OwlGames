@@ -9,12 +9,12 @@ export function Field({
 }: React.InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string; mono?: boolean }) {
   return (
     <label className={cn("block", className)}>
-      <span className="mb-1.5 block text-sm font-bold text-mute">{label}</span>
+      <span className="mb-2 block text-sm font-bold text-mute">{label}</span>
       <input
         {...props}
         className={cn(
-          "min-h-12 w-full rounded-2xl border border-line bg-white/5 px-4 text-[15px] text-ink outline-none backdrop-blur-sm transition-colors",
-          "placeholder:text-dim focus:border-aqua/60 focus:bg-white/8",
+          "input-glass min-h-[52px] w-full px-4 text-[15px] text-ink outline-none backdrop-blur-sm transition-colors",
+          "placeholder:text-dim focus:border-aqua focus:shadow-[0_0_0_4px_rgb(34_211_238/0.15)]",
           mono && "num tracking-wider",
         )}
       />

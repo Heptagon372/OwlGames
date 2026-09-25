@@ -1,0 +1,402 @@
+{
+  "common": {
+    "play": "Play",
+    "retry": "Play again",
+    "close": "Close",
+    "back": "Back",
+    "toLobby": "Lobby",
+    "seeAll": "See all",
+    "me": "YOU",
+    "level": "Lv {level}",
+    "points": "{points}P",
+    "settings": "Settings",
+    "loading": "loading...",
+    "closedNow": "The booth is closed right now, so you cannot start a game.",
+    "demoNote": "DEMO · scores are not saved",
+    "scoreUnit": "pts",
+    "appName": "OWL GAMES",
+    "appShort": "OWL GAMES",
+    "appDesc": "S.OWL booth mini games — play, climb the ranks and spin the gacha at the booth."
+  },
+  "nav": {
+    "lobby": "Lobby",
+    "rank": "Ranking",
+    "ticket": "Tickets",
+    "me": "My stats",
+    "settings": "Settings"
+  },
+  "energy": {
+    "title": "Owl Energy",
+    "full": "Full",
+    "next": "Next in {time}",
+    "note": "{cost} per game · refills up to {cap} · booth missions give more",
+    "low": "🦉 Not enough Owl Energy"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Tune the screen, sound and language on this device.",
+    "back": "Back",
+    "storedOnDevice": "Settings are saved on this device only. They never affect your score or rank.",
+    "display": {
+      "title": "Display",
+      "theme": "Theme",
+      "themeHint": "Dark at night, light in bright rooms",
+      "size": "Screen size",
+      "sizeHint": "Text and buttons grow together",
+      "sizes": {
+        "small": "Small",
+        "normal": "Default",
+        "large": "Large",
+        "xlarge": "Extra large"
+      }
+    },
+    "sound": {
+      "title": "Sound",
+      "master": "Sound effects",
+      "masterHint": "Short blips on buttons and result screens",
+      "on": "ON",
+      "off": "OFF",
+      "volume": "Volume",
+      "previewOk": "Success",
+      "previewCoin": "Pickup",
+      "previewLevel": "Level up"
+    },
+    "language": {
+      "title": "Language",
+      "hint": "Changes the interface text, including game briefings and booth guidance."
+    }
+  },
+  "landing": {
+    "tagline": "Like an owl, wide awake at night.",
+    "tagline2": "Play, climb the ranks, and <b>spin the booth gacha</b>.",
+    "goLobby": "Go to the lobby",
+    "start": "Get started",
+    "haveAccount": "I already have an account",
+    "closed": "We are closed right now — see you between {start} and {end}",
+    "gamesLabel": "games --list",
+    "gamesTitle": "6 mini games",
+    "howLabel": "how-it-works",
+    "howTitle": "How it works",
+    "steps": {
+      "play": {
+        "title": "Play a game",
+        "desc": "Earn points across 6 mini games"
+      },
+      "rank": {
+        "title": "Level and rank up",
+        "desc": "17 ranks, from Wood to Challenger"
+      },
+      "ticket": {
+        "title": "Earn a gacha ticket",
+        "desc": "One ticket for every rank up"
+      },
+      "booth": {
+        "title": "Visit the S.OWL booth",
+        "desc": "Show your code and spin"
+      }
+    },
+    "offlineOnly": "The gacha runs at the booth only. Get a ticket code and come see us 🦉",
+    "ranksLabel": "ranks --all 17",
+    "ranksTitle": "17 ranks",
+    "prizesLabel": "prizes --stock",
+    "prizesTitle": "Booth prizes",
+    "place": "No. {place}",
+    "stock": "{stock} left",
+    "soldOut": "Sold out",
+    "footer": "S.OWL club booth · open {start}–{end} (KST)",
+    "settingsAria": "Settings"
+  },
+  "lobby": {
+    "tierRange": "{range} · tier T{tier}",
+    "total": "Total",
+    "ticketHave": "{count, plural, one {# gacha ticket ready} other {# gacha tickets ready}}",
+    "ticketNone": "No gacha tickets yet",
+    "ticketHintHave": "Get a code to use at the booth",
+    "ticketHintReserved": "{count, plural, one {# ticket reserved in an issued code} other {# tickets reserved in an issued code}}",
+    "ticketHintNone": "You get one every time your rank goes up",
+    "gamesLabel": "games --play",
+    "gamesTitle": "What do you want to play?",
+    "pointRange": "30–300P",
+    "closedGame": "Opens during booth hours",
+    "rankLabel": "ranking --top 10",
+    "rankTitle": "Live ranking",
+    "empty": "No scores yet"
+  },
+  "gameShell": {
+    "duration": "{duration} · 30–300P per run",
+    "start": "Start",
+    "starting": "Preparing session...",
+    "submitting": "SUBMITTING...",
+    "errorRetry": "Try again"
+  },
+  "result": {
+    "title": "{title} results",
+    "rejectedTitle": "This run was not counted",
+    "rejectedDefault": "The play time was outside the normal range.",
+    "rejectedNote": "No points were awarded. Want to try one more run?",
+    "raw": "Raw score",
+    "gained": "Points earned",
+    "position": "Overall rank",
+    "positionValue": "#{n}",
+    "totalPoints": "Total {points}P",
+    "energyGained": "🦉 Owl Energy +{count}",
+    "energyHave": "{count} held",
+    "ticketGained": "🎟️ Gacha ticket +{count}",
+    "stats": {
+      "distance": "Distance",
+      "comboMax": "Best combo",
+      "nearMiss": "NEAR MISS",
+      "items": "Items",
+      "phase": "Phase reached",
+      "special": "Special section",
+      "specialValue": "cleared {count}x",
+      "solved": "Solved",
+      "solvedValue": "{count} puzzles",
+      "optimal": "Optimal",
+      "times": "{count}x",
+      "tierMax": "Best tier",
+      "hints": "Hints",
+      "avgSolve": "Avg. solve",
+      "seconds": "{sec}s",
+      "stage": "Stage",
+      "stageValue": "STAGE {stage}",
+      "stageCleared": "STAGE {stage} cleared",
+      "survived": "Survived",
+      "kills": "Kills",
+      "killsWithObstacles": "{kills} (obstacles {obstacles})",
+      "graze": "GRAZE",
+      "livesLeft": "Lives left",
+      "none": "none",
+      "damage": "Hits taken",
+      "noDamage": "No hits ✨",
+      "bossKilled": "Boss",
+      "bossKilledValue": "defeated ✅",
+      "levelReached": "Level",
+      "evolutions": "Evolutions",
+      "count": "{count}",
+      "revives": "Revives",
+      "destroyed": "Destroyed",
+      "missed": "Missed",
+      "correct": "Correct",
+      "wrong": "Wrong",
+      "maxStreak": "Best streak"
+    }
+  },
+  "games": {
+    "typer": {
+      "title": "Night Typer",
+      "tagline": "Type the falling commands and break the firewall",
+      "duration": "60 seconds",
+      "rules": [
+        "Type each falling command exactly, then press Enter",
+        "Every command that lands adds 20% to the firewall — 100% ends the run",
+        "Chain hits for combo ×1.2 → ×1.5 → ×2.0"
+      ]
+    },
+    "phish": {
+      "title": "Phish Hunter",
+      "tagline": "Real or phishing? Judge like a sheriff owl",
+      "duration": "90 seconds",
+      "rules": [
+        "← Swipe left = 🚨 phishing",
+        "→ Swipe right = ✅ legitimate",
+        "Streaks pay a bonus, a wrong call costs 5 seconds",
+        "Each card has a timer — later stages get shorter"
+      ]
+    },
+    "flight": {
+      "title": "Owl Running",
+      "tagline": "Match the colour, pick your size, save your wingbeats",
+      "duration": "up to 180 seconds",
+      "rules": [
+        "Hold to climb, release to glide (energy drains only while flapping)",
+        "Pass colour gates with the matching colour and shape — a miss costs energy, not your run",
+        "Grab 🪶 energy, 🟢🔵 size and 🛡️🌈 buffs to fly further"
+      ]
+    },
+    "logic": {
+      "title": "Owl Logic",
+      "tagline": "Drop in gates and repair the locked auth circuit",
+      "duration": "from 70 seconds (solving adds more)",
+      "rules": [
+        "Tap a part, then tap an empty slot — the circuit runs instantly",
+        "Match the whole truth table and the puzzle clears itself",
+        "Solve with the fewest parts for an optimisation bonus; 5 in a row is OVERDRIVE"
+      ]
+    },
+    "space": {
+      "title": "Owl Space",
+      "tagline": "One hit ends it, a graze scores it",
+      "duration": "up to 180 seconds",
+      "rules": [
+        "Drag to dodge — firing is automatic (portrait)",
+        "Grazing enemy bullets scores points and charges your chip",
+        "3 lives. When it gets hairy, 💣 clears the screen"
+      ]
+    },
+    "survive": {
+      "title": "Owl Survivors",
+      "tagline": "Stay alive and take down the boss",
+      "duration": "up to 180 seconds",
+      "rules": [
+        "Just move — every attack is automatic (landscape)",
+        "Pick 1 of 3 skill cards on every level up",
+        "Beat the boss to unlock the next stage"
+      ]
+    }
+  },
+  "ranks": {
+    "0": "Wood",
+    "1": "Stone",
+    "2": "Iron",
+    "3": "Bronze",
+    "4": "Silver",
+    "5": "Gold",
+    "6": "Platinum",
+    "7": "Emerald",
+    "8": "Diamond",
+    "9": "Ruby",
+    "10": "Sapphire",
+    "11": "Obsidian",
+    "12": "Master",
+    "13": "Grandmaster",
+    "14": "Transcendent",
+    "15": "Mythic",
+    "16": "Challenger"
+  },
+  "theme": {
+    "dark": "Dark",
+    "light": "Light",
+    "aria": "Switch the colour theme",
+    "hint": "Colour theme (dark / light)"
+  },
+  "open": {
+    "on": "Open",
+    "off": "Closed"
+  },
+  "auth": {
+    "signOut": "Sign out",
+    "login": "Log in",
+    "loginHint": "Use your student ID and password.",
+    "loginPending": "Checking...",
+    "noAccount": "No account yet?",
+    "signup": "Sign up",
+    "forgot": "Forgot your password? Ask us at the S.OWL booth.",
+    "signupHint": "Sign up with your student ID, then show your student card at the S.OWL booth to start playing.",
+    "signupPending": "Signing up...",
+    "signupSubmit": "Sign up and wait for approval",
+    "haveAccount": "Already have an account?",
+    "name": "Name",
+    "namePlaceholder": "Hong Gildong",
+    "studentId": "Student ID",
+    "studentIdHint": "9 digits · used to check your student card",
+    "password": "Password",
+    "passwordHint": "6 characters or more",
+    "password2": "Confirm password",
+    "errName": "Your name must be 2 to 20 characters.",
+    "errStudentId": "That student ID does not look right. (9 digits)",
+    "errPassword": "Your password must be at least 6 characters.",
+    "errPasswordMatch": "The two passwords do not match.",
+    "errServer": "The server is not configured correctly.",
+    "errSignupFailed": "Sign-up failed: {reason}",
+    "errSignedUpNoLogin": "Your account was created but the login failed. Please try again from the login screen.",
+    "errEmpty": "Enter your student ID and password.",
+    "errBadLogin": "That student ID or password is not correct.",
+    "errDuplicate": "That student ID is already registered. Please ask at the S.OWL booth."
+  },
+  "expBar": {
+    "max": "MAX"
+  },
+  "rankDelta": {
+    "same": "No change",
+    "overall": "#{position} overall"
+  },
+  "levelUp": {
+    "rankUp": "RANK UP",
+    "levelUp": "LEVEL UP",
+    "reached": "Reached Lv {level}",
+    "levelReached": "Level <n>{level}</n>!",
+    "ticket": "🎟️ Gacha ticket +{count}",
+    "continue": "Tap anywhere to continue",
+    "continueAria": "Continue"
+  },
+  "rank": {
+    "title": "Ranking",
+    "label": "ranking --board {tab}",
+    "autoRefresh": "Refreshes every 20s",
+    "tabAll": "Total points",
+    "empty": "No scores yet",
+    "maskNote": "Names are partly masked to protect privacy."
+  },
+  "ticket": {
+    "title": "Gacha tickets",
+    "count": "{count}",
+    "summary": "ready · {total} earned / {used} used so far",
+    "oddsLabel": "gacha --odds",
+    "oddsTitle": "Odds",
+    "oddsNote": "Odds follow <b>your rank at the moment you draw</b>. Save your tickets, rank up, then draw for better odds.",
+    "boothLabel": "booth --location",
+    "boothTitle": "Come to the booth",
+    "mapAlt": "Booth location map",
+    "boothNote": "The gacha runs at the booth only. Show your code to a club member."
+  },
+  "me": {
+    "title": "My stats",
+    "statPoints": "Total points",
+    "statPlays": "Runs played",
+    "statBest": "Best run",
+    "plays": "{count, plural, one {# run} other {# runs}}",
+    "kiosk": "Booth kiosk",
+    "admin": "Admin",
+    "drawsLabel": "draws --history",
+    "drawsTitle": "Gacha history",
+    "drawPlace": "No. {place} · {prize}",
+    "drawMiss": "No prize",
+    "claimed": "Claimed",
+    "unclaimed": "Not claimed",
+    "noDraws": "No draws yet",
+    "playsLabel": "plays --recent 30",
+    "playsTitle": "Play history",
+    "rawScore": "raw {score}",
+    "rejected": "Not counted",
+    "expired": "Expired",
+    "noPlays": "No runs yet"
+  },
+  "pending": {
+    "title": "Waiting for approval",
+    "body": "Show your <b>student card</b> at the S.OWL booth and a club member will approve you on the spot.",
+    "hello": "{name}, ",
+    "watching": "You will be sent to the lobby automatically once approved",
+    "boothLabel": "booth --location"
+  },
+  "demo": {
+    "banner": "DEMO MODE · Supabase is not configured — running on fake data, nothing is saved (no booth hours)"
+  },
+  "browser": {
+    "notice": "Your browser is a little old, so some things may look broken. The latest Chrome or Safari works best.",
+    "close": "Close"
+  },
+  "odds": {
+    "tier": "Tier",
+    "place": "No. {place}",
+    "mine": "your tier",
+    "note": "Anything not in the table is a miss. Prizes that are out of stock are removed from the draw and count as a miss."
+  },
+  "issuer": {
+    "failed": "Could not issue a code",
+    "noTicket": "No tickets to use yet. Play a game and <b>rank up</b> to earn one.",
+    "showCode": "🦉 Come to the S.OWL booth and show this code",
+    "draws": "<n>{count}</n> draws · expires in <t>{time}</t>",
+    "expiryNote": "When it expires your tickets come straight back, so you can just issue a new code.",
+    "reissue": "Issue a new code (voids the old one)",
+    "prompt": "Issue a code to use at the booth. How many draws?",
+    "minus": "Fewer",
+    "plus": "More",
+    "held": "of {count} tickets held",
+    "pending": "Issuing...",
+    "issue": "Issue a gacha code (valid {min} min)"
+  },
+  "modal": {
+    "close": "Close"
+  }
+}

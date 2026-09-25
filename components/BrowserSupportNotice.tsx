@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 // Tailwind v4가 쓰는 최신 CSS(color-mix 등)를 모르는 브라우저에서는 화면이 깨져 보일 수 있다.
 // 조용히 깨지는 대신 한 줄로 알려주고, 게임 자체는 그대로 쓸 수 있게 둔다.
@@ -18,6 +19,7 @@ function isSupported(): boolean {
 export function BrowserSupportNotice() {
   const [show, setShow] = useState(false);
 
+  const t = useTranslations("browser");
   useEffect(() => {
     let dismissed = false;
     try {
@@ -32,7 +34,7 @@ export function BrowserSupportNotice() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-[80] border-t border-neon/40 bg-night/95 px-4 py-3 text-center text-xs text-neon-soft">
-      브라우저가 오래돼서 화면이 조금 깨져 보일 수 있어요. 크롬·사파리 최신 버전을 권장합니다.
+      {t("notice")}
       <button
         type="button"
         className="ml-3 min-h-9 rounded-lg border border-line px-3 text-mute"
@@ -45,7 +47,7 @@ export function BrowserSupportNotice() {
           }
         }}
       >
-        닫기
+        {t("close")}
       </button>
     </div>
   );

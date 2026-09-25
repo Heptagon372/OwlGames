@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { LiveRefresh } from "@/components/LiveRefresh";
 import { PlayerShell } from "@/components/PlayerShell";
 import { RankDelta } from "@/components/RankDelta";
@@ -11,12 +12,10 @@ import { GAMES, isGameId } from "@/lib/games";
 import { getGameBests, getLeaderboard, getMyPosition, getMyProfile, getOwlEnergy } from "@/lib/queries";
 import { cn } from "@/lib/cn";
 
-export const metadata: Metadata = { title: "랭킹" };
-
-const TABS = [
-  { key: "all", label: "누적 포인트" },
-  ...Object.values(GAMES).map((g) => ({ key: g.id, label: g.title })),
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("rank");
+  return { title: t("title") };
+}
 
 export default async function RankPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const profile = await getMyProfile();
@@ -25,12 +24,21 @@ export default async function RankPage({ searchParams }: { searchParams: Promise
   const { tab } = await searchParams;
   const active = tab && (tab === "all" || isGameId(tab)) ? tab : "all";
 
-  const [rows, bests, myPos, energy] = await Promise.all([
+  const [rows, bests, myPos, energy, t, tc, tg] = await Promise.all([
     active === "all" ? getLeaderboard(50) : Promise.resolve([]),
     active !== "all" && isGameId(active) ? getGameBests(active, 50) : Promise.resolve([]),
     getMyPosition(profile.id),
     getOwlEnergy(),
+    getTranslations("rank"),
+    getTranslations("common"),
+    getTranslations("games"),
   ]);
+
+  // 탭 라벨은 언어에 따라 바뀌므로 요청 안에서 만든다
+  const tabs = [
+    { key: "all", label: t("tabAll") },
+    ...Object.values(GAMES).map((g) => ({ key: g.id, label: tg(`${g.id}.title`) })),
+  ];
 
   const list =
     active === "all"
@@ -39,7 +47,7 @@ export default async function RankPage({ searchParams }: { searchParams: Promise
           position: r.position,
           maskedName: r.masked_name,
           rankIdx: r.rank_idx,
-          sub: `Lv ${r.level}`,
+          sub: tc("level", { level: r.level }),
           value: `${formatNumber(r.total_points)}P`,
           me: r.user_id === profile.id,
         }))
@@ -48,7 +56,7 @@ export default async function RankPage({ searchParams }: { searchParams: Promise
           position: b.position,
           maskedName: b.masked_name,
           rankIdx: b.rank_idx,
-          sub: isGameId(active) ? GAMES[active].scoreUnit : "",
+          sub: tc("scoreUnit"),
           value: formatNumber(b.best_score),
           me: b.user_id === profile.id,
         }));
@@ -56,28 +64,28 @@ export default async function RankPage({ searchParams }: { searchParams: Promise
   return (
     <PlayerShell profile={profile} energy={energy} current="/rank">
       <LiveRefresh intervalMs={20000} />
-      <TermLabel>ranking --board {active}</TermLabel>
+      <TermLabel>{t("label", { tab: active })}</TermLabel>
       <div className="mb-4 mt-1 flex items-end justify-between gap-2">
-        <h1 className="text-2xl font-black">랭킹</h1>
+        <h1 className="display text-3xl">{t("title")}</h1>
         <span className="flex items-center gap-1.5 text-xs text-dim">
           <span className="inline-block size-1.5 animate-pulse rounded-full bg-ok" />
-          20초마다 자동 갱신
+          {t("autoRefresh")}
         </span>
       </div>
 
       <div className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4">
-        {TABS.map((t) => (
+        {tabs.map((tab) => (
           <Link
-            key={t.key}
-            href={t.key === "all" ? "/rank" : `/rank?tab=${t.key}`}
+            key={tab.key}
+            href={tab.key === "all" ? "/rank" : `/rank?tab=${tab.key}`}
             className={cn(
               "min-h-11 shrink-0 rounded-full border px-4 py-2.5 text-sm font-bold transition-colors",
-              active === t.key
+              active === tab.key
                 ? "border-neon bg-neon/15 text-neon"
                 : "border-line text-mute hover:border-line-strong hover:text-ink",
             )}
           >
-            {t.label}
+            {tab.label}
           </Link>
         ))}
       </div>
@@ -88,9 +96,12 @@ export default async function RankPage({ searchParams }: { searchParams: Promise
           <RankBadge rankIdx={myPos.rank_idx} size="md" />
           <div className="min-w-0 flex-1">
             <p className="font-bold">
-              {profile.name} <Chip tone="neon" className="ml-1">나</Chip>
+              {profile.name}{" "}
+              <Chip tone="neon" className="ml-1">
+                {tc("me")}
+              </Chip>
             </p>
-            <p className="num text-xs text-mute">Lv {myPos.level}</p>
+            <p className="num text-xs text-mute">{tc("level", { level: myPos.level })}</p>
             <RankDelta position={myPos.position} className="mt-1 text-[11px]" />
           </div>
           <span className="num font-black text-neon">{formatNumber(myPos.total_points)}P</span>
@@ -114,17 +125,21 @@ export default async function RankPage({ searchParams }: { searchParams: Promise
             <div className="min-w-0 flex-1">
               <p className="truncate font-bold">
                 {row.maskedName}
-                {row.me && <Chip tone="neon" className="ml-2">나</Chip>}
+                {row.me && (
+                  <Chip tone="neon" className="ml-2">
+                    {tc("me")}
+                  </Chip>
+                )}
               </p>
               <p className="num text-[11px] text-dim">{row.sub}</p>
             </div>
             <span className="num shrink-0 font-bold text-neon">{row.value}</span>
           </div>
         ))}
-        {list.length === 0 && <p className="px-4 py-10 text-center text-sm text-dim">아직 기록이 없어요</p>}
+        {list.length === 0 && <p className="px-4 py-10 text-center text-sm text-dim">{t("empty")}</p>}
       </Card>
 
-      <p className="mt-4 text-center text-xs text-dim">이름은 개인정보 보호를 위해 가운데 글자를 가려요.</p>
+      <p className="mt-4 text-center text-xs text-dim">{t("maskNote")}</p>
     </PlayerShell>
   );
 }

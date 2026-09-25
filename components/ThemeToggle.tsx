@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { applyTheme, currentTheme } from "@/lib/theme";
 import { cn } from "@/lib/cn";
 
@@ -12,6 +13,7 @@ import { cn } from "@/lib/cn";
  * 여기서는 클릭과 "한 번 더 재생"만 관리한다.
  */
 export function ThemeToggle({ className, label }: { className?: string; label?: boolean }) {
+  const t = useTranslations("theme");
   const ref = useRef<HTMLButtonElement>(null);
   // 토글할 때마다 key가 바뀌면서 호 애니메이션이 다시 재생된다 (첫 렌더에는 재생하지 않는다)
   const [arc, setArc] = useState<{ n: number; rise: boolean } | null>(null);
@@ -32,8 +34,8 @@ export function ThemeToggle({ className, label }: { className?: string; label?: 
       ref={ref}
       type="button"
       onClick={toggle}
-      aria-label="화면 테마 바꾸기"
-      title="화면 테마 (다크 / 라이트)"
+      aria-label={t("aria")}
+      title={t("hint")}
       className={cn("theme-switch inline-flex min-h-11 items-center gap-2 px-0.5", className)}
     >
       <span className="grad-line glass relative block h-9 w-[72px] overflow-hidden rounded-full">
@@ -94,8 +96,8 @@ export function ThemeToggle({ className, label }: { className?: string; label?: 
       {label && (
         /* 두 글자를 같은 칸에 겹쳐 두고 투명도로 교대 — 폭이 흔들리지 않는다 */
         <span className="grid text-xs font-bold text-mute">
-          <span className="theme-label-night col-start-1 row-start-1">다크</span>
-          <span className="theme-label-day col-start-1 row-start-1">라이트</span>
+          <span className="theme-label-night col-start-1 row-start-1">{t("dark")}</span>
+          <span className="theme-label-day col-start-1 row-start-1">{t("light")}</span>
         </span>
       )}
     </button>

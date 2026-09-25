@@ -1,7 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { BrowserSupportNotice } from "@/components/BrowserSupportNotice";
+import { SoundBoot } from "@/components/SoundBoot";
+import { SCALE_INIT_SCRIPT } from "@/lib/prefs";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -27,14 +31,17 @@ const arcade = localFont({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "아울게임즈 OWL GAMES",
-    template: "%s · 아울게임즈",
-  },
-  description: "S.OWL 부스 미니게임 — 플레이하고 랭크를 올려 부스에서 뽑기에 도전하세요.",
-  applicationName: "OWL GAMES",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("common");
+  return {
+    title: {
+      default: t("appName"),
+      template: `%s · ${t("appShort")}`,
+    },
+    description: t("appDesc"),
+    applicationName: "OWL GAMES",
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#070b18",
@@ -43,23 +50,28 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
   return (
     <html
-      lang="ko"
+      lang={locale}
       data-theme="dark"
       suppressHydrationWarning
       className={`${pretendard.variable} ${jetbrains.variable} ${arcade.variable}`}
     >
       <head>
-        {/* 첫 페인트 전에 테마를 정한다 — 없으면 라이트 사용자에게 어두운 화면이 번쩍인다 */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* 첫 페인트 전에 테마·화면 크기를 정한다 — 없으면 화면이 한 번 번쩍이거나 글자가 튄다 */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT + SCALE_INIT_SCRIPT }} />
       </head>
       <body className="antialiased">
         <div className="night-sky" aria-hidden />
         <div className="sky-day" aria-hidden />
-        {children}
-        <BrowserSupportNotice />
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+          {/* 두 컴포넌트 다 번역을 읽으므로 Provider 안에 있어야 한다 */}
+          <SoundBoot />
+          <BrowserSupportNotice />
+        </NextIntlClientProvider>
         <div className="scanlines" aria-hidden />
       </body>
     </html>
