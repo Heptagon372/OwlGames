@@ -72,7 +72,7 @@ export const DEMO_LEADERBOARD: LeaderboardRow[] = (() => {
   return rows.sort((a, b) => b.total_points - a.total_points).map((r, i) => ({ ...r, position: i + 1 }));
 })();
 
-const BEST_BASE: Record<GameId, number> = { typer: 1080, flight: 5200, phish: 2700, logic: 4100, survive: 6800 };
+const BEST_BASE: Record<GameId, number> = { typer: 1080, flight: 5200, phish: 2700, logic: 4100, survive: 6800, space: 5900 };
 
 export function demoGameBests(game: GameId): GameBestRow[] {
   return NAMES.slice(0, 15).map((n, i) => ({
@@ -87,7 +87,8 @@ export function demoGameBests(game: GameId): GameBestRow[] {
 
 export const DEMO_SESSIONS: GameSessionRow[] = [
   { game: "typer", raw: 812, pts: 233, m: 6 },
-  { game: "survive", raw: 3420, pts: 144, m: 9 },
+  { game: "survive", raw: 3420, pts: 201, m: 9 },
+  { game: "space", raw: 4180, pts: 239, m: 11 },
   { game: "phish", raw: 1830, pts: 213, m: 14 },
   { game: "logic", raw: 2960, pts: 178, m: 18 },
   { game: "flight", raw: 402, pts: 164, m: 21 },
@@ -162,6 +163,7 @@ export const DEMO_ADMIN_STATS: AdminStats = {
     { game: "flight", plays: 298, rejected: 9, avg_raw: 3140, best_raw: 9860, avg_pts: 187 },
     { game: "logic", plays: 186, rejected: 2, avg_raw: 2870, best_raw: 6240, avg_pts: 173 },
     { game: "survive", plays: 140, rejected: 1, avg_raw: 3620, best_raw: 8110, avg_pts: 151 },
+    { game: "space", plays: 122, rejected: 3, avg_raw: 3180, best_raw: 7420, avg_pts: 189 },
   ],
   tickets: { unused: 88, reserved: 12, used: 96 },
   prizes: [

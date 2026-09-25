@@ -4,10 +4,11 @@ S.OWL 동아리 부스 행사용 웹 미니게임 플랫폼.
 게임 플레이 → 포인트 → 레벨·랭크 상승 → 뽑기 티켓 → **S.OWL 부스 방문** → 부스에서 뽑기.
 
 설계 근거는 [`OWLGAMES_SPEC.md`](OWLGAMES_SPEC.md)(플랫폼)와 게임 기획서
-[`OWLRUNNING_GDD.md`](OWLRUNNING_GDD.md) · [`OWLLOGIC_GDD.md`](OWLLOGIC_GDD.md) · [`OWLSURVIVORS_GDD.md`](OWLSURVIVORS_GDD.md),
+[`OWLRUNNING_GDD.md`](OWLRUNNING_GDD.md) · [`OWLLOGIC_GDD.md`](OWLLOGIC_GDD.md) ·
+[`OWLSURVIVORS_GDD.md`](OWLSURVIVORS_GDD.md) · [`OWLSPACE_GDD.md`](OWLSPACE_GDD.md),
 구현하며 내린 결정은 [`DECISIONS.md`](DECISIONS.md)에 있습니다.
 
-## 게임 5종
+## 게임 6종
 
 | 게임 | 한 판 | 조작 | 특징 |
 |---|---|---|---|
@@ -16,6 +17,7 @@ S.OWL 동아리 부스 행사용 웹 미니게임 플랫폼.
 | 🎣 피싱 헌터 | 90초 | 좌우 스와이프 | 피싱/정상 메시지 판별 |
 | 🔌 아울 로직 | 70초~ | 탭 | 빈 칸에 논리 게이트를 꽂아 진리표 맞추기 (풀면 시간이 늘어난다) |
 | 🛡️ 아울 서바이버즈 | 최대 180초 | 가상 조이스틱 (가로 전용) | 한 판 = 한 스테이지. 보스를 잡아야 다음 스테이지가 열려요 |
+| 🚀 아울스페이스 | 최대 180초 | 드래그 (세로 전용) | 탄막 슈팅. 생명 3개, 스치면(그레이즈) 점수 |
 
 모든 게임은 **점수는 무한히 쌓이지만 체감 난이도는 15단계**로 끊어 올라갑니다
 (`lib/stages.ts` — 단계마다 난이도가 1.16배씩 **곱**으로 붙고, 15단계를 넘으면 배율이 고정됩니다).
@@ -95,7 +97,7 @@ npm run dev:lan      # 같은 와이파이의 폰·아이폰에서 http://<PC의
 | `/auth/signup` `/auth/login` | 비로그인 | 이름·학번·비밀번호 |
 | `/pending` | 미인증 | 학번 인증 대기 (승인되면 Realtime으로 자동 이동) |
 | `/lobby` | 인증 유저 | 랭크·경험치·아울 에너지·티켓 배너·게임 5종·미니 랭킹 (30초마다 자동 갱신) |
-| `/game/typer` `/game/flight` `/game/phish` `/game/logic` `/game/survive` | 인증 유저 | 게임 5종 → 결과 모달(등수 변동 포함) |
+| `/game/typer` … `/game/survive` `/game/space` | 인증 유저 | 게임 6종 → 결과 모달(등수 변동 포함) |
 | `/rank` `/ticket` `/me` | 인증 유저 | 랭킹 · 코드 발급 · 내 기록 |
 | `/booth` | staff+ | 부스 키오스크 (코드 조회 · 추첨 · 수령 · 가입 승인) |
 | `/board` | 공개 | 부스 전광판 (랭킹 · 통계 · 재고 · 티커) |
@@ -166,6 +168,8 @@ games/        # core(루프·캔버스·세션) + typer / flight(아울러닝) /
               #   logic/:   engine(게이트·회로·판정·생성기·솔버·점수) · ui(SVG 회로도·진리표·부품)
               #   survive/: data(스킬 50종·스테이지 15+·보스) · engine(월드 SoA 풀·공간해시·스킬·보스·장애물)
               #             · ui(조이스틱·HUD·전투로그·카드) · theme.ts(다크 네온 / 라이트)
+              #   space/:   data(패턴 DSL·스킬 30종·스테이지 15+) · engine(탄 900발 풀·패턴 실행기·그레이즈)
+              #             · ui(HUD·카드) — 세로 고정, 내 탄/적 탄 색 규칙은 theme.ts
 data/         # 타이퍼 단어, 피싱 카드
 lib/          # supabase 클라이언트, 랭크·설정·포맷, 조회·RPC 래퍼, 데모 데이터
 public/assets/ # 외부 CC0 에셋 (Kenney 파티클·텍스처·라이트 마스크, Orbitron 폰트)

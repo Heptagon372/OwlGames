@@ -24,6 +24,7 @@ const GAME_COMPONENTS: Record<GameId, React.ComponentType<GameComponentProps>> =
   phish: dynamic(() => import("./phish/PhishGame").then((m) => m.PhishGame), { ssr: false, loading: Loading }),
   logic: dynamic(() => import("./logic").then((m) => m.LogicGame), { ssr: false, loading: Loading }),
   survive: dynamic(() => import("./survive").then((m) => m.SurviveGame), { ssr: false, loading: Loading }),
+  space: dynamic(() => import("./space").then((m) => m.SpaceGame), { ssr: false, loading: Loading }),
 };
 
 /** 인트로 → 카운트다운 → 플레이 → 제출 → 결과 */
