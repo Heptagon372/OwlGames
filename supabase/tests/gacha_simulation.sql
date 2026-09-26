@@ -6,7 +6,7 @@
 --   실행: psql "<connection-string>" -f supabase/tests/gacha_simulation.sql
 --         또는 Supabase SQL 편집기에 전체 붙여넣기 (마지막 SELECT 결과표가 보인다)
 --   소요: 환경에 따라 10~60초. 트랜잭션 전체를 rollback 하므로 영구 변경은 없다.
---   주의: 재고 0 검증 구간에서 prizes 5행을 잠그므로 행사 운영 중에는 실행하지 말 것.
+--   주의: 재고 0 검증 구간에서 prizes 6행을 잠그므로 행사 운영 중에는 실행하지 말 것.
 --   참고: 100,000회 / ±0.5%p 는 약 3σ 수준이라 정상 구현이어도 드물게(≈1% 확률로)
 --         실패할 수 있다. 실패하면 한 번 더 돌려보고, 반복 실패면 진짜 버그다.
 -- =====================================================================
@@ -17,7 +17,7 @@ set local plpgsql.check_asserts = on;
 
 create temp table gacha_sim_result (
   tier         int,        -- 1~6 = 티어, 0 = 재고 0 검증 구간(T6)
-  slot         int,        -- 1~5 = 등수, 6 = 꽝
+  slot         int,        -- 1~6 = 등수, 7 = 꽝
   label        text,
   expected_pct numeric,
   observed_pct numeric,
@@ -43,15 +43,15 @@ begin
   -- 재고와 무관한 "순수" 분포를 보려고 p_respect_stock => false 로 호출한다.
   -- (재고가 충분할 때 실제 추첨과 완전히 동일한 경로)
   for t in 1..6 loop
-    v_cnt := array[0, 0, 0, 0, 0, 0];
+    v_cnt := array[0, 0, 0, 0, 0, 0, 0];
     for i in 1..c_n loop
-      v_place := coalesce(public.gacha_pick(t, public.gacha_roll(), false), 6);
+      v_place := coalesce(public.gacha_pick(t, public.gacha_roll(), false), 7);
       v_cnt[v_place] := v_cnt[v_place] + 1;
     end loop;
 
     v_win := 0;
-    for k in 1..6 loop
-      if k <= 5 then
+    for k in 1..7 loop
+      if k <= 6 then
         v_exp   := coalesce(((v_tbl -> (t::text)) ->> (k - 1))::numeric, 0);
         v_win   := v_win + v_exp;
         v_label := k || '등';
@@ -83,38 +83,41 @@ begin
   -- ===== 2. 재고 0 → 꽝 흡수(재분배 금지) 검증 =======================
   -- prizes 를 임시로 바꾼 뒤 서브트랜잭션을 롤백한다(스크립트 밖에서 실행해도 안전).
   -- 집계는 plpgsql 변수(v_zero)에 담아 두므로 롤백돼도 살아남는다.
-  v_zero := array[0, 0, 0, 0, 0, 0];
+  v_zero := array[0, 0, 0, 0, 0, 0, 0];
   begin
     update public.prizes set stock = 10;
 
-    -- 2.1 재고가 충분할 때의 슬라이스 경계 (T1 = 0.01 / 0.5 / 3 / 10 / 20)
+    -- 2.1 재고가 충분할 때의 슬라이스 경계 (T1 = 1 / 3 / 6 / 10 / 20 / 25 → 누적 1·4·10·20·40·65)
     assert public.gacha_pick(1, 0,         true) = 1,     'roll 0 → 1등';
-    assert public.gacha_pick(1, 0.009999,  true) = 1,     '1등 슬라이스 끝';
-    assert public.gacha_pick(1, 0.01,      true) = 2,     '0.01 → 2등 시작';
-    assert public.gacha_pick(1, 0.509999,  true) = 2,     '2등 슬라이스 끝';
-    assert public.gacha_pick(1, 0.51,      true) = 3,     '0.51 → 3등 시작';
-    assert public.gacha_pick(1, 3.509999,  true) = 3,     '3등 슬라이스 끝';
-    assert public.gacha_pick(1, 3.51,      true) = 4,     '3.51 → 4등 시작';
-    assert public.gacha_pick(1, 13.509999, true) = 4,     '4등 슬라이스 끝';
-    assert public.gacha_pick(1, 13.51,     true) = 5,     '13.51 → 5등 시작';
-    assert public.gacha_pick(1, 33.509999, true) = 5,     '5등 슬라이스 끝';
-    assert public.gacha_pick(1, 33.51,     true) is null, '당첨 합계 밖 → 꽝';
+    assert public.gacha_pick(1, 0.999999,  true) = 1,     '1등 슬라이스 끝';
+    assert public.gacha_pick(1, 1,         true) = 2,     '1 → 2등 시작';
+    assert public.gacha_pick(1, 3.999999,  true) = 2,     '2등 슬라이스 끝';
+    assert public.gacha_pick(1, 4,         true) = 3,     '4 → 3등 시작';
+    assert public.gacha_pick(1, 9.999999,  true) = 3,     '3등 슬라이스 끝';
+    assert public.gacha_pick(1, 10,        true) = 4,     '10 → 4등 시작';
+    assert public.gacha_pick(1, 19.999999, true) = 4,     '4등 슬라이스 끝';
+    assert public.gacha_pick(1, 20,        true) = 5,     '20 → 5등 시작';
+    assert public.gacha_pick(1, 39.999999, true) = 5,     '5등 슬라이스 끝';
+    assert public.gacha_pick(1, 40,        true) = 6,     '40 → 6등 시작';
+    assert public.gacha_pick(1, 64.999999, true) = 6,     '6등 슬라이스 끝';
+    assert public.gacha_pick(1, 65,        true) is null, '당첨 합계 밖 → 꽝';
     assert public.gacha_pick(1, 99.999999, true) is null, '맨 끝 → 꽝';
 
     -- 2.2 2등·4등 재고 0
     update public.prizes set stock = 0 where place in (2, 4);
 
-    assert public.gacha_pick(1, 0.2, true) is null, '재고 0 인 2등 슬라이스 → 꽝';
-    assert public.gacha_pick(1, 0.2, false) = 2,    '순수 선택 자체는 그대로 2등';
-    assert public.gacha_pick(1, 5,   true) is null, '재고 0 인 4등 슬라이스 → 꽝';
+    assert public.gacha_pick(1, 2,  true) is null, '재고 0 인 2등 슬라이스 → 꽝';
+    assert public.gacha_pick(1, 2,  false) = 2,    '순수 선택 자체는 그대로 2등';
+    assert public.gacha_pick(1, 15, true) is null, '재고 0 인 4등 슬라이스 → 꽝';
     -- 재분배 금지: 2·4등 슬라이스가 다른 등수로 넘어가지 않는다
-    assert public.gacha_pick(1, 0,   true) = 1,     '1등 슬라이스 불변';
-    assert public.gacha_pick(1, 1.0, true) = 3,     '3등 슬라이스 불변';
-    assert public.gacha_pick(1, 20,  true) = 5,     '5등 슬라이스 불변';
+    assert public.gacha_pick(1, 0,  true) = 1,     '1등 슬라이스 불변';
+    assert public.gacha_pick(1, 5,  true) = 3,     '3등 슬라이스 불변';
+    assert public.gacha_pick(1, 25, true) = 5,     '5등 슬라이스 불변';
+    assert public.gacha_pick(1, 50, true) = 6,     '6등 슬라이스 불변';
 
-    -- 2.3 표본으로도 확인 (T6: 2등 3.0% + 4등 20% 가 전부 꽝으로)
+    -- 2.3 표본으로도 확인 (T6: 2등 6% + 4등 15% 가 전부 꽝으로)
     for i in 1..c_n loop
-      v_place := coalesce(public.gacha_pick(6, public.gacha_roll(), true), 6);
+      v_place := coalesce(public.gacha_pick(6, public.gacha_roll(), true), 7);
       v_zero[v_place] := v_zero[v_place] + 1;
     end loop;
 
@@ -129,8 +132,8 @@ begin
 
   -- 재고 0 구간 집계는 롤백 이후에 기록한다
   v_win := 0;
-  for k in 1..6 loop
-    if k <= 5 then
+  for k in 1..7 loop
+    if k <= 6 then
       v_exp   := case when k in (2, 4) then 0
                       else coalesce(((v_tbl -> '6') ->> (k - 1))::numeric, 0) end;
       v_win   := v_win + coalesce(((v_tbl -> '6') ->> (k - 1))::numeric, 0);

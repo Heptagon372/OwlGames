@@ -145,10 +145,11 @@ export const DEMO_DRAWS: (DrawRow & { prize_name: string | null })[] = [
 
 export const DEMO_PRIZES: PrizeRow[] = [
   { place: 1, name: "게이밍 PC", stock: 1 },
-  { place: 2, name: "게이밍 마우스", stock: 4 },
-  { place: 3, name: "장패드", stock: 17 },
-  { place: 4, name: "과자", stock: 82 },
-  { place: 5, name: "젤리", stock: 163 },
+  { place: 2, name: "버티컬 마우스", stock: 2 },
+  { place: 3, name: "게이밍 키보드 · 장패드", stock: 3 },
+  { place: 4, name: "키캡 키링", stock: 2 },
+  { place: 5, name: "과자 세트 10종", stock: 100 },
+  { place: 6, name: "하리보 젤리", stock: 150 },
 ];
 
 export const DEMO_STATS: BoardStats = { participants: 214, plays: 1387, challengers: 1, draws: 96 };
@@ -168,10 +169,11 @@ export const DEMO_ADMIN_STATS: AdminStats = {
   tickets: { unused: 88, reserved: 12, used: 96 },
   prizes: [
     { place: 1, name: "게이밍 PC", stock: 1, drawn: 0 },
-    { place: 2, name: "게이밍 마우스", stock: 4, drawn: 2 },
-    { place: 3, name: "장패드", stock: 17, drawn: 9 },
-    { place: 4, name: "과자", stock: 82, drawn: 38 },
-    { place: 5, name: "젤리", stock: 163, drawn: 47 },
+    { place: 2, name: "버티컬 마우스", stock: 1, drawn: 1 },
+    { place: 3, name: "게이밍 키보드 · 장패드", stock: 2, drawn: 1 },
+    { place: 4, name: "키캡 키링", stock: 1, drawn: 1 },
+    { place: 5, name: "과자 세트 10종", stock: 78, drawn: 22 },
+    { place: 6, name: "하리보 젤리", stock: 121, drawn: 29 },
   ],
   energy_today: 62,
   energy_drops_today: 18,
@@ -262,7 +264,7 @@ export function demoLookup(code: string): BoothLookup {
 export function demoDraw(tier: number): BoothDrawResult {
   const table = DEFAULT_CONFIG.gacha_table[String(tier)] ?? DEFAULT_CONFIG.gacha_table["1"];
   // 데모에서는 1·2등 특수 연출을 확인하기 쉽도록 해당 확률만 20배로 부풀린다
-  const boost = [20, 20, 1, 1, 1];
+  const boost = [20, 20, 1, 1, 1, 1];
   const roll = Math.random() * 100;
   let acc = 0;
   let place: number | null = null;

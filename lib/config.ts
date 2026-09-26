@@ -57,13 +57,14 @@ export const DEFAULT_CONFIG: AppConfig = {
     survive: { min_sec: 20, max_sec: 200 },
     space: { min_sec: 20, max_sec: 200 },
   },
+  // [1등, 2등, 3등, 4등, 5등, 6등] · 나머지가 꽝 (DB 기본값과 같아야 한다 — §6)
   gacha_table: {
-    "1": [0.01, 0.5, 3, 10, 20],
-    "2": [0.02, 0.8, 4, 12, 23],
-    "3": [0.03, 1.2, 5, 14, 26],
-    "4": [0.05, 1.6, 6.5, 16, 28],
-    "5": [0.08, 2.2, 8, 18, 30],
-    "6": [0.1, 3.0, 10, 20, 32],
+    "1": [1, 3, 6, 10, 20, 25],
+    "2": [1.5, 3.5, 6.5, 11, 21, 26],
+    "3": [2, 4, 7, 12, 22, 27],
+    "4": [3, 4.5, 7.5, 13, 23, 28],
+    "5": [4, 5, 8, 14, 24, 29],
+    "6": [5, 6, 9, 15, 25, 30],
   },
   booth_location: {
     building: "(미정) 건물",
@@ -112,4 +113,4 @@ export function isOpenNow(cfg: Pick<AppConfig, "open_hours" | "force_open">, now
 }
 
 export const PLACE_LABEL = ["1등", "2등", "3등", "4등", "5등"] as const;
-export const PLACE_EMOJI = ["🖥️", "🖱️", "🟫", "🍪", "🍬"] as const;
+export const PLACE_EMOJI = ["🖥️", "🖱️", "⌨️", "🔑", "🍪", "🍬"] as const;
