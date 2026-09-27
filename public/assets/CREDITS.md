@@ -88,6 +88,8 @@
 - 아울리스 배경음악 (`owlis-bgm/`): 사용자(S.OWL) 제공 곡 "Night City Groove"(초반) · "Neon City Pulse"(후반·위기). 128kbps 재인코딩·메타데이터 제거.
 - 아울러닝 배경음악 (`flight-bgm/`): 사용자(S.OWL) 제공 곡 "Neon Owl Dash"(초반) · "Overdrive Mode"(후반·OVERDRIVE). 128kbps 재인코딩·메타데이터 제거.
 - 버튼 클릭음 (`ui/button-click.mp3`): 사용자 제공 샘플(freesoundeffects, 원본 `freesoundeffects-button-click-289742.mp3`, 0.18초). 모노 96kbps 재인코딩·메타데이터 제거 (2.8KB).
+- 레벨업 징글 (`ui/level-up.mp3`): 사용자 제공 샘플(Pixabay · Universfield, 원본 `universfield-next-level-114480.mp3`, 2.7초). 128kbps 재인코딩·메타데이터 제거.
+- 랭크업 징글 (`ui/rank-up.mp3`): 사용자 제공 샘플(Pixabay · Dragon Studio, 원본 `dragon-studio-epic-whoosh-478371.mp3`, 2.5초). 128kbps 재인코딩·메타데이터 제거.
 
 ### `survive-obstacles`
 - 아울 서바이버즈 장애물 5종 × (멀쩡 · 부서짐). 원본은 1774×887 RGB 시트 한 장(검은 배경)이고, `scripts/slice-survive-obstacles.py <시트>` 로 잘랐다 — 빈 세로줄로 열을 찾고, 검은 배경을 알파로 바꾼 뒤 한 열의 두 그림을 같은 배율(최대 변 256px)로 WebP(q88) 저장했다(10장 합계 약 200KB). 원본 시트는 레포에 넣지 않았다.

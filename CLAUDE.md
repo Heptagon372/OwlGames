@@ -165,6 +165,7 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 설정 항목 추가 | `components/SettingsScreen.tsx` + 저장은 `lib/prefs.ts`(기기) / `lib/locale.ts`(쿠키) |
 | 효과음 | `lib/sound.ts`의 `PATTERNS` (파일 없이 WebAudio 합성) |
 | 버튼 클릭음 | `lib/sound.ts` 의 `UI_CLICK`·`playClick()` (사용자 샘플 `public/assets/ui/button-click.mp3`, 없으면 합성음 `tap`) — 무는 곳은 `components/SoundBoot.tsx` |
+| 레벨업·랭크업 징글 | `lib/sound.ts` 의 `LEVEL_UP`·`RANK_UP`·`playLevelUp()` (사용자 샘플 `public/assets/ui/level-up.mp3`·`rank-up.mp3`, 없으면 합성음 `level`·`legend`) — 부르는 곳은 `components/LevelUpOverlay.tsx` |
 | 서바이버즈 효과음·배경음악 | `games/survive/audio.ts`의 `SOUNDS`(효과음) · `BGM`(곡 경로, 파일은 `public/assets/survive-bgm/`) — 새 사건은 `world.ts`의 `CUE`에 비트를 추가하고 `CUE_SOUNDS`에 연결 |
 | 아울리스 배경음악 | `games/owlis/audio.ts` (`BGM`·`LATE_LEVEL` — 후반/위기 곡 전환, 파일은 `public/assets/owlis-bgm/`) |
 | 아울러닝 배경음악 | `games/flight/audio.ts` (`BGM`·`LATE_STAGE` — 후반 단계·OVERDRIVE 곡 전환, 파일은 `public/assets/flight-bgm/`) |
