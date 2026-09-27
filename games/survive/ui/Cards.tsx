@@ -4,6 +4,7 @@
 // 카드가 뜨면 게임 전체가 멈춘다. 최소 높이 180px, 간격 16px — 세로에서도 누르기 쉽게.
 
 import { useEffect } from "react";
+import { actionOf, primaryLabel, useKeymap, useKeymapState } from "@/lib/keybinds";
 import type { Theme } from "../theme";
 import type { Card } from "../types";
 
@@ -19,17 +20,21 @@ type Props = {
 };
 
 export function Cards({ cards, level, rerolls, skips, theme, onPick, onReroll, onSkip }: Props) {
-  // PC: 1·2·3 선택, R 리롤 (§2)
+  // PC: 1·2·3 선택, R 리롤 (§2) — 키는 설정에서 바꾼다
+  const keysRef = useKeymap("survive");
+  const keyMap = useKeymapState("survive");
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "1" || e.key === "2" || e.key === "3") {
-        const i = Number(e.key) - 1;
+      if (e.repeat) return;
+      const a = actionOf(keysRef.current, e.code);
+      const i = a === "pick1" ? 0 : a === "pick2" ? 1 : a === "pick3" ? 2 : -1;
+      if (i >= 0) {
         if (i < cards.length) onPick(i);
-      } else if (e.key.toLowerCase() === "r") onReroll();
+      } else if (a === "reroll") onReroll();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [cards.length, onPick, onReroll]);
+  }, [cards.length, onPick, onReroll, keysRef]);
 
   return (
     <div
@@ -76,7 +81,7 @@ export function Cards({ cards, level, rerolls, skips, theme, onPick, onReroll, o
                   {c.desc}
                 </span>
                 <span className="num text-[10px]" style={{ color: `${theme.dim}aa` }}>
-                  {i + 1}
+                  {primaryLabel(keyMap, (["pick1", "pick2", "pick3"] as const)[i]) || i + 1}
                 </span>
               </button>
             );

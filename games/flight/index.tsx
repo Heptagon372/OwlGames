@@ -16,6 +16,7 @@ import { stageKey, stageTag } from "./engine/phases";
 import { render } from "./engine/render";
 import { Hud, type HudState } from "./hud/Hud";
 import { playSfx, type Sfx } from "@/lib/sound";
+import { actionOf, primaryLabel, useKeymap, useKeymapState } from "@/lib/keybinds";
 import { sceneOf, setBgm } from "./audio";
 import { createDprGovernor } from "../core/quality";
 import type { GameComponentProps } from "../core/types";
@@ -119,6 +120,8 @@ export function FlightGame({ onEnd }: GameComponentProps) {
   const colorRef = useRef<Color | null>(null);
   const skillRef = useRef(false);
   const pickRef = useRef<number | null>(null);
+  const keysRef = useKeymap("flight");
+  const keyMap = useKeymapState("flight");
   const endedRef = useRef(false);
 
   const [hud, setHud] = useState<HudState | null>(null);
@@ -258,25 +261,28 @@ export function FlightGame({ onEnd }: GameComponentProps) {
     }, 250);
 
     // ── 키보드 ────────────────────────────────────────────
+    // 키는 설정(/settings → 키 설정)에서 바꾼다 — lib/keybinds.ts 의 DEFAULT_KEYS.flight
+    const COLOR_OF = { colorR: 0, colorB: 1, colorP: 2 } as const;
     const down = (e: KeyboardEvent) => {
+      const action = actionOf(keysRef.current, e.code);
+      if (!action) return;
+      e.preventDefault();
       if (e.repeat) return;
-      if (e.code === "Space" || e.code === "ArrowUp") {
-        e.preventDefault();
+      if (action === "flap") {
         flapRef.current = true;
         setStarted(true);
-      } else if (e.code === "ShiftLeft" || e.code === "ShiftRight") {
+      } else if (action === "cycle") {
         cycleRef.current = true;
-      } else if (e.code === "Digit1" || e.code === "Digit2" || e.code === "Digit3" || e.code.startsWith("Numpad")) {
-        const n = Number(e.code.slice(-1)) - 1;
-        if (n < 0 || n > 2) return;
-        // CHOOSE 1 이 떠 있으면 1·2·3 은 보상 선택, 아니면 색 (2.0 §26)
+      } else if (action === "colorR" || action === "colorB" || action === "colorP") {
+        const n = COLOR_OF[action];
+        // CHOOSE 1 이 떠 있으면 색 키 1·2·3 번째는 보상 선택, 아니면 색 (2.0 §26)
         if (g.choice) pickRef.current = n;
         else colorRef.current = (["R", "B", "P"] as const)[n];
-      } else if (e.code === "KeyQ" || e.code === "KeyE") skillRef.current = true;
-      else if (e.code === "KeyP" || e.code === "Escape") togglePauseRef.current();
+      } else if (action === "skill") skillRef.current = true;
+      else if (action === "pause") togglePauseRef.current();
     };
     const up = (e: KeyboardEvent) => {
-      if (e.code === "Space" || e.code === "ArrowUp") flapRef.current = false;
+      if (actionOf(keysRef.current, e.code) === "flap") flapRef.current = false;
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
@@ -296,7 +302,7 @@ export function FlightGame({ onEnd }: GameComponentProps) {
       document.removeEventListener("visibilitychange", onVisibility);
       loopRef.current = null;
     };
-  }, [onEnd]);
+  }, [onEnd, keysRef]);
 
   // 길게 누르기(컨텍스트 메뉴) 방지
   useEffect(() => {
@@ -333,6 +339,7 @@ export function FlightGame({ onEnd }: GameComponentProps) {
       {hud && (
         <Hud
           hud={hud}
+          keyMap={keyMap}
           pauseLeft={pauseLeft}
           onCycleColor={() => {
             cycleRef.current = true;
@@ -371,7 +378,16 @@ export function FlightGame({ onEnd }: GameComponentProps) {
             />
             <p className="mt-1 text-lg font-black text-ink">{t("startTitle")}</p>
             <p className="mt-1 text-sm text-mute">{t("startHint")}</p>
-            <p className="mt-1 text-xs text-dim">{t("startKeys")}</p>
+            <p className="mt-1 hidden text-xs text-dim pc:block">
+              {t("startKeys", {
+                flap: primaryLabel(keyMap, "flap"),
+                r: primaryLabel(keyMap, "colorR"),
+                b: primaryLabel(keyMap, "colorB"),
+                p: primaryLabel(keyMap, "colorP"),
+                skill: primaryLabel(keyMap, "skill"),
+                pause: primaryLabel(keyMap, "pause"),
+              })}
+            </p>
             <div className="mt-3 flex items-center justify-center gap-3 text-xs text-dim">
               {(Object.keys(COLOR_INFO) as Color[]).map((c) => (
                 <span key={c} className="flex items-center gap-1" style={{ color: COLOR_INFO[c].hex }}>
@@ -381,6 +397,9 @@ export function FlightGame({ onEnd }: GameComponentProps) {
                     {COLOR_INFO[c].shape === "triangle" && <path d="M12 3 L21 20 L3 20 Z" fill="currentColor" />}
                   </svg>
                   {COLOR_INFO[c].label}
+                  <kbd className="ml-0.5 hidden rounded border border-current/50 px-1 font-mono text-[10px] pc:inline">
+                    {primaryLabel(keyMap, c === "R" ? "colorR" : c === "B" ? "colorB" : "colorP")}
+                  </kbd>
                 </span>
               ))}
             </div>
@@ -392,7 +411,7 @@ export function FlightGame({ onEnd }: GameComponentProps) {
       {hud?.status === "dead" && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center bg-night/55">
           <p className="animate-pop text-3xl font-black text-alert">
-            {cause === "wall" ? t("deathWall") : t("deathEnergy")}
+            {cause === "wall" ? t("deathWall") : cause === "time" ? t("deathTime") : t("deathEnergy")}
           </p>
         </div>
       )}

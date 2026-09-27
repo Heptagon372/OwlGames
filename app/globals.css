@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* PC(마우스·키보드) 전용 — 키 안내 배지·키 설정처럼 폰에서는 숨길 것 (`hidden pc:flex`) */
+@custom-variant pc (@media (hover: hover) and (pointer: fine));
+
 /* ============================================================
    OWL GAMES 디자인 토큰 (§13)
    "밤에 깨어있는 부엉이 = 해커" — 리퀴드 글래스:

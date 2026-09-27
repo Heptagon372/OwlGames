@@ -380,6 +380,8 @@ export function update(g: Game, dt: number, input: Input): void {
 
   const ts = timeScale(g);
   g.time += dt;
+  // 한 판 상한 — 서버 max_sec(game_limits.flight) 보다 먼저 끝낸다 (체력이 늘어 긴 판이 나온다)
+  if (g.time >= CFG.platform.maxSessionSec) return die(g, "time");
 
   // ── 단계 ────────────────────────────────────────────────
   const phase = phaseFromMeters(g.meters);

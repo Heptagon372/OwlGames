@@ -33,7 +33,7 @@
   },
   "settings": {
     "title": "Settings",
-    "subtitle": "Tune the screen, sound and language on this device.",
+    "subtitle": "Adjust display, sound, keys and language for this device.",
     "back": "Back",
     "storedOnDevice": "Settings are saved on this device only. They never affect your score or rank.",
     "display": {
@@ -65,6 +65,62 @@
     "language": {
       "title": "Language",
       "hint": "Changes the interface text, including game briefings and booth guidance."
+    },
+    "keys": {
+      "title": "Key bindings (PC)",
+      "hint": "Rebind keys per game. Click a slot, then press the key you want. Up to two keys per action.",
+      "press": "Press a key…",
+      "pressHint": "Press the new key · Esc to cancel",
+      "conflictHint": "Picking a key used by another action removes it from there.",
+      "reset": "Reset to default",
+      "unbound": "No key",
+      "bindAria": "Change {action} key {n}",
+      "removeAria": "Remove key {key}",
+      "actions": {
+        "flight": {
+          "flap": "Flap (rise)",
+          "colorR": "Switch to red",
+          "colorB": "Switch to blue",
+          "colorP": "Switch to purple",
+          "cycle": "Cycle color",
+          "skill": "Skill",
+          "pause": "Pause"
+        },
+        "survive": {
+          "up": "Move up",
+          "down": "Move down",
+          "left": "Move left",
+          "right": "Move right",
+          "pick1": "Pick card 1",
+          "pick2": "Pick card 2",
+          "pick3": "Pick card 3",
+          "reroll": "Reroll cards"
+        },
+        "owlis": {
+          "left": "Move left",
+          "right": "Move right",
+          "soft": "Soft drop",
+          "rotR": "Rotate right",
+          "rotL": "Rotate left",
+          "hard": "Hard drop",
+          "hold": "Hold",
+          "pause": "Pause"
+        },
+        "chef": {
+          "plate1": "Plate 1",
+          "plate2": "Plate 2",
+          "plate3": "Plate 3",
+          "next": "Next action (serve/finish)",
+          "undo": "Undo",
+          "trash": "Clear plate",
+          "board": "Cutting board",
+          "pan": "Pan",
+          "pot": "Pot",
+          "oven": "Oven",
+          "mixer": "Mixer",
+          "pause": "Pause"
+        }
+      }
     }
   },
   "landing": {
@@ -186,7 +242,7 @@
     "flight": {
       "title": "Owl Running",
       "tagline": "Match colors, dodge hazards, unleash powers — how far can you fly?",
-      "duration": "Up to 180s · 15 stages + ∞",
+      "duration": "Up to 9 min · 15 stages + ∞",
       "rules": [
         "Hold to rise · release to glide — pass gates in the same color for PERFECT",
         "Lasers, missiles, gravity flips… every stage brings a new crisis (only walls are fatal)",
@@ -262,14 +318,14 @@
     "noAccount": "No account yet?",
     "signup": "Sign up",
     "forgot": "Forgot your password? Ask us at the S.OWL booth.",
-    "signupHint": "Sign up with your student ID, then show your student card at the S.OWL booth to start playing.",
+    "signupHint": "Sign up with your student ID — once the staff checks your details, you can start playing.",
     "signupPending": "Signing up...",
-    "signupSubmit": "Sign up and wait for approval",
+    "signupSubmit": "Sign up",
     "haveAccount": "Already have an account?",
     "name": "Name",
     "namePlaceholder": "Hong Gildong",
     "studentId": "Student ID",
-    "studentIdHint": "9 digits · used to check your student card",
+    "studentIdHint": "9 digits · used to verify your identity",
     "password": "Password",
     "passwordHint": "8 characters or more · not your student ID",
     "password2": "Confirm password",
@@ -347,11 +403,10 @@
     "noPlays": "No runs yet"
   },
   "pending": {
-    "title": "Waiting for approval",
-    "body": "Show your <b>student card</b> at the S.OWL booth and a club member will approve you on the spot.",
+    "title": "Please wait a moment",
+    "body": "<b>We are checking your details.</b> You can start as soon as the check is done.",
     "hello": "{name}, ",
-    "watching": "You will be sent to the lobby automatically once approved",
-    "boothLabel": "booth --location"
+    "watching": "You will be sent to the lobby automatically once the check is done"
   },
   "setup": {
     "banner": "Supabase is not configured — add the connection settings to .env.local to enable sign-in, games and records"
@@ -397,7 +452,7 @@
       "canvasAria": "Owl Running game screen",
       "startTitle": "Hold to fly up",
       "startHint": "Release to glide · match gate colors with the color button",
-      "startKeys": "PC: Space fly · 1/2/3 color · Q skill · Esc pause",
+      "startKeys": "PC: {flap} fly · {r}/{b}/{p} color · {skill} skill · {pause} pause (change keys in Settings)",
       "deathWall": "💥 Crashed",
       "deathEnergy": "🪫 Out of energy",
       "rotateNote": "Owl Running is played in landscape",
@@ -511,7 +566,7 @@
       "gravityFlipSub": "You fall upward — press to push down!",
       "wave": "🌊 WAVE",
       "waveSub": "The waves shake the owl",
-      "choiceHint": "1 · 2 · 3 or tap — auto-pick in {sec}s",
+      "choiceHint": "Color keys or tap — auto-pick in {sec}s",
       "choice": {
         "energy": "ENERGY +50",
         "score": "SCORE ×2",
@@ -635,7 +690,7 @@
         "themeDark": "🌙 Dark (neon)",
         "themeLight": "☀️ Light",
         "best": "Best: STAGE {stage}",
-        "controls": "PC: WASD · Mobile: virtual joystick — attacks are automatic",
+        "controls": "PC: {move} to move (change keys in Settings) · Mobile: virtual joystick — attacks are automatic",
         "bosses": "Bosses — 5 Hexagon · 8 Nonagon · 12 Tridecagon · 15 Pentadecagon",
         "stage": "STAGE {stage}",
         "kill": "KILL {n}",
@@ -826,7 +881,6 @@
     },
     "owlis": {
       "raw": "{text}",
-      "score": "SCORE",
       "aiLevel": "AI LEVEL",
       "time": "TIME",
       "next": "NEXT",
@@ -836,8 +890,6 @@
       "fever": "OWL FEVER!",
       "feverOn": "OWL FEVER!",
       "you": "PLAYER",
-      "ai": "AI",
-      "comboPop": "{n} COMBO",
       "rebootField": "REBOOT…",
       "canvas": "OWLIS game screen — your field on the left, the AI's on the right",
       "ready": "READY",
@@ -866,7 +918,8 @@
         "soft": "Soft drop",
         "right": "Right",
         "rotR": "Rotate right",
-        "hard": "Hard drop"
+        "hard": "Hard drop",
+        "pause": "Pause"
       },
       "menu": {
         "tagline": "An endless puzzle duel — the AI grows as you do",
@@ -888,9 +941,10 @@
         ],
         "controlsTitle": "Controls",
         "controlsTouch": "📱 Drag = move · Tap = rotate (left half ↺ / right half ↻) · Drag down = soft drop · Flick down = hard drop · Flick up = hold (buttons below work too)",
-        "controlsKeys": "⌨️ ← → move · ↓ soft drop · ↑/X rotate · Z rotate back · Space hard drop · C/Shift hold",
+        "controlsKeys": "⌨️ {left} {right} move · {soft} soft drop · {rotR} rotate · {rotL} rotate back · {hard} hard drop · {hold} hold · {pause} pause",
         "hint": "On PC, press Enter to start"
-      }
+      },
+      "chainPop": "{n} CHAIN!"
     },
     "chef": {
       "score": "SCORE",
@@ -899,7 +953,6 @@
       "ordersLeft": "Orders {n}/{max}",
       "combo": "{n} COMBO",
       "tickets": "ORDERS",
-      "ticketPick": "Tap a table or plate to pick an order",
       "ticketNone": "Empty table",
       "tableAria": "Table {n} — {dish}",
       "tableEmpty": "Empty table",
@@ -908,8 +961,6 @@
       "plateInTool": "Cooking in {tool}",
       "plateWrong": "⚠ Wrong order — undo",
       "serve": "Serve",
-      "plateEmpty": "Add ingredients",
-      "plateSelect": "Tap to select",
       "finStep": "{tool}: {verb}",
       "wrongLine": "⚠ Line {n} differs from the recipe — fix it with undo (↩)",
       "slotAria": "{tool} slot {n}",
@@ -1059,18 +1110,22 @@
         ],
         "controlsTitle": "Controls",
         "controlsTouch": "📱 Tap = one step · drag an ingredient or a finished item onto any plate · drag a plate onto a tool or its table",
-        "controlsKeys": "⌨️ 1·2·3 plates · Space next action (serve/finish) · Q W E R T tools · letter keys on ingredient tiles · Backspace undo · Delete clear · Esc pause",
         "hint": "On PC, press Enter to start",
         "home": "Lobby",
-        "settings": "Settings"
+        "settings": "Settings",
+        "controlsKeysMap": "⌨️ {plates} plates · {next} next action (serve/finish) · {tools} tools · letter keys on ingredient tiles · {undo} undo · {trash} clear · {pause} pause (rebind keys in Settings)"
       },
       "waitCourse": "Serve the Full-Stack Course for ∞",
       "trashHint": "Clear the selected plate · drop a tool item here to throw it away",
       "pause": {
         "title": "PAUSED",
-        "note": "Time is frozen. Press Esc again or use the button below",
-        "resume": "Resume"
-      }
+        "resume": "Resume",
+        "noteKey": "Time is frozen. Press {key} again or use the button below",
+        "noteTouch": "Time is frozen. Use the button below to continue"
+      },
+      "plateSelected": "ON",
+      "pantryDirect": "Straight to plate",
+      "pantryPrep": "Prep first — tap to send to a tool"
     }
   },
   "music": {

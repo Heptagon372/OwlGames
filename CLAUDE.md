@@ -77,6 +77,9 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
   점수 배율 몫은 `bonus_score` 로 따로 보내고 서버 `flight_raw`·`flight_reject_reason` 헬퍼가 같은 식으로 재계산한다 —
   **점수식을 바꾸면 `engine/score.ts` + 두 헬퍼(새 마이그레이션) + `tests/flight-sim.test.ts` 를 같이** 고친다.
 - 모바일 우선. 버튼 최소 터치 영역 44px(`components/ui/Button.tsx`의 size 토큰이 보장).
+- **PC 키는 코드에 박지 않는다** — `lib/keybinds.ts` 의 `DEFAULT_KEYS`(게임별 동작 → 키)가 기본값이고, 사용자가 `/settings` 에서 바꾼다(기기 저장).
+  게임 입력은 `useKeymap(game)` + `actionOf`, 화면의 키 안내는 `useKeymapState(game)` + `primaryLabel` 로 그린다.
+  PC 전용 UI(키 안내·키 설정)는 Tailwind 변형 **`pc:`**(마우스·키보드 기기)로 폰에서 숨긴다 (`hidden pc:inline`). 새 동작은 `DEFAULT_KEYS` + `settings.keys.actions.*` 문구를 같이.
 - **플레이어가 보는 문구는 코드에 직접 쓰지 말고 `messages/ko.json`·`messages/en.json`에 넣는다**
   (서버는 `getTranslations`, 클라이언트는 `useTranslations`). 관리자·부스·전광판은 한국어 그대로 둔다.
 - 화면 크기(`--ui-scale`)·소리·테마는 `/settings`에서 바꾸고 기기에만 저장된다 (`lib/prefs.ts`·`lib/theme.ts`).
@@ -172,6 +175,8 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 동아리 가입 배너·링크 | `components/JoinClubBanner.tsx` 의 `CLUB_APPLY_URL` + 문구 `messages/*.json` 의 `club.*` |
 | 제작진·개인정보·경품 고지 | `app/about/page.tsx` + 문구는 `messages/*.json` 의 `about.*` (배열은 `t.raw`). 들어가는 곳: 설정 하단·첫 화면 푸터·티켓 확률표 아래 |
 | 관리자 화면 | `components/admin/AdminPanel.tsx` (대시보드·승인·유저·재고·설정·로그) |
+| 가입 자동 승인 | `app_config.auto_approve` + `admin_set_auto_approve` RPC(`20261013000000_balance_v4.sql`) — 스위치는 관리자 → 가입 승인 탭. 새 가입자는 `handle_new_user` 가 판단 |
+| PC 키 설정 | 기본 키 `lib/keybinds.ts` 의 `DEFAULT_KEYS` · 화면 `components/KeybindSettings.tsx` · 동작 이름 `messages/*.json` 의 `settings.keys.actions` |
 | 운영 값을 화면에서 바꾸기 | `admin_set_config` 화이트리스트(최신 본문은 `supabase/migrations/20261007000000_points_v2.sql`) + `lib/rpc.ts`의 `setConfigValue` |
 | 관리자 대시보드 집계 | `admin_stats()` RPC — 항목을 늘리면 `lib/types.ts`의 `AdminStats`도 같이 고친다 |
 

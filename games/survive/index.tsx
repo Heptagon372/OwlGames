@@ -21,6 +21,7 @@ import { Cards } from "./ui/Cards";
 import { Guide } from "./ui/Guide";
 import { Hud, type HudState } from "./ui/Hud";
 import { Joystick } from "./ui/Joystick";
+import { primaryLabel, useKeymapState } from "@/lib/keybinds";
 import { startFixedLoop } from "@/games/flight/engine/loop";
 import { text } from "@/games/core/i18n";
 import { fetchSurviveProgress } from "@/lib/client-queries";
@@ -70,6 +71,7 @@ function StartScreen({
 }) {
   const t = useTranslations("hud.survive.ui");
   const tg = useTranslations("hud.survive.guide");
+  const keyMap = useKeymapState("survive");
   const th = THEMES[theme];
   const [guide, setGuide] = useState(false);
   const closeGuide = useCallback(() => setGuide(false), []);
@@ -152,7 +154,9 @@ function StartScreen({
         </div>
 
         <p className="mt-5 text-[11px]" style={{ color: th.dim }}>
-          {t("controls")}
+          {t("controls", {
+            move: (["up", "left", "down", "right"] as const).map((a) => primaryLabel(keyMap, a)).join(""),
+          })}
         </p>
         <p className="mt-1 text-[11px]" style={{ color: th.dim }}>
           {t("bosses")}

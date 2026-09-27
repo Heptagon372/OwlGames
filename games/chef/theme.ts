@@ -16,20 +16,15 @@ export const TOOL_EMOJI: Record<ToolId, string> = {
   mixer: "🥤",
 };
 
-/** 키보드 힌트 (도구) */
-export const TOOL_KEY: Record<ToolId, string> = { board: "Q", pan: "W", pot: "E", oven: "R", mixer: "T" };
-
-/** 재료 키 — ITEMS 순서 그대로 (재료가 늘어나도 같은 재료는 같은 키) */
+/**
+ * 재료 키 — ITEMS 순서 그대로 (재료가 늘어나도 같은 재료는 같은 키). 고정 배치다.
+ * 접시·도구·되돌리기·일시정지 같은 동작 키는 `lib/keybinds.ts` 의 `chef` 키맵(설정에서 바꾼다)이 먼저 잡는다.
+ */
 export const ITEM_KEYS = [
   "KeyA", "KeyS", "KeyD", "KeyF", "KeyG", "KeyH", "KeyJ", "KeyK", "KeyL", "Semicolon",
   "KeyZ", "KeyX", "KeyC", "KeyV", "KeyB", "KeyN", "KeyM", "Comma", "Period", "Slash",
   "KeyY", "KeyU",
 ] as const;
-
-export function keyLabel(code: string): string {
-  if (code.startsWith("Key")) return code.slice(3);
-  return { Semicolon: ";", Comma: ",", Period: ".", Slash: "/" }[code] ?? code;
-}
 
 /** 인내도 비율 → 색 */
 export function patienceColor(ratio: number): string {

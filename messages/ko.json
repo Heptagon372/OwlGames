@@ -33,7 +33,7 @@
   },
   "settings": {
     "title": "설정",
-    "subtitle": "화면·소리·언어를 이 기기에 맞게 바꿔요.",
+    "subtitle": "화면·소리·키·언어를 이 기기에 맞게 바꿔요.",
     "back": "뒤로",
     "storedOnDevice": "설정은 이 기기에만 저장돼요. 점수·랭크에는 영향이 없어요.",
     "display": {
@@ -65,6 +65,62 @@
     "language": {
       "title": "언어",
       "hint": "화면 글자가 바뀌어요. 게임 안내와 부스 안내도 같이 바뀝니다."
+    },
+    "keys": {
+      "title": "키 설정 (PC)",
+      "hint": "게임마다 키를 바꿀 수 있어요. 칸을 누른 뒤 원하는 키를 누르세요. 한 동작에 키를 두 개까지 붙일 수 있어요.",
+      "press": "키 입력…",
+      "pressHint": "바꿀 키를 누르세요 · Esc 로 취소",
+      "conflictHint": "다른 동작이 쓰던 키를 고르면 그쪽에서는 빠져요.",
+      "reset": "기본값으로",
+      "unbound": "키 없음",
+      "bindAria": "{action} 키 {n} 바꾸기",
+      "removeAria": "{key} 키 빼기",
+      "actions": {
+        "flight": {
+          "flap": "날갯짓(상승)",
+          "colorR": "빨강으로",
+          "colorB": "파랑으로",
+          "colorP": "보라로",
+          "cycle": "색 순환",
+          "skill": "스킬",
+          "pause": "일시정지"
+        },
+        "survive": {
+          "up": "위로",
+          "down": "아래로",
+          "left": "왼쪽으로",
+          "right": "오른쪽으로",
+          "pick1": "카드 1 고르기",
+          "pick2": "카드 2 고르기",
+          "pick3": "카드 3 고르기",
+          "reroll": "카드 리롤"
+        },
+        "owlis": {
+          "left": "왼쪽 이동",
+          "right": "오른쪽 이동",
+          "soft": "빠르게 내리기",
+          "rotR": "오른쪽 회전",
+          "rotL": "왼쪽 회전",
+          "hard": "바로 떨어뜨리기",
+          "hold": "홀드",
+          "pause": "일시정지"
+        },
+        "chef": {
+          "plate1": "접시 1",
+          "plate2": "접시 2",
+          "plate3": "접시 3",
+          "next": "다음 행동(제출·마무리)",
+          "undo": "되돌리기",
+          "trash": "접시 비우기",
+          "board": "도마",
+          "pan": "프라이팬",
+          "pot": "냄비",
+          "oven": "오븐",
+          "mixer": "믹서",
+          "pause": "일시정지"
+        }
+      }
     }
   },
   "landing": {
@@ -186,7 +242,7 @@
     "flight": {
       "title": "아울러닝",
       "tagline": "색을 맞추고, 장애물을 피하고, 능력을 발동시켜 어디까지?",
-      "duration": "최대 180초 · 15단계 + ∞",
+      "duration": "최대 9분 · 15단계 + ∞",
       "rules": [
         "꾹 누르면 상승 · 떼면 활공 — 색 게이트는 같은 색으로 PERFECT",
         "레이저·미사일·중력 반전… 단계마다 새 위기가 와요 (벽만 즉사)",
@@ -262,14 +318,14 @@
     "noAccount": "아직 계정이 없나요?",
     "signup": "회원가입",
     "forgot": "비밀번호를 잊었다면 S.OWL 부스로 문의해주세요.",
-    "signupHint": "학번으로 가입한 뒤, S.OWL 부스에서 학생증 확인을 받으면 바로 플레이할 수 있어요.",
+    "signupHint": "학번으로 가입하면 운영진이 가입 정보를 대조한 뒤 바로 플레이할 수 있어요.",
     "signupPending": "가입 중...",
-    "signupSubmit": "가입하고 인증 대기",
+    "signupSubmit": "가입하기",
     "haveAccount": "이미 계정이 있나요?",
     "name": "이름",
     "namePlaceholder": "홍길동",
     "studentId": "학번",
-    "studentIdHint": "숫자 9자리 · 학생증 확인에 사용돼요",
+    "studentIdHint": "숫자 9자리 · 본인 확인에 사용돼요",
     "password": "비밀번호",
     "passwordHint": "8자 이상 · 학번과 다르게",
     "password2": "비밀번호 확인",
@@ -347,11 +403,10 @@
     "noPlays": "아직 플레이 기록이 없어요"
   },
   "pending": {
-    "title": "학번 인증 대기중",
-    "body": "S.OWL 부스에서 <b>학생증</b>을 보여주면 부원이 확인 후 바로 승인해드려요.",
+    "title": "잠시만 대기해주세요",
+    "body": "<b>대조중입니다.</b> 가입 정보 확인이 끝나면 바로 시작할 수 있어요.",
     "hello": "{name} 님, ",
-    "watching": "승인되면 자동으로 로비로 이동합니다",
-    "boothLabel": "booth --location"
+    "watching": "확인이 끝나면 자동으로 로비로 이동합니다"
   },
   "setup": {
     "banner": "Supabase 미설정 — .env.local 에 연결 정보를 넣어야 로그인·게임·기록이 동작해요"
@@ -397,7 +452,7 @@
       "canvasAria": "아울러닝 게임 화면",
       "startTitle": "누르고 있으면 날아올라요",
       "startHint": "떼면 활공 · 색 버튼으로 게이트 색을 맞추세요",
-      "startKeys": "PC: Space 상승 · 1/2/3 색 · Q 스킬 · Esc 일시정지",
+      "startKeys": "PC: {flap} 상승 · {r}/{b}/{p} 색 바꾸기 · {skill} 스킬 · {pause} 일시정지 (설정에서 키 변경)",
       "deathWall": "💥 벽 충돌",
       "deathEnergy": "🪫 에너지 고갈",
       "rotateNote": "아울러닝은 가로 화면에서 플레이해요",
@@ -511,7 +566,7 @@
       "gravityFlipSub": "위로 떨어져요 — 누르면 아래로!",
       "wave": "🌊 WAVE",
       "waveSub": "물결이 부엉이를 흔들어요",
-      "choiceHint": "1 · 2 · 3 또는 탭 — {sec}초 뒤 자동 선택",
+      "choiceHint": "색 키 또는 탭 — {sec}초 뒤 자동 선택",
       "choice": {
         "energy": "ENERGY +50",
         "score": "SCORE ×2",
@@ -635,7 +690,7 @@
         "themeDark": "🌙 다크 (네온)",
         "themeLight": "☀️ 라이트",
         "best": "최고 기록 STAGE {stage}",
-        "controls": "PC: WASD · 모바일: 가상 조이스틱 — 공격은 자동",
+        "controls": "PC: {move} 이동 (설정에서 키 변경) · 모바일: 가상 조이스틱 — 공격은 자동",
         "bosses": "보스 — 5 육각형 · 8 구각형 · 12 십삼각형 · 15 십오각형",
         "stage": "STAGE {stage}",
         "kill": "KILL {n}",
@@ -826,7 +881,6 @@
     },
     "owlis": {
       "raw": "{text}",
-      "score": "SCORE",
       "aiLevel": "AI LEVEL",
       "time": "TIME",
       "next": "NEXT",
@@ -836,8 +890,6 @@
       "fever": "OWL FEVER!",
       "feverOn": "OWL FEVER!",
       "you": "PLAYER",
-      "ai": "AI",
-      "comboPop": "{n} COMBO",
       "rebootField": "REBOOT…",
       "canvas": "아울리스 게임 화면 — 왼쪽이 내 필드, 오른쪽이 AI 필드",
       "ready": "READY",
@@ -866,7 +918,8 @@
         "soft": "빠르게 내리기",
         "right": "오른쪽",
         "rotR": "시계 회전",
-        "hard": "바로 떨어뜨리기"
+        "hard": "바로 떨어뜨리기",
+        "pause": "일시정지"
       },
       "menu": {
         "tagline": "내가 잘할수록 AI도 강해지는 끝없는 퍼즐 대결",
@@ -888,9 +941,10 @@
         ],
         "controlsTitle": "조작",
         "controlsTouch": "📱 드래그 = 좌우 이동 · 탭 = 회전(왼쪽 절반 반시계/오른쪽 절반 시계) · 아래로 끌기 = 빠르게 · 아래로 튕기기 = 바로 떨어뜨리기 · 위로 튕기기 = 홀드 (아래 버튼도 돼요)",
-        "controlsKeys": "⌨️ ← → 이동 · ↓ 빠르게 · ↑/X 회전 · Z 반대 회전 · Space 바로 떨어뜨리기 · C/Shift 홀드",
+        "controlsKeys": "⌨️ {left} {right} 이동 · {soft} 빠르게 · {rotR} 회전 · {rotL} 반대 회전 · {hard} 바로 떨어뜨리기 · {hold} 홀드 · {pause} 일시정지",
         "hint": "PC는 Enter로 바로 시작"
-      }
+      },
+      "chainPop": "{n}연쇄!"
     },
     "chef": {
       "score": "SCORE",
@@ -899,7 +953,6 @@
       "ordersLeft": "주문 {n}/{max}",
       "combo": "{n} COMBO",
       "tickets": "ORDERS",
-      "ticketPick": "테이블이나 접시를 눌러 주문을 골라요",
       "ticketNone": "빈 테이블",
       "tableAria": "{n}번 테이블 — {dish}",
       "tableEmpty": "빈 테이블",
@@ -908,8 +961,6 @@
       "plateInTool": "{tool}에서 조리 중",
       "plateWrong": "⚠ 순서가 틀렸어요 — 되돌리기",
       "serve": "제출",
-      "plateEmpty": "재료를 올려요",
-      "plateSelect": "눌러서 선택",
       "finStep": "{tool}: {verb}",
       "wrongLine": "⚠ {n}번째 줄이 레시피와 달라요 — 되돌리기(↩)로 고쳐요",
       "slotAria": "{tool} {n}번 칸",
@@ -1059,18 +1110,22 @@
         ],
         "controlsTitle": "조작",
         "controlsTouch": "📱 탭 = 한 단계 · 재료나 다 된 재료를 원하는 접시로 끌어 놓기 · 접시를 도구·테이블로 끌어 놓기",
-        "controlsKeys": "⌨️ 1·2·3 접시 · Space 다음 행동(제출·마무리) · Q W E R T 도구 · 재료 칸의 글자 키 · Backspace 되돌리기 · Delete 비우기 · Esc 일시정지",
         "hint": "PC는 Enter로 바로 시작",
         "home": "로비로",
-        "settings": "설정"
+        "settings": "설정",
+        "controlsKeysMap": "⌨️ {plates} 접시 · {next} 다음 행동(제출·마무리) · {tools} 도구 · 재료 칸의 글자 키 · {undo} 되돌리기 · {trash} 비우기 · {pause} 일시정지 (키는 설정에서 바꿀 수 있어요)"
       },
       "waitCourse": "풀스택 코스요리를 내면 ∞",
       "trashHint": "선택한 접시 비우기 · 도구 칸 재료를 끌어 놓으면 버려요",
       "pause": {
         "title": "PAUSED",
-        "note": "시간이 멈췄어요. Esc 를 다시 누르거나 아래 버튼으로 계속해요",
-        "resume": "계속하기"
-      }
+        "resume": "계속하기",
+        "noteKey": "시간이 멈췄어요. {key} 를 다시 누르거나 아래 버튼으로 계속해요",
+        "noteTouch": "시간이 멈췄어요. 아래 버튼으로 계속해요"
+      },
+      "plateSelected": "선택",
+      "pantryDirect": "바로 접시로",
+      "pantryPrep": "손질 먼저 — 탭하면 도구로"
     }
   },
   "music": {

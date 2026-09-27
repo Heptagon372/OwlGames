@@ -2,6 +2,7 @@
 
 // 아울러닝 HUD (기획서 §15 + 2.0) — 화면 면적 18% 이하, 플레이 영역 침범 금지
 import Image from "next/image";
+import { primaryLabel, type Keymap } from "@/lib/keybinds";
 import { Pause } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { CFG, COLOR_INFO, type Color, type SizeKey } from "../config";
@@ -132,6 +133,7 @@ const BANNER_TONE: Record<NonNullable<NonNullable<Banner>["tone"]>, string> = {
 
 export function Hud({
   hud,
+  keyMap,
   onCycleColor,
   onSkill,
   onPick,
@@ -139,6 +141,8 @@ export function Hud({
   pauseLeft,
 }: {
   hud: HudState;
+  /** PC 키 안내 (색 버튼 옆) — 설정에서 바꾼 키 */
+  keyMap: Keymap<"flight">;
   onCycleColor: () => void;
   onSkill: () => void;
   onPick: (i: number) => void;
@@ -352,6 +356,18 @@ export function Hud({
               draggable={false}
             />
           </button>
+          {/* PC: 색마다 바로 가는 키 (폰에서는 버튼을 눌러 순환) */}
+          <div className="hidden gap-1 pc:flex">
+            {(["R", "B", "P"] as const).map((c) => (
+              <kbd
+                key={c}
+                className={`rounded-md border-2 bg-night/80 px-1.5 py-0.5 font-mono text-[11px] font-black ${hud.color === c ? "" : "opacity-50"}`}
+                style={{ borderColor: COLOR_INFO[c].hex, color: COLOR_INFO[c].hex }}
+              >
+                {primaryLabel(keyMap, c === "R" ? "colorR" : c === "B" ? "colorB" : "colorP")}
+              </kbd>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -392,7 +408,9 @@ export function Hud({
                   }}
                   className="glass grad-line relative flex min-h-[132px] w-[118px] flex-col items-center justify-center gap-1.5 rounded-tile px-2 py-3 active:scale-95 sm:w-[140px]"
                 >
-                  <span className="absolute left-2 top-1.5 font-mono text-[10px] text-dim">{i + 1}</span>
+                  <span className="absolute left-2 top-1.5 hidden font-mono text-[10px] text-dim pc:inline">
+                    {primaryLabel(keyMap, (["colorR", "colorB", "colorP"] as const)[i])}
+                  </span>
                   <Image
                     src={spriteUrl(CHOICE_ART[id])}
                     alt={CHOICE_ICON[id]}

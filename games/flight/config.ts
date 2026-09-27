@@ -18,8 +18,9 @@ export const CFG = {
   },
   scroll: { v0: 288, vMax: 576, accelPer60s: 96 },
   energy: {
-    // 체력(에너지 최대치) — 2.0 에서 늘렸다 (예전 S 80 · M 100 · L 130). 서버 flight_raw 의 energy_left 상한(180)과 짝
-    maxBySize: { S: 110, M: 140, L: 180 },
+    // 체력(에너지 최대치) — 2.0 에서 늘렸고(예전 S 80 · M 100 · L 130 → 110 · 140 · 180), 밸런스 v4 에서 한 번 더 (§5-37).
+    // 서버 flight_raw 의 energy_left 상한(240)과 짝
+    maxBySize: { S: 150, M: 190, L: 240 },
     // 초반이 너무 어렵다는 피드백 — 가득 찬 상태로 시작 (예전 80%)
     startRatio: 1,
     // 기획서 §5는 14/초지만, 봇 시뮬레이션(§16-6) 중앙값이 39초로 목표(60~90초)에 크게 못 미쳐 10으로 낮춤
@@ -86,7 +87,7 @@ export const CFG = {
    * 🦉 아울러닝 2.0 — 플레이어가 보는 15단계 (거리 m 기준).
    * P0~P4(`phase`)는 청크 풀·통로 폭을 고르는 내부 난이도로 그대로 쓴다.
    * `key`는 그 단계에서 새로 등장하는 요소 (배너 문구 `hud.flight.stage.<key>`).
-   * 한 단계는 평균 8~9초 — 숙련자가 약 130초에 ∞ 에 들어가게 맞췄다 (세션 상한 185초).
+   * 한 단계는 평균 8~9초 — 숙련자가 약 130초에 ∞ 에 들어가게 맞췄다 (한 판 상한 540초 — 서버 max_sec 600).
    */
   // `cap`: 이 단계에서 고를 청크 난이도 상한 (없으면 페이즈 기본값) — 초반을 쉽게
   stages: [
@@ -221,7 +222,7 @@ export const CFG = {
 
   pause: { totalSec: 15 },
   death: { slowSec: 0.4 },
-  platform: { K: 100, basePoints: 30, maxBonus: 270, maxSessionSec: 185 },
+  platform: { K: 100, basePoints: 30, maxBonus: 270, maxSessionSec: 540 },
   /** 서버 검증 — 순간 최고 속도(터보·오버드라이브)가 24m/s 를 넘으므로 평균 상한을 올렸다 */
   server: { maxAvgMps: 30 },
   /** 엔티티 크기 */

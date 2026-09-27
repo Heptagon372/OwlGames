@@ -196,6 +196,12 @@ export const CFG = {
   /** 한 판 상한 — 서버 max_sec(1800)보다 먼저 끝낸다 */
   run: { hardCapSec: 1780, endDelay: 1.8 },
 
+  /**
+   * 일시정지 — 한 판에 합쳐서 이만큼만 (UI 전용, 규칙은 안 바뀐다). 멈춘 동안 필드는 가린다(생각할 시간 금지).
+   * 멈춘 시간도 서버 경과시간(max_sec 1800)에 들어가므로 hardCapSec + intro + endDelay + 이 값이 1800 을 넘지 않게.
+   */
+  pause: { totalSec: 10 },
+
   platform: { K: 40, basePoints: 30, maxBonus: 270, maxSessionSec: 1800 },
 } as const;
 

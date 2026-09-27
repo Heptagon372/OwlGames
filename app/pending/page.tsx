@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import { MapPin, Clock } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { PendingWatcher } from "./PendingWatcher";
 import { Logo } from "@/components/brand/Logo";
 import { OwlMark } from "@/components/brand/OwlMark";
 import { SetupBanner } from "@/components/SetupBanner";
-import { Card, TermLabel } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { SignOutButton } from "@/components/SignOutButton";
-import { getAppConfig, getMyProfile } from "@/lib/queries";
+import { getMyProfile } from "@/lib/queries";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("pending");
@@ -15,8 +14,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PendingPage() {
-  const [profile, config, t] = await Promise.all([getMyProfile(), getAppConfig(), getTranslations("pending")]);
-  const booth = config.booth_location;
+  // 부스로 오라고 하지 않는다 — 운영진이 가입 정보를 대조하는 동안 기다리는 화면 (DECISIONS §5-39)
+  const [profile, t] = await Promise.all([getMyProfile(), getTranslations("pending")]);
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-16">
@@ -43,21 +42,6 @@ export default async function PendingPage() {
           {t("watching")}
         </div>
       </Card>
-
-      <section className="mt-6">
-        <TermLabel>{t("boothLabel")}</TermLabel>
-        <Card className="mt-2 grid gap-3">
-          <p className="flex items-center gap-2 font-bold">
-            <MapPin className="size-4 text-neon" />
-            {booth.building} {booth.floor} · {booth.spot}
-          </p>
-          <p className="flex items-center gap-2 text-sm text-mute">
-            <Clock className="size-4 text-neon" />
-            {config.open_hours.start} ~ {config.open_hours.end} (KST)
-          </p>
-          {booth.note && <p className="text-xs text-dim">{booth.note}</p>}
-        </Card>
-      </section>
 
       <PendingWatcher userId={profile?.id ?? null} />
     </div>

@@ -46,6 +46,8 @@ export type AppConfig = {
   redeem_code_ttl_min: number;
   owl_energy: OwlEnergyConfig;
   master_admin: MasterAdmin;
+  /** 가입 자동 승인 (관리자 → 가입 승인 탭). 켜면 새 가입자가 바로 verified (20261013_balance_v4) */
+  auto_approve: boolean;
 };
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -54,9 +56,9 @@ export const DEFAULT_CONFIG: AppConfig = {
   level_curve: { base: 30, step: 5 },
   game_k: { flight: 100, survive: 20, owlis: 40, chef: 200 },
   // 난이도: 아울리스 < 레스토랑 < 서바이버즈 ≤ 아울러닝 → 어려울수록 분당 포인트가 크다
-  game_points: { base: 50, per_min: { owlis: 8, chef: 10, survive: 12, flight: 15 } },
+  game_points: { base: 50, per_min: { owlis: 8, chef: 10, survive: 12, flight: 22 } },
   game_limits: {
-    flight: { min_sec: 3, max_sec: 185 },
+    flight: { min_sec: 3, max_sec: 600 },
     survive: { min_sec: 20, max_sec: 2400 },
     owlis: { min_sec: 10, max_sec: 1800 },
     chef: { min_sec: 15, max_sec: 1210 },
@@ -90,6 +92,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     drop_daily_cap: 5,
   },
   master_admin: { student_ids: ["999999999"], bootstrap_only: true },
+  auto_approve: false,
 };
 
 export function mergeConfig(rows: { key: string; value: unknown }[] | null | undefined): AppConfig {

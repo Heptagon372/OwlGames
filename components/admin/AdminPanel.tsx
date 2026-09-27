@@ -28,6 +28,7 @@ import {
   deleteUser,
   fetchAdminStats,
   setConfigValue,
+  setAutoApprove,
   setForceOpen,
   setStock,
   setUserEnergy,
@@ -69,7 +70,12 @@ export function AdminPanel({ config, meId }: { config: AppConfig; meId: string }
       </div>
 
       {tab === "dash" && <DashTab />}
-      {tab === "approve" && <PendingList />}
+      {tab === "approve" && (
+        <>
+          <AutoApproveSwitch initial={config.auto_approve} />
+          <PendingList />
+        </>
+      )}
       {tab === "users" && <UsersTab meId={meId} />}
       {tab === "stock" && <StockTab />}
       {tab === "config" && <ConfigTab config={config} />}
@@ -261,6 +267,61 @@ function useSaver() {
   }, []);
 
   return { busy, msg, save };
+}
+
+/** 가입 자동 승인 — 켜면 새 가입자가 바로 플레이할 수 있고, 지금 대기 중인 사람도 한 번에 승인된다 */
+function AutoApproveSwitch({ initial }: { initial: boolean }) {
+  const [on, setOn] = useState(initial === true);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  async function toggle() {
+    const next = !on;
+    if (next && !window.confirm("자동 승인을 켤까요? 지금 대기 중인 가입자도 모두 승인돼요.")) return;
+    setBusy(true);
+    setNote(null);
+    try {
+      const n = await setAutoApprove(next);
+      setOn(next);
+      setNote(next ? `자동 승인 켜짐 · 대기 중이던 ${n}명 승인` : "자동 승인 꺼짐 · 새 가입자는 직접 승인해야 해요");
+    } catch (e) {
+      setNote(e instanceof Error ? e.message : "바꾸지 못했어요");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="mb-4 flex items-center gap-4">
+      <div className="min-w-0 flex-1">
+        <p className="font-bold">가입 자동 승인</p>
+        <p className="mt-1 text-xs text-mute">
+          켜 두면 가입하자마자 바로 플레이할 수 있어요. 끄면 아래 목록에서 한 명씩 승인합니다.
+        </p>
+        {note && <p className="mt-2 text-xs text-aqua">{note}</p>}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label="가입 자동 승인"
+        disabled={busy}
+        onClick={toggle}
+        className={cn(
+          "relative h-11 w-20 shrink-0 rounded-full border transition-colors disabled:opacity-60",
+          on ? "border-ok bg-ok/25" : "border-line bg-night",
+        )}
+      >
+        <span
+          className={cn(
+            "absolute top-1/2 size-8 -translate-y-1/2 rounded-full transition-all",
+            on ? "left-[calc(100%-2.25rem)] bg-ok" : "left-1 bg-mute",
+          )}
+        />
+        <span className="sr-only">{on ? "켜짐" : "꺼짐"}</span>
+      </button>
+    </Card>
+  );
 }
 
 function SaveButton({ busy, onClick }: { busy: boolean; onClick: () => void }) {

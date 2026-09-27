@@ -6,7 +6,11 @@
 // 조작 (GDD §20)
 //   · 탭: 재료 → 선택된 접시(손질이 필요하면 도구로) · 도구 → 다 된 재료를 다음 도구/접시로 · 접시 → 선택 / 다음 행동
 //   · 드래그: 재료·다 된 재료 → 원하는 접시 · 재료 → 도구 · 접시 → 도구(마무리) / 자기 테이블(제출)
-//   · 키보드: 1·2·3 접시 · Space/Enter 다음 행동 · Q W E R T 도구 · 재료 칸의 글자 · Backspace 되돌리기 · Delete 비우기
+//   · 키보드: 접시·다음 행동·도구·되돌리기·비우기·일시정지는 `lib/keybinds.ts` 의 chef 키맵(설정에서 바꾼다,
+//     기본 1·2·3 · Space/Enter · Q W E R T · Backspace · Delete · Esc) → 그다음 재료 칸의 고정 글자 키(`ITEM_KEYS`)
+//
+// 배치 (DECISIONS — 넘기기 금지): 음식·레시피를 슬라이드·가로 스크롤로 보여 주지 않는다. 폰 세로는 테이블 아래에
+// 그 주문의 레시피 전체를 아이콘 줄로 펼쳐 두고, PC 가로는 오른쪽에 티켓 세 장을 이름과 함께 펼친다.
 
 import { GameLogo } from "@/components/GameLogo";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,6 +18,7 @@ import Link from "next/link";
 import { BarChart3, BookOpen, Home, Play, Settings } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { CFG, STAGE_MAX, TOOL_IDS, type ToolId } from "./config";
+import { actionOf, primaryLabel, useKeymap, useKeymapState, type Keymap } from "@/lib/keybinds";
 import { ITEMS, type ItemId } from "./data/items";
 import {
   CUE,
@@ -39,7 +44,7 @@ import {
   type GameEvent,
 } from "./engine/game";
 import { buildMeta, rawScore } from "./engine/score";
-import { EditButtons, Hud, Kitchen, Pantry, TableColumn, Ticket, type BoardHandlers, type DragSrc, type Popup } from "./ui/Board";
+import { EditButtons, Hud, Kitchen, Pantry, TableColumn, Ticket, type BoardHandlers, type DragSrc, type KeyHints, type Popup } from "./ui/Board";
 import { BannerView, Glitch, Toast, type Banner } from "./ui/Overlays";
 import { ItemIcon } from "./ui/parts";
 import { ITEM_KEYS } from "./theme";
@@ -71,6 +76,8 @@ function Menu({ onStart }: { onStart: () => void }) {
   const t = useTranslations("hud.chef.menu");
   const [panel, setPanel] = useState<"none" | "record" | "how">("none");
   const [rec, setRec] = useState<ChefRecord | null>(null);
+  const km = useKeymapState("chef");
+  const L = (a: keyof Keymap<"chef">) => primaryLabel(km, a) || "—";
 
   useEffect(() => {
     preloadArt();
@@ -159,7 +166,16 @@ function Menu({ onStart }: { onStart: () => void }) {
             ))}
             <p className="mt-1 font-bold">{t("controlsTitle")}</p>
             <p className="text-mute">{t("controlsTouch")}</p>
-            <p className="text-mute">{t("controlsKeys")}</p>
+            <p className="hidden text-mute pc:block">
+              {t("controlsKeysMap", {
+                plates: [L("plate1"), L("plate2"), L("plate3")].join("·"),
+                next: L("next"),
+                tools: TOOL_IDS.map((tool) => L(tool)).join(" "),
+                undo: L("undo"),
+                trash: L("trash"),
+                pause: L("pause"),
+              })}
+            </p>
           </div>
         )}
         <p className="mt-4 text-[11px] text-dim">{t("hint")}</p>
@@ -240,6 +256,9 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
   const suppress = useRef(false);
   const seq = useRef(0);
   const wrapRef = useRef<HTMLDivElement>(null);
+  // 키 입력은 ref(바로 반영), 화면의 키 안내는 상태(다시 그린다)
+  const keymap = useKeymap("chef");
+  const km = useKeymapState("chef");
 
   /* 사건 → 화면 문구 */
   const onEvents = useCallback(
@@ -405,9 +424,9 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
 
   /* 키보드 */
   useEffect(() => {
-    const toolByKey = Object.fromEntries(TOOL_IDS.map((tool) => [CFG.tools[tool].key, tool])) as Record<string, ToolId>;
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === "Escape") {
+      const act = actionOf(keymap.current, e.code);
+      if (act === "pause") {
         e.preventDefault();
         if (!e.repeat && !g.over) togglePause();
         return;
@@ -421,15 +440,15 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
         }
         return;
       }
-      const code = e.code;
-      if (code === "Digit1" || code === "Digit2" || code === "Digit3") tapPlate(g, Number(code.slice(5)) - 1);
-      else if (code === "Space" || code === "Enter" || code === "NumpadEnter") {
+      if (act === "plate1" || act === "plate2" || act === "plate3") tapPlate(g, Number(act.slice(5)) - 1);
+      else if (act === "next" || (!act && e.code === "NumpadEnter")) {
         if (g.selected >= 0) nextAction(g, g.selected);
-      } else if (code === "Backspace") undo(g);
-      else if (code === "Delete") trash(g);
-      else if (toolByKey[code]) tapTool(g, toolByKey[code]);
+      } else if (act === "undo") undo(g);
+      else if (act === "trash") trash(g);
+      else if (act && (TOOL_IDS as readonly string[]).includes(act)) tapTool(g, act as ToolId);
       else {
-        const k = (ITEM_KEYS as readonly string[]).indexOf(code);
+        // 동작 키가 아니면 재료 칸의 고정 글자 키
+        const k = (ITEM_KEYS as readonly string[]).indexOf(e.code);
         if (k < 0 || k >= ITEMS.length) return;
         const item = ITEMS[k].id;
         if (!unlockedItems(g).includes(item)) return;
@@ -439,7 +458,7 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [g]);
+  }, [g, keymap]);
 
   function togglePause() {
     const p = !pausedRef.current;
@@ -474,15 +493,34 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
   const liveFlash = flash && flash.until > now ? flash.item : null;
 
   const wide = size.w >= 900 && size.w > size.h;
-  const keys = !touch;
-  const hint = g.stage <= CFG.run.tutorialUntil && g.selected >= 0 ? hintFor(g, g.selected) : null;
+  // 키 안내 — 설정에서 바꾼 키가 그대로 보인다. PC(마우스·키보드)에서만 보이는 건 CSS `pc:` 변형이 맡는다
+  const keys: KeyHints = {
+    plate: [primaryLabel(km, "plate1"), primaryLabel(km, "plate2"), primaryLabel(km, "plate3")],
+    tool: { board: primaryLabel(km, "board"), pan: primaryLabel(km, "pan"), pot: primaryLabel(km, "pot"), oven: primaryLabel(km, "oven"), mixer: primaryLabel(km, "mixer") },
+    next: primaryLabel(km, "next"),
+    undo: primaryLabel(km, "undo"),
+    trash: primaryLabel(km, "trash"),
+  };
+  // 선택된 접시의 "다음에 누를 곳" — 늘 표시한다 (튜토리얼 단계에서는 반짝임까지, ui/Board.tsx 의 guideCls)
+  const hint = g.selected >= 0 && !g.over ? hintFor(g, g.selected) : null;
   const score = rawScore(g);
-  const cols = wide ? 8 : size.w >= 430 ? 7 : 6;
+  // 재료 칸 — 폰도 7칸(360px 폭에서도 한 칸 ≥ 44px)으로 줄 수를 줄인다
+  const cols = wide ? 8 : size.w >= 356 ? 7 : 6;
 
   const tables = (
     <div className="flex gap-1.5">
       {Array.from({ length: TABLES }, (_, i) => (
-        <TableColumn key={i} g={g} i={i} h={h} popups={livePops.filter((p) => p.table === i)} keys={keys} hint={hint} big={size.h > 640} />
+        <TableColumn
+          key={i}
+          g={g}
+          i={i}
+          h={h}
+          popups={livePops.filter((p) => p.table === i)}
+          keys={keys}
+          hint={hint}
+          big={size.h > 640}
+          ticket={!wide}
+        />
       ))}
     </div>
   );
@@ -520,30 +558,25 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
             </p>
             {Array.from({ length: TABLES }, (_, i) => (
               <button key={i} type="button" className="text-left" onClick={() => h.tapTable(i)}>
-                <Ticket g={g} i={i} compact={false} />
+                <Ticket g={g} i={i} />
               </button>
             ))}
+            <EditButtons g={g} h={h} keys={keys} hint={hint} />
             {/* 넓은 화면 — 티켓 아래 빈자리에 식당 장식 */}
             <div className="mt-auto flex items-end justify-center gap-3 pt-2 opacity-80" aria-hidden>
               <Decor name="neon" h={64} />
               <Decor name="hello" h={56} />
               <Decor name="plant" h={60} />
             </div>
-            <div>
-              <EditButtons h={h} keys={keys} vertical />
-            </div>
           </div>
         </div>
       ) : (
+        // 폰 세로 — 위에서 아래로 한 화면: HUD → 테이블(손님 · 레시피 줄 · 접시) → 도구 → 재료(+되돌리기·비우기)
         <div className="mx-auto flex min-h-full max-w-[560px] flex-col gap-2 p-2">
           <Hud g={g} score={score} />
           {tables}
-          <div className="glass flex items-center gap-1.5 rounded-tile p-1.5">
-            {g.selected >= 0 ? <Ticket g={g} i={g.selected} compact /> : <p className="flex-1 px-2 text-[11px] text-dim">{t("ticketPick")}</p>}
-            <EditButtons h={h} keys={keys} />
-          </div>
           <Kitchen g={g} h={h} keys={keys} hint={hint} />
-          <Pantry g={g} h={h} keys={keys} hint={hint} flash={liveFlash} cols={cols} />
+          <Pantry g={g} h={h} keys={keys} hint={hint} flash={liveFlash} cols={cols} edit />
         </div>
       )}
 
@@ -573,7 +606,16 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
         <div className="absolute inset-0 z-40 grid place-items-center bg-night/70 backdrop-blur-sm">
           <div className="card-solid w-full max-w-xs rounded-card p-6 text-center">
             <p className="font-mono text-2xl font-black tracking-widest">{t("pause.title")}</p>
-            <p className="mt-2 text-xs text-mute">{t("pause.note")}</p>
+            <p className="mt-2 text-xs text-mute">
+              {primaryLabel(km, "pause") ? (
+                <>
+                  <span className="pc:hidden">{t("pause.noteTouch")}</span>
+                  <span className="hidden pc:inline">{t("pause.noteKey", { key: primaryLabel(km, "pause") })}</span>
+                </>
+              ) : (
+                t("pause.noteTouch")
+              )}
+            </p>
             <button
               type="button"
               onClick={togglePause}
