@@ -90,6 +90,19 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
+// 미들웨어는 판단할 것이 있는 경로에서만 돈다. 예전 "전부 통과" 매처는 첫 화면·전광판·설정은 물론
+// 배경음악(.mp3)·홍보 영상(.mp4)·폰트 요청마다 Supabase Auth 왕복을 한 번씩 끼워 넣고 있었다 —
+// 부스 와이파이에서 첫 연결이 느리던 가장 큰 이유다. 최종 판단은 어차피 서버 RPC 가 한다.
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2)$).*)"],
+  matcher: [
+    "/lobby/:path*",
+    "/game/:path*",
+    "/rank/:path*",
+    "/ticket/:path*",
+    "/me/:path*",
+    "/pending",
+    "/booth/:path*",
+    "/admin/:path*",
+    "/auth/:path*",
+  ],
 };

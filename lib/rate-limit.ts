@@ -49,10 +49,18 @@ export function resetAll(): void {
 }
 
 export const LIMITS = {
-  /** 학번 하나에 로그인 실패 5번 / 10분 → 잠깐 막는다 */
-  loginFail: { limit: 5, windowMs: 10 * 60_000 },
+  /**
+   * 학번 하나에 로그인 실패 8번 / 5분.
+   * 줄 서 있는 사람이 비밀번호를 몇 번 헷갈렸다고 10분을 막으면 차례를 놓친다 —
+   * 무차별 대입은 이 정도로도 못 하고(5분에 8번), 최종 방어는 Supabase Auth 다.
+   */
+  loginFail: { limit: 8, windowMs: 5 * 60_000 },
   /** IP 하나에 로그인 시도 60번 / 5분 (같은 와이파이 여러 명 고려) */
   loginIp: { limit: 60, windowMs: 5 * 60_000 },
-  /** IP 하나에 가입 시도 20번 / 10분 */
-  signupIp: { limit: 20, windowMs: 10 * 60_000 },
+  /**
+   * IP 하나에 가입 시도 60번 / 10분.
+   * 부스에 줄이 서면 학교 와이파이 한 IP 로 10분에 20명은 금방 넘는다.
+   * 가입은 어차피 **학번 중복 + 관리자 승인**으로 한 번 더 걸러진다.
+   */
+  signupIp: { limit: 60, windowMs: 10 * 60_000 },
 } as const;

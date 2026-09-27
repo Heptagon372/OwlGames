@@ -70,7 +70,7 @@ describe("입력 검사 (로그인·가입)", () => {
 describe("시도 제한", () => {
   beforeEach(() => resetAll());
 
-  it("학번당 로그인 실패 5번이면 막히고, 창이 지나면 풀린다", () => {
+  it("학번당 로그인 실패가 한도에 닿으면 막히고, 창이 지나면 풀린다", () => {
     const { limit, windowMs } = LIMITS.loginFail;
     const t0 = 1_000_000;
     for (let i = 0; i < limit; i++) {
