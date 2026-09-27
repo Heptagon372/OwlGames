@@ -35,9 +35,15 @@ export default async function LandingPage() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pb-16">
       <SetupBanner />
-      <header className="flex items-center justify-between py-4">
-        <Logo size="sm" />
-        <div className="flex items-center gap-1">
+      {/* 375px 에서 로고 부제까지 넣으면 줄이 접혀서 헤더가 두 줄이 된다 — 좁을 때는 부제를 숨긴다 */}
+      <header className="flex items-center justify-between gap-2 py-4">
+        <span className="sm:hidden">
+          <Logo size="sm" compact />
+        </span>
+        <span className="hidden sm:block">
+          <Logo size="sm" />
+        </span>
+        <div className="flex shrink-0 items-center gap-1">
           <OpenStatus open={open} hours={config.open_hours} />
           <ThemeToggle />
           <Link

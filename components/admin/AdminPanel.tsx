@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, Chip, TermLabel } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { cn } from "@/lib/cn";
-import { PLACE_EMOJI, type AppConfig, type ForceOpen } from "@/lib/config";
+import { PLACE_EMOJI, type AppConfig, type ForceOpen, type GachaTable } from "@/lib/config";
 import {
   fetchAuditLog,
   fetchPrizes,
@@ -616,6 +616,7 @@ function ConfigTab({ config }: { config: AppConfig }) {
           <EnergyCard config={config} />
           <PointsCard config={config} />
           <KCard config={config} />
+          <GachaCard config={config} />
           <BoothCard config={config} />
           <MasterCard config={config} />
         </div>
@@ -774,6 +775,110 @@ function PointsCard({ config }: { config: AppConfig }) {
       <p className="mt-2 text-xs text-dim">
         포인트 = 기본 + 플레이 분 × 분당 + 원점수 ÷ K (상한 없음). 어려운 게임일수록 분당을 크게 — 플레이 시간은 서버 시계로 잰다.
       </p>
+      <Msg msg={msg} />
+    </Card>
+  );
+}
+
+/* 뽑기 확률표 — 행사 중에 상위 상품이 너무 빨리 나가면 여기서 바로 낮춘다 (§5-13).
+   재고와 붙여 보여줘야 판단이 된다: "1등 재고 0인데 5%" 같은 게 눈에 보이게. */
+function GachaCard({ config }: { config: AppConfig }) {
+  const { busy, msg, save } = useSaver();
+  const [table, setTable] = useState<GachaTable>(() =>
+    Object.fromEntries(Object.entries(config.gacha_table).map(([t, row]) => [t, [...row]])),
+  );
+  const [prizes, setPrizes] = useState<PrizeRow[]>([]);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (open && prizes.length === 0) void fetchPrizes().then(setPrizes);
+  }, [open, prizes.length]);
+
+  const tiers = Object.keys(table).sort();
+  const places = table[tiers[0]]?.length ?? 0;
+
+  function set(tier: string, i: number, raw: string) {
+    const v = Math.max(0, Math.min(100, Number(raw) || 0));
+    setTable((prev) => ({ ...prev, [tier]: prev[tier].map((x, k) => (k === i ? v : x)) }));
+  }
+
+  return (
+    <Card>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <p className="font-bold">뽑기 확률</p>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="ghost" onClick={() => setOpen((v) => !v)}>
+            {open ? "접기" : "펼치기"}
+          </Button>
+          {open && <SaveButton busy={busy} onClick={() => save("gacha_table", table)} />}
+        </div>
+      </div>
+
+      {!open ? (
+        <p className="text-xs text-dim">
+          티어별 등수 확률 (T1 1등 {table["1"]?.[0] ?? 0}% · T6 1등 {table["6"]?.[0] ?? 0}%). 펼쳐서 바꿔요.
+        </p>
+      ) : (
+        <>
+          <div className="no-scrollbar -mx-2 overflow-x-auto px-2">
+            <table className="w-full min-w-[520px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-line text-xs text-mute">
+                  <th className="py-2 pr-2 text-left font-bold">티어</th>
+                  {Array.from({ length: places }, (_, i) => {
+                    const prize = prizes.find((x) => x.place === i + 1);
+                    const out = prize ? prize.stock <= 0 : false;
+                    return (
+                      <th key={i} className="px-1 py-2 text-center font-bold">
+                        <span className="block text-base leading-none">{PLACE_EMOJI[i]}</span>
+                        <span className={cn("block", out && "text-alert line-through")}>{i + 1}등</span>
+                        {prize && (
+                          <span className={cn("num block text-[10px]", out ? "text-alert" : "text-dim")}>
+                            재고 {prize.stock}
+                          </span>
+                        )}
+                      </th>
+                    );
+                  })}
+                  <th className="px-1 py-2 text-right font-bold">꽝</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tiers.map((tier) => {
+                  const sum = table[tier].reduce((a, b) => a + b, 0);
+                  const miss = Math.round((100 - sum) * 100) / 100;
+                  return (
+                    <tr key={tier} className="border-b border-line/60 last:border-0">
+                      <td className="num py-1.5 pr-2 font-bold">T{tier}</td>
+                      {table[tier].map((v, i) => (
+                        <td key={i} className="px-1 py-1.5">
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.5}
+                            value={v}
+                            aria-label={`T${tier} ${i + 1}등 확률`}
+                            onChange={(e) => set(tier, i, e.target.value)}
+                            className="num min-h-11 w-[72px] rounded-xl border border-line bg-night px-2 text-right outline-none focus:border-aqua/60"
+                          />
+                        </td>
+                      ))}
+                      <td className={cn("num px-1 py-1.5 text-right font-bold", miss < 0 ? "text-alert" : "text-mute")}>
+                        {miss}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-xs text-dim">
+            남는 몫이 꽝이에요 — 한 줄의 합이 100%를 넘으면 저장되지 않아요. 티어는 <b>티켓을 얻은 랭크</b> 기준이고,
+            재고가 0인 등수는 추첨에서 빠져 그 확률이 꽝으로 갑니다.
+          </p>
+        </>
+      )}
       <Msg msg={msg} />
     </Card>
   );

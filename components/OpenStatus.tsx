@@ -11,7 +11,8 @@ export async function OpenStatus({ open, hours }: { open: boolean; hours: OpenHo
         <span className={`inline-block size-2 rounded-full ${open ? "bg-ok" : "bg-alert"} ${open ? "animate-pulse" : ""}`} />
         {open ? t("on") : t("off")}
       </Chip>
-      <span className="num text-xs text-mute">
+      {/* 폰에서는 헤더가 좁다 — 운영 여부만 남기고 시간은 감춘다 (푸터에 다시 나온다) */}
+      <span className="num hidden text-xs text-mute sm:inline">
         {hours.start} ~ {hours.end} (KST)
       </span>
     </div>
