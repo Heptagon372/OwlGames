@@ -32,12 +32,12 @@ export async function PlayerShell({
   current: string;
   children: React.ReactNode;
 }) {
-  const [r, t, tr, tc] = [
-    rankInfo(profile.rank_idx),
-    await getTranslations("nav"),
-    await getTranslations("ranks"),
-    await getTranslations("common"),
-  ];
+  const r = rankInfo(profile.rank_idx);
+  const [t, tr, tc] = await Promise.all([
+    getTranslations("nav"),
+    getTranslations("ranks"),
+    getTranslations("common"),
+  ]);
   return (
     <div className="mx-auto flex min-h-dvh-safe w-full max-w-2xl flex-col">
       {/* 유리 헤더: 아래쪽에만 시안→바이올렛 헤어라인이 깔린다 */}

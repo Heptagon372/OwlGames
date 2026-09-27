@@ -16,6 +16,8 @@ import { stageKey, stageTag } from "./engine/phases";
 import { render } from "./engine/render";
 import { Hud, type HudState } from "./hud/Hud";
 import { playSfx, type Sfx } from "@/lib/sound";
+import { sceneOf, setBgm } from "./audio";
+import { createDprGovernor } from "../core/quality";
 import type { GameComponentProps } from "../core/types";
 
 const END_DELAY = 1.1; // 사망 원인을 1초 이상 보여준 뒤 결과로 (기획서 §12)
@@ -156,12 +158,13 @@ export function FlightGame({ onEnd }: GameComponentProps) {
     gameRef.current = g;
     endedRef.current = false;
 
+    const quality = createDprGovernor();
     let dpr = 1;
     let scale = 1;
     let offX = 0;
     let offY = 0;
     const fit = () => {
-      dpr = Math.min(2, window.devicePixelRatio || 1);
+      dpr = quality.dpr;
       const cw = wrap.clientWidth;
       const ch = wrap.clientHeight;
       canvas.width = Math.round(cw * dpr);
@@ -202,6 +205,7 @@ export function FlightGame({ onEnd }: GameComponentProps) {
         const now = performance.now();
         const fxDt = Math.min(0.05, (now - lastDraw) / 1000);
         lastDraw = now;
+        if (quality.frame(now)) fit();
         updateFx(fx, g, fxDt, reduced);
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -214,7 +218,11 @@ export function FlightGame({ onEnd }: GameComponentProps) {
     );
 
     loopRef.current = loop;
-    const hudTimer = setInterval(() => setHud(snapshot(g)), 90);
+    const hudTimer = setInterval(() => {
+      setHud(snapshot(g));
+      // 배경음악 — 후반 단계·OVERDRIVE 면 몰아치는 곡으로 (같은 곡이면 아무 일도 안 한다)
+      setBgm(g.status === "dead" ? "off" : sceneOf(g.stage, g.overdrive));
+    }, 90);
 
     // 탭이 가려지면 자동 일시정지 (§14)
     const onVisibility = () => {
@@ -278,6 +286,7 @@ export function FlightGame({ onEnd }: GameComponentProps) {
       loop.stop();
       clearInterval(hudTimer);
       clearInterval(pauseTimer);
+      setBgm("off");
       window.removeEventListener("resize", fit);
       window.visualViewport?.removeEventListener("resize", fit);
       window.removeEventListener("resize", orientation);

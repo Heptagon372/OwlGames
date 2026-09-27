@@ -28,6 +28,7 @@ import {
   skillDamage,
 } from "@/games/survive/data/skills";
 import { ENEMY_KINDS, MOB_KINDS, MOB_SPEC, STAGES, stageInfo } from "@/games/survive/data/stages";
+import { OBSTACLE_ART } from "@/games/survive/engine/assets";
 import { applyCard, drawCards, pendingEvolution } from "@/games/survive/engine/levelup";
 import {
   cellCenter,
@@ -741,9 +742,12 @@ describe("장애물 (무한 맵)", () => {
     expect(loadedObstacles(w)).toBe(0);
   });
 
-  it("장애물 종류 4종이 모두 정의돼 있다", () => {
-    expect(OBSTACLE_KINDS).toHaveLength(4);
+  it("장애물 종류 5종이 모두 정의돼 있다 (가중치·그림도 같은 수)", () => {
+    expect(OBSTACLE_KINDS).toHaveLength(5);
     for (const k of OBSTACLE_KINDS) expect(k.hp).toBeGreaterThan(0);
+    expect(CFG.obstacle.kindWeights).toHaveLength(OBSTACLE_KINDS.length);
+    // 그림 비율(engine/assets.ts)이 빠진 종류가 없어야 판정 사각형과 그림이 맞는다
+    for (const k of OBSTACLE_KINDS) expect(OBSTACLE_ART[k.id]).toBeDefined();
   });
 });
 

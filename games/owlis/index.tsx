@@ -22,6 +22,8 @@ import { GRAD, OWLIS, glassStyle } from "./theme";
 import { startFixedLoop } from "@/games/flight/engine/loop";
 import { fetchOwlisRecord, type OwlisRecord } from "@/lib/client-queries";
 import { playSfx } from "@/lib/sound";
+import { sceneOf, setBgm } from "./audio";
+import { createDprGovernor } from "../core/quality";
 import type { GameComponentProps } from "../core/types";
 
 const HUD_H = 56;
@@ -213,11 +215,12 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
     gameRef.current = g;
     const R = createRenderer();
 
+    const quality = createDprGovernor();
     let dpr = 1;
     let w = 1;
     let h = 1;
     const fit = () => {
-      dpr = Math.min(2, window.devicePixelRatio || 1);
+      dpr = quality.dpr;
       w = wrap.clientWidth;
       h = wrap.clientHeight;
       canvas.width = Math.round(w * dpr);
@@ -259,6 +262,7 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
         const now = performance.now();
         const dt = Math.min(0.05, (now - lastDraw) / 1000);
         lastDraw = now;
+        if (quality.frame(now)) fit();
         playCues(g);
         const lay = layRef.current;
         const labels = labelsRef.current;
@@ -280,6 +284,8 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
         fever: g.fever.t > 0,
       });
       setIntro(introT < INTRO_SEC * 0.55 ? "ready" : introT < INTRO_SEC ? "go" : null);
+      // 배경음악 — 후반(높은 AI LEVEL)·위기에서 긴장감 있는 곡으로 (같은 곡이면 아무 일도 안 한다)
+      setBgm(g.over ? "off" : sceneOf(g.diff.peak, g.critical));
       if (g.over) setOver(g.end);
     }, 90);
 
@@ -324,6 +330,7 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
       ended = true;
       loop.stop();
       clearInterval(hudTimer);
+      setBgm("off");
       window.removeEventListener("resize", fit);
       window.removeEventListener("orientationchange", fit);
       window.visualViewport?.removeEventListener("resize", fit);

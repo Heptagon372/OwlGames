@@ -36,6 +36,10 @@ export async function GachaOdds({
                 </span>
               </th>
             ))}
+            <th className="px-1 py-2 text-right font-bold">
+              <span className="block text-base leading-none">🫥</span>
+              <span className="block">{t("miss")}</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -43,6 +47,8 @@ export async function GachaOdds({
             const mine = currentTier === Number(tier);
             const row = table[tier];
             const sum = row.reduce((a, b) => a + b, 0);
+            // 꽝은 남는 몫이다 (서버 gacha_pick 과 같은 규칙) — 0.05 같은 값 때문에 소수점 둘째 자리까지 반올림
+            const miss = Math.round((100 - sum) * 100) / 100;
             return (
               <tr
                 key={tier}
@@ -60,7 +66,7 @@ export async function GachaOdds({
                     {v}%
                   </td>
                 ))}
-                <td className="sr-only">{sum}</td>
+                <td className={cn("num px-1 py-2 text-right", !mine && "text-mute")}>{miss}%</td>
               </tr>
             );
           })}

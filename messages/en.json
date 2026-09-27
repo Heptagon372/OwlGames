@@ -364,7 +364,8 @@
     "tier": "Tier",
     "place": "No. {place}",
     "mine": "your tier",
-    "note": "Anything not in the table is a miss. Prizes that are out of stock are removed from the draw and count as a miss."
+    "note": "Each row is the chance for a single draw. A sold-out prize is removed from the draw and its share becomes a miss.",
+    "miss": "Miss"
   },
   "issuer": {
     "failed": "Could not issue a code",
@@ -566,7 +567,8 @@
         "rack": "Server rack",
         "box": "Supply box",
         "extinguisher": "Extinguisher",
-        "cable": "Cable pile"
+        "cable": "Cable pile",
+        "portal": "Neon gate"
       },
       "stageIn": "STAGE {stage} start",
       "stageBanner": "STAGE {stage}",
@@ -1075,5 +1077,163 @@
     "volume": "Music volume",
     "mute": "Mute music",
     "unmute": "Unmute music"
+  },
+  "about": {
+    "title": "Credits & Notices",
+    "subtitle": "Who made this, how your data is handled, and how the prizes work",
+    "back": "Back",
+    "link": "Credits · Privacy · Prize notice",
+    "updated": "Last updated 27 September 2026",
+    "credits": {
+      "label": "credits --team",
+      "title": "Who made this",
+      "rows": [
+        {
+          "role": "Game team",
+          "name": "S.OWL — IT club, Sungkonghoe University"
+        },
+        {
+          "role": "Producer",
+          "name": "윤승호 (Yoon Seungho)"
+        },
+        {
+          "role": "Art & design",
+          "name": "ChatGPT"
+        },
+        {
+          "role": "Development",
+          "name": "Claude"
+        },
+        {
+          "role": "Music",
+          "name": "SUNO"
+        },
+        {
+          "role": "Servers & hosting",
+          "name": "AWS + Megazone Cloud"
+        },
+        {
+          "role": "Sound effects",
+          "name": "Kenney (CC0) · WebAudio synthesis"
+        },
+        {
+          "role": "Typefaces",
+          "name": "Pretendard · JetBrains Mono (OFL)"
+        }
+      ],
+      "note": "This game is not run for profit. It is a non-commercial project built for the S.OWL club booth at Sungkonghoe University."
+    },
+    "privacy": {
+      "label": "privacy --policy",
+      "title": "Privacy policy",
+      "intro": "We collect only what the event needs, and we delete it once the event is over.",
+      "items": [
+        {
+          "title": "What we collect",
+          "body": "Your name, student ID, password, game records (score, playtime, stage reached), points, level and rank, gacha tickets and draw results, and the kind of device you played on. We never ask for a phone number, email address, postal address or payment details."
+        },
+        {
+          "title": "Why",
+          "body": "To check you against your student card, calculate rankings and points, hand out and track prizes, and prevent cheating. We do not use it for anything else."
+        },
+        {
+          "title": "Legal basis",
+          "body": "Your consent at sign-up (Personal Information Protection Act, Article 15(1)1). You may withdraw it at any time; doing so deletes your account and records."
+        },
+        {
+          "title": "Passwords",
+          "body": "Supabase Auth stores them hashed, in a form that cannot be reversed. Not even the crew can read one. A forgotten password cannot be reset — the account has to be deleted and registered again."
+        },
+        {
+          "title": "What others see",
+          "body": "The leaderboard and the booth display show only a partly masked name. Your student ID and detailed records are visible to you and the crew only."
+        },
+        {
+          "title": "Processors",
+          "body": "Supabase handles the database and authentication; AWS and Megazone Cloud host the service. Servers may be located outside Korea. Nothing is sold or passed to any other third party."
+        },
+        {
+          "title": "Retention",
+          "body": "Accounts and records are deleted within 30 days of the event ending. Ask us and we will delete yours sooner."
+        },
+        {
+          "title": "Your rights",
+          "body": "You may request access, correction, deletion or a halt to processing. Come to the booth and we will do it on the spot."
+        },
+        {
+          "title": "Cookies",
+          "body": "Only your login session and your language and display settings. No advertising or tracking cookies, and no external analytics."
+        },
+        {
+          "title": "Age",
+          "body": "You must be at least 14 years old to register."
+        }
+      ],
+      "contactTitle": "Privacy contact",
+      "contact": "윤승호 (Yoon Seungho), producer, S.OWL IT club, Sungkonghoe University — reach us at the S.OWL booth or through the club."
+    },
+    "prizes": {
+      "label": "prizes --terms",
+      "title": "Prizes and draws",
+      "intro": "There is no entry fee and nothing to pay for. Prizes are given out free at the booth by the club.",
+      "items": [
+        {
+          "title": "Free to play",
+          "body": "No entry fee and no payment of any kind in the game. Points and tickets cannot be bought, and the crew earns nothing from this."
+        },
+        {
+          "title": "Published odds",
+          "body": "Every prize's odds, and the chance of a miss, are shown in the app at all times. The odds follow the rank at which the ticket was earned, and the draw is made by the server from a random number that no one can influence."
+        },
+        {
+          "title": "Stock",
+          "body": "A prize with no stock left is removed from the draw and its share becomes a miss. The prize event may end early if everything is claimed."
+        },
+        {
+          "title": "Claiming",
+          "body": "Prizes are handed over at the booth during event hours only. They cannot be exchanged for cash or another item, or transferred to someone else, and unclaimed prizes lapse when the event ends."
+        },
+        {
+          "title": "Taxes",
+          "body": "Under Korean income tax law, a prize worth more than 50,000 won counts as other income and may carry a 22% withholding charge. If that applies to your prize we will explain it when you claim it."
+        },
+        {
+          "title": "Cheating",
+          "body": "Automation, tampering with game data or playing on someone else's account means the prize is refused and the account is locked. Unusual records are reviewed before a prize is given."
+        },
+        {
+          "title": "This is not gambling",
+          "body": "Nobody pays to take part and no randomised item is ever sold. Tickets come from playing, and each one is a single draw at a club booth."
+        },
+        {
+          "title": "Questions",
+          "body": "If you disagree with a draw or a prize, tell the crew at the booth. Every draw is recorded on the server and can be checked."
+        }
+      ]
+    },
+    "legal": {
+      "label": "notice --misc",
+      "title": "Other notices",
+      "items": [
+        {
+          "title": "The service",
+          "body": "This is a non-commercial service for a campus event, so it may stop or go down for maintenance without notice. Except in cases of intent or gross negligence, we are not liable for losses arising from its use."
+        },
+        {
+          "title": "Credits and rights",
+          "body": "Music was made with SUNO and artwork with ChatGPT; some sound effects are CC0 assets by Kenney. The typefaces are Pretendard and JetBrains Mono, both OFL. Trademarks mentioned belong to their owners."
+        },
+        {
+          "title": "House rules",
+          "body": "Play on your own account. Registering with someone else's student ID, or lending your account out, is not allowed."
+        }
+      ]
+    }
+  },
+  "club": {
+    "label": "S.OWL RECRUIT",
+    "title": "Come join the club!",
+    "body": "S.OWL, the Sungkonghoe University IT club behind this game, is looking for new members — development, security, games, whatever you are into.",
+    "cta": "Apply to the club"
   }
 }

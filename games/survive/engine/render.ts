@@ -12,9 +12,10 @@ import { CFG } from "../config";
 import { ACTIVES, auraRadius } from "../data/skills";
 import { ENEMY_KINDS, ENEMY_SPEC, MOB_KINDS } from "../data/stages";
 import { alpha, neon, stageAccent, type Theme } from "../theme";
-import { MOB_ART, MOVE_FRAMES, mobArt, owl, type MobArt, type OwlSprite } from "./assets";
+import { MOB_ART, MOVE_FRAMES, OBSTACLE_ART, mobArt, obstacleArt, owl, type MobArt, type ObstacleArt, type OwlSprite } from "./assets";
 import { chronoGrowth } from "./bosses/chrono";
 import { LOOK } from "./skills";
+import { OBSTACLE_KINDS } from "./obstacles";
 import { BEAM, FX, HZ, HZ_LETHAL, PC, type World } from "./world";
 
 /* ── 스프라이트 캐시 ────────────────────────────────────────── */
@@ -1333,6 +1334,26 @@ export function render(ctx: CanvasRenderingContext2D, w: World): void {
     const y = vy(o.y[i]) - o.h[i] / 2;
     if (!onScreen(x, y, 120)) continue;
     const hurt = o.hp[i] / o.maxHp[i];
+    // 그림(사용자 제공 네온 오브젝트) — 체력이 절반 아래면 부서진 모습으로 바뀐다
+    const art = OBSTACLE_KINDS[o.kind[i]].id as ObstacleArt;
+    const cracked = hurt <= 0.5;
+    const img = obstacleArt(art, cracked);
+    const base = cracked ? obstacleArt(art, false) : img;
+    if (img && base) {
+      // 단단한 부분이 판정 사각형과 겹치게 그린다 (부서진 그림은 같은 배율이라 크기 비율만 곱한다)
+      const body = OBSTACLE_ART[art];
+      const dw = (o.w[i] / body.w) * (img.width / base.width);
+      const dh = (o.h[i] / body.h) * (img.height / base.height);
+      const cx = vx(o.x[i]);
+      const cy = vy(o.y[i]);
+      ctx.save();
+      if (o.flash[i] > 0) ctx.filter = "brightness(2.2)";
+      else if (!t.glow) ctx.globalAlpha = 0.92;
+      ctx.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
+      ctx.restore();
+      continue;
+    }
+    // 폴백 — 그림이 아직 없으면 도형
     ctx.fillStyle = o.flash[i] > 0 ? "#FFFFFF" : alpha(t.obstacle, 0.5 + hurt * 0.5);
     ctx.fillRect(x, y, o.w[i], o.h[i]);
     ctx.strokeStyle = alpha(t.text, t.glow ? 0.18 : 0.35);

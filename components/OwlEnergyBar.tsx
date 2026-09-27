@@ -4,8 +4,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import { formatCountdown } from "@/lib/format";
-import { owlEnergyStatus } from "@/lib/rpc";
 import type { OwlEnergy } from "@/lib/types";
+
+// 로비 헤더와 본문에 바가 두 개 뜬다 — 같은 순간의 조회는 하나로 합친다.
+// Supabase 클라이언트(번들에서 가장 큰 조각)는 첫 갱신 때 불러온다: 첫 화면은 서버가 준 값으로 그리면 된다.
+let inflight: Promise<OwlEnergy> | null = null;
+
+function fetchEnergy(): Promise<OwlEnergy> {
+  inflight ??= import("@/lib/rpc")
+    .then((m) => m.owlEnergyStatus())
+    .finally(() => {
+      inflight = null;
+    });
+  return inflight;
+}
 
 /** 아울 에너지 — 10분마다 1개씩 충전, 게임 1판에 1개 소모 */
 export function OwlEnergyBar({
@@ -26,7 +38,7 @@ export function OwlEnergyBar({
     if (refreshing.current) return;
     refreshing.current = true;
     try {
-      const next = await owlEnergyStatus();
+      const next = await fetchEnergy();
       setStatus(next);
       setLeft(next.next_refill_sec);
     } catch {

@@ -13,7 +13,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
   return (
     <div className="grid min-h-dvh-safe place-items-center px-6 text-center">
       <div className="w-full max-w-sm">
-        <OwlMark sleepy className="mx-auto size-24" />
+        <OwlMark className="mx-auto size-24" />
         <h1 className="mt-6 text-xl font-black">문제가 생겼어요</h1>
         <p className="mt-2 text-sm leading-relaxed text-mute">
           잠시 후 다시 시도해주세요. 계속 같은 화면이 뜨면 S.OWL 부스로 알려주세요.

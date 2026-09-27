@@ -2,8 +2,9 @@ import { ArrowRight, Gift, Settings, Sparkles, Ticket, Trophy } from "lucide-rea
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Logo } from "@/components/brand/Logo";
-import { OwlMark } from "@/components/brand/OwlMark";
+import { BrandBanner } from "@/components/brand/BrandBanner";
 import { GameLogo } from "@/components/GameLogo";
+import { JoinClubBanner } from "@/components/JoinClubBanner";
 import { SetupBanner } from "@/components/SetupBanner";
 import { OpenStatus } from "@/components/OpenStatus";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -23,13 +24,14 @@ const STEPS = [
 ] as const;
 
 export default async function LandingPage() {
-  const [config, open, prizes, profile, t, tg] = await Promise.all([
+  const [config, open, prizes, profile, t, tg, tAbout] = await Promise.all([
     getAppConfig(),
     getIsOpen(),
     getPrizes(),
     getMyProfile(),
     getTranslations("landing"),
     getTranslations("games"),
+    getTranslations("about"),
   ]);
 
   return (
@@ -60,13 +62,9 @@ export default async function LandingPage() {
       <section className="card grad-line glow-iris relative mt-4 overflow-hidden px-6 py-10 text-center">
         <div className="grid-bg pointer-events-none absolute inset-0 opacity-40" aria-hidden />
         <div className="relative">
-          <OwlMark className="mx-auto size-28 animate-float drop-shadow-[0_0_40px_rgb(255_176_32/0.35)]" />
-          <h1 className="display mt-5 font-mono text-[44px] sm:text-6xl">
-            <span className="grad-text">OWL</span>
-            <span className="text-neon text-glow">_</span>
-            <span className="grad-text">GAMES</span>
-          </h1>
-          <p className="mt-2 font-mono text-xs tracking-[0.3em] text-aqua">S.OWL · 아울게임즈</p>
+          <h1 className="sr-only">OWL GAMES · 아울게임즈</h1>
+          <BrandBanner priority className="max-w-md animate-float drop-shadow-[0_0_46px_rgb(167_139_250/0.3)]" />
+          <p className="mt-1 font-mono text-xs tracking-[0.3em] text-aqua">S.OWL · 아울게임즈</p>
           <p className="mt-5 text-[15px] leading-relaxed text-mute">
             {t("tagline")}
             <br />
@@ -170,6 +168,8 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      <JoinClubBanner className="mt-10" />
+
       <footer className="mt-12 border-t border-line pt-6 text-center">
         <p className="font-mono text-[11px] text-dim">
           {t("footer", { start: config.open_hours.start, end: config.open_hours.end })}
@@ -177,6 +177,12 @@ export default async function LandingPage() {
         <p className="mt-1 font-mono text-[11px] text-dim">
           {config.booth_location.building} {config.booth_location.floor} · {config.booth_location.spot}
         </p>
+        <Link
+          href="/about"
+          className="mt-3 inline-flex min-h-11 items-center px-3 font-mono text-[11px] text-mute underline decoration-neon/40 underline-offset-4 transition-colors hover:text-neon"
+        >
+          {tAbout("link")}
+        </Link>
       </footer>
     </div>
   );

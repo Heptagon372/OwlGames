@@ -308,6 +308,18 @@ export function playSample(url: string, opts: { gain?: number; rate?: number } =
   return true;
 }
 
+/* ── UI 클릭음 ──────────────────────────────────────────────── */
+
+/** 버튼·링크 클릭음 (사용자 제공 샘플). 아직 안 받았으면 합성음 `tap` 으로 대신한다 */
+export const UI_CLICK = "/assets/ui/button-click.mp3";
+
+/** 버튼·링크를 눌렀을 때의 소리 — `SoundBoot` 와 설정 화면이 같은 소리를 쓴다 */
+export function playClick(gain = 0.7): void {
+  if (typeof window === "undefined") return;
+  preloadSamples([UI_CLICK]);
+  if (!playSample(UI_CLICK, { gain })) playSfx("tap");
+}
+
 /* ── 배경음악 ───────────────────────────────────────────────── */
 
 /**
@@ -389,7 +401,11 @@ function syncMusic(force = false): void {
   const ac = ensure();
   if (!ac) return;
   makeDecks(ac);
-  const url = wanted && !broken.has(wanted) ? wanted : null;
+  // 파일을 받는 것 자체가 트래픽이다 — 로비 배경음악만 3MB 가 넘는다.
+  // 그래서 (1) 배경음악 음량이 0이면(MusicDock 음소거) 아예 받지 않고,
+  // (2) 첫 입력 전에는 받지 않는다 (브라우저가 어차피 재생을 막으므로 첫 입력 때 unlock 이 다시 부른다).
+  const playable = prefs.music > 0 && primed;
+  const url = wanted && !broken.has(wanted) && playable ? wanted : null;
   const current = active?.url ?? null;
   if (current === url) {
     // 같은 곡 — 소리를 다시 켰거나 첫 입력이 들어왔을 때만 이어서 튼다

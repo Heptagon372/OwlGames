@@ -85,7 +85,11 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
   엔진은 `world.cues`에 `CUE` 비트만 세우고, 소리 이름·파일·음량·간격은 `games/survive/audio.ts`(`SOUNDS`·`BGM`) 한 곳이다.
   샘플이 아직 없으면 합성음(`fallback`)으로 대신한다. 배경음악은 `lib/sound.ts`의 `playMusic`(크로스페이드, 음량은 설정의 "배경음악").
 - **게임 로고 4종은 사용자 그림**(`scripts/src/game-logos.webp` → `scripts/slice-game-logos.py` → `public/assets/logos/<game>.webp`)이고 `components/GameLogo.tsx`로 로비·첫 화면·게임 인트로에 그린다. 게임을 추가하면 로고도 같이 넣을 것.
-- 플랫폼 UI는 이미지 에셋 없이 SVG·도형으로 그린다 (`components/brand/OwlMark.tsx`, `GachaMachine.tsx`).
+- 플랫폼 UI는 이미지 에셋 없이 SVG·도형으로 그린다 (`components/brand/Logo.tsx`, `GachaMachine.tsx`).
+- **예외: 브랜드 그림은 사용자가 준 두 장**(`scripts/src/brand-frame.webp`·`brand-owl.png` → `scripts/slice-brand.py`)이다.
+  스크립이 프레임 안에 이름을 얹어 `public/assets/brand/banner.webp`(+`-light`)·`owl.webp`(+`-light`) 와 `app/icon.png`·`apple-icon.png`·`opengraph-image.png` 를 만든다.
+  화면에서는 `components/brand/BrandBanner.tsx`(랜딩 히어로·로비 맨 위)·`OwlMark.tsx`(헤더·티켓·에러 화면)를 쓰고,
+  라이트 테마에서는 CSS 의 `.brand-night`/`.brand-day` 가 **진한 사본**으로 바꿔 끼운다 (DECISIONS §5-36).
   **예외: 랭크 뱃지 17종은 사용자가 준 시트**(`scripts/src/rank-sheet.webp` → `scripts/slice-rank-badges.py` → `public/assets/ranks/rank-00~16.webp`)를 `RankBadge.tsx`가 `<img>`로 그린다. 순서는 `RANKS` 순서와 같다.
 - **아울러닝 2.0 그림은 사용자가 준 시트 두 장**이다 — 리소스 시트(`public/assets/owlrun/*.webp`, `scripts/slice-owlrun-sheet.py`)와
   캐릭터 시트(`public/assets/owlrun/char/*.webp`, `scripts/slice-owlrun-character.py`, 외곽선 스티커 스타일 · 2배로 키운 고해상도).
@@ -96,8 +100,9 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
   새 에셋을 추가하면 `public/assets/CREDITS.md`에 출처·커밋·라이선스를 반드시 적을 것.
 - **예외: 아울 서바이버즈의 부엉이는 사용자가 준 스프라이트**(`public/assets/survive-owl/*.webp`,
   로더 `games/survive/engine/assets.ts`)다. 방향(정면·후면·좌·우)·이동 5프레임·감정·피격·사망·레벨업·화살·베기·마법진이 있고,
-  로딩 전에는 도형 폴백으로 그린다. **몬스터 14종도 사용자 그림**(`public/assets/survive-mobs/*.webp`, `assets.ts`의 `MOB_ART`에
-  몸통 비율)이고, 로딩 전에는 네온 도형으로 그린다. 탄·장애물은 여전히 도형이다.
+  로딩 전에는 도형 폴백으로 그린다. **몬스터 14종도 사용자 그림**(시트 `scripts/src/survive-mobs.webp` → `scripts/slice-survive-mobs.py` → `public/assets/survive-mobs/*.webp`, `assets.ts`의 `MOB_ART`에
+  몸통 비율)이고, 로딩 전에는 네온 도형으로 그린다. **장애물 5종도 사용자 그림**(`public/assets/survive-obstacles/*.webp`,
+  `assets.ts`의 `OBSTACLE_ART`에 단단한 부분 비율)이고 **체력 절반 아래면 `-broken` 그림**으로 바뀐다. 탄은 여전히 도형이다.
 - **아울 레스토랑의 음식 25종 · 재료 · 주방 도구도 사용자가 준 시트 그림**(`public/assets/chef/`, `scripts/slice-chef-sheet.py`)이다.
   두 번째 시트(`scripts/slice-chef-extras.py`)의 손님 8명·버그 4종·UI 아이콘·연출 배지·장식도 쓴다.
   `games/chef/ui/art.tsx` 의 `Art`/`DishIcon`/`ToolIcon`/`UiIcon`/`Badge`/`Decor`/`BugArt` 를 거치고, 그림을 못 받으면 이모지·SVG·글자로 그린다.
@@ -142,6 +147,7 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 아울리스 AI 판단(평가 가중치) | `games/owlis/engine/ai.ts` 의 `W` (모양·연쇄 잠재력·발사/쌓기 판단) |
 | 아울 레스토랑 튜닝 | `games/chef/config.ts` 의 `CFG`(인내도 `patience` · 등장 `spawn` · 버그 `bugs` · 점수 `score` · ∞ `infinite`) + 단계표 `STAGES` — 점수·단계식을 바꾸면 `20261005000000_chef.sql` 헬퍼도 같이 |
 | 아울 레스토랑 음식·재료 추가 | `games/chef/data/recipes.ts` · `data/items.ts` + 이름은 `hud.chef.recipes`·`items`·`labels` (해금 단계 규칙은 `tests/chef-engine.test.ts` 가 검증) |
+| 서바이버즈 장애물 | 종류·크기·체력 `games/survive/engine/obstacles.ts` 의 `OBSTACLE_KINDS` + 가중치 `CFG.obstacle.kindWeights` + 그림 `public/assets/survive-obstacles/`(`assets.ts` 의 `OBSTACLE_ART`, 자르기 `scripts/slice-survive-obstacles.py`) |
 | 서바이버즈 스킬 추가·수정 | `games/survive/data/skills.ts` (동작은 `engine/skills.ts`의 유형 핸들러) |
 | 서바이버즈 보스 패턴 | `games/survive/engine/bosses/*.ts` (공통 경고·레이저는 `common.ts`) |
 | 서바이버즈 가이드(시작 화면) | `games/survive/ui/Guide.tsx` — 이름·수치는 데이터·`CFG`에서 자동, 문장만 `hud.survive.guide` (보스 패턴을 추가하면 `BOSS_PATTERNS`에도) |
@@ -154,10 +160,16 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 실시간 등수·변동 표시 | `components/RankDelta.tsx` · `components/LiveRefresh.tsx` · `games/core/useGameSession.ts`의 `position` |
 | 플랫폼 색·유리 질감 | `app/globals.css`의 `@theme` + `.card`/`.grad-line` — 캔버스 쪽 복제본은 `games/core/canvas.ts`의 `COLORS`, 게임 테마는 `games/*/theme.ts` |
 | 라이트 테마 색 | `app/globals.css`의 `:root[data-theme="light"]` 한 블록 |
+| 브랜드 배너·부엉이 마크 | 자르기 `scripts/slice-brand.py` (원본 `scripts/src/brand-*`) → `public/assets/brand/` · 화면은 `components/brand/BrandBanner.tsx`·`OwlMark.tsx` |
 | 화면 문구(한/영) | `messages/ko.json` · `messages/en.json` (두 파일의 키가 **같아야** 한다) |
 | 설정 항목 추가 | `components/SettingsScreen.tsx` + 저장은 `lib/prefs.ts`(기기) / `lib/locale.ts`(쿠키) |
 | 효과음 | `lib/sound.ts`의 `PATTERNS` (파일 없이 WebAudio 합성) |
+| 버튼 클릭음 | `lib/sound.ts` 의 `UI_CLICK`·`playClick()` (사용자 샘플 `public/assets/ui/button-click.mp3`, 없으면 합성음 `tap`) — 무는 곳은 `components/SoundBoot.tsx` |
 | 서바이버즈 효과음·배경음악 | `games/survive/audio.ts`의 `SOUNDS`(효과음) · `BGM`(곡 경로, 파일은 `public/assets/survive-bgm/`) — 새 사건은 `world.ts`의 `CUE`에 비트를 추가하고 `CUE_SOUNDS`에 연결 |
+| 아울리스 배경음악 | `games/owlis/audio.ts` (`BGM`·`LATE_LEVEL` — 후반/위기 곡 전환, 파일은 `public/assets/owlis-bgm/`) |
+| 아울러닝 배경음악 | `games/flight/audio.ts` (`BGM`·`LATE_STAGE` — 후반 단계·OVERDRIVE 곡 전환, 파일은 `public/assets/flight-bgm/`) |
+| 동아리 가입 배너·링크 | `components/JoinClubBanner.tsx` 의 `CLUB_APPLY_URL` + 문구 `messages/*.json` 의 `club.*` |
+| 제작진·개인정보·경품 고지 | `app/about/page.tsx` + 문구는 `messages/*.json` 의 `about.*` (배열은 `t.raw`). 들어가는 곳: 설정 하단·첫 화면 푸터·티켓 확률표 아래 |
 | 관리자 화면 | `components/admin/AdminPanel.tsx` (대시보드·승인·유저·재고·설정·로그) |
 | 운영 값을 화면에서 바꾸기 | `admin_set_config` 화이트리스트(최신 본문은 `supabase/migrations/20261007000000_points_v2.sql`) + `lib/rpc.ts`의 `setConfigValue` |
 | 관리자 대시보드 집계 | `admin_stats()` RPC — 항목을 늘리면 `lib/types.ts`의 `AdminStats`도 같이 고친다 |

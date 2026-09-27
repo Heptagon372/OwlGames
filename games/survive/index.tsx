@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, Play } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { CFG } from "./config";
-import { preloadMobs, preloadOwl } from "./engine/assets";
+import { preloadMobs, preloadObstacles, preloadOwl } from "./engine/assets";
 import { chooseCard, createRun, isPaused, rerollCards, skipCards, stageDuration, update, type Input, type Run } from "./engine/game";
 import { ACTIVES, EVOLUTIONS, PASSIVES } from "./data/skills";
 import { bombFuse, chronoTimeLeft } from "./engine/bosses/chrono";
@@ -24,6 +24,7 @@ import { Joystick } from "./ui/Joystick";
 import { startFixedLoop } from "@/games/flight/engine/loop";
 import { text } from "@/games/core/i18n";
 import { fetchSurviveProgress } from "@/lib/client-queries";
+import { createDprGovernor } from "../core/quality";
 import type { GameComponentProps } from "../core/types";
 
 const END_DELAY = 1.6;
@@ -234,18 +235,20 @@ function SurviveRun({ theme, onEnd }: { theme: ThemeId; onEnd: GameComponentProp
     resetSprites();
     preloadOwl();
     preloadMobs();
+    preloadObstacles();
     // 시작 전 3·2·1 — 그동안 월드는 멈추고 부엉이 발밑에 마법진이 돈다
     const run = createRun(Date.now(), theme, reduced, CFG.run.countdownSec);
     runRef.current = run;
     endedRef.current = false;
     overAtRef.current = 0;
 
+    const quality = createDprGovernor();
     let dpr = 1;
     let scale = 1;
     let offX = 0;
     let offY = 0;
     const fit = () => {
-      dpr = Math.min(2, window.devicePixelRatio || 1);
+      dpr = quality.dpr;
       const cw = wrap.clientWidth;
       const ch = wrap.clientHeight;
       canvas.width = Math.round(cw * dpr);
@@ -288,6 +291,7 @@ function SurviveRun({ theme, onEnd }: { theme: ThemeId; onEnd: GameComponentProp
         const now = performance.now();
         const frameMs = now - last;
         last = now;
+        if (quality.frame(now)) fit();
         fpsAcc += frameMs;
         fpsFrames++;
         if (fpsFrames >= 30) {

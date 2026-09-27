@@ -2,6 +2,7 @@
 
 // 부스·전광판·관리자 화면에서 쓰는 브라우저 측 조회. Supabase 가 없으면 빈 값.
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBrowserSupabase } from "./supabase/client";
 import { safeSearchTerm } from "./validate";
 import {
@@ -15,6 +16,14 @@ import {
   type PrizeRow,
   type Profile,
 } from "./types";
+
+/**
+ * 내 user id (이 기기의 세션에서). 조회 필터로만 쓰고 권한은 DB 가 JWT 로 판단하므로 Auth 서버를 왕복할 필요가 없다.
+ */
+async function myId(supabase: SupabaseClient): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user.id ?? null;
+}
 
 export async function fetchPendingUsers(): Promise<PendingUser[]> {
   const supabase = getBrowserSupabase();
@@ -87,11 +96,9 @@ export async function fetchBoardEvents(limit = 20): Promise<BoardEvent[]> {
 export async function fetchMyPosition(): Promise<number | null> {
   const supabase = getBrowserSupabase();
   if (!supabase) return null;
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data } = await supabase.from("leaderboard").select("position").eq("user_id", user.id).maybeSingle();
+  const uid = await myId(supabase);
+  if (!uid) return null;
+  const { data } = await supabase.from("leaderboard").select("position").eq("user_id", uid).maybeSingle();
   const pos = (data as { position?: number } | null)?.position;
   return typeof pos === "number" ? pos : null;
 }
@@ -103,11 +110,9 @@ export async function fetchMyPosition(): Promise<number | null> {
 export async function fetchSurviveProgress(): Promise<{ stage: number; theme: "dark" | "light" }> {
   const supabase = getBrowserSupabase();
   if (!supabase) return { stage: 0, theme: "dark" };
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { stage: 0, theme: "dark" };
-  const { data } = await supabase.from("profiles").select("meta").eq("id", user.id).maybeSingle();
+  const uid = await myId(supabase);
+  if (!uid) return { stage: 0, theme: "dark" };
+  const { data } = await supabase.from("profiles").select("meta").eq("id", uid).maybeSingle();
   const meta = (data?.meta ?? {}) as Record<string, unknown>;
   const raw = Number(meta.survive_stage ?? 0);
   const theme = meta.survive_theme === "light" ? "light" : "dark";
@@ -130,11 +135,9 @@ export async function fetchOwlisRecord(): Promise<OwlisRecord> {
   const empty: OwlisRecord = { best: 0, sec: 0, combo: 0, level: 0, games: 0 };
   const supabase = getBrowserSupabase();
   if (!supabase) return empty;
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return empty;
-  const { data } = await supabase.from("profiles").select("meta").eq("id", user.id).maybeSingle();
+  const uid = await myId(supabase);
+  if (!uid) return empty;
+  const { data } = await supabase.from("profiles").select("meta").eq("id", uid).maybeSingle();
   const rec = ((data?.meta ?? {}) as Record<string, unknown>).owlis_record as Record<string, unknown> | undefined;
   if (!rec) return empty;
   const n = (k: string) => {
@@ -159,11 +162,9 @@ export async function fetchChefRecord(): Promise<ChefRecord> {
   const empty: ChefRecord = { best: 0, stage: 0, inf: 0, combo: 0, games: 0 };
   const supabase = getBrowserSupabase();
   if (!supabase) return empty;
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return empty;
-  const { data } = await supabase.from("profiles").select("meta").eq("id", user.id).maybeSingle();
+  const uid = await myId(supabase);
+  if (!uid) return empty;
+  const { data } = await supabase.from("profiles").select("meta").eq("id", uid).maybeSingle();
   const rec = ((data?.meta ?? {}) as Record<string, unknown>).chef_record as Record<string, unknown> | undefined;
   if (!rec) return empty;
   const n = (k: string) => {

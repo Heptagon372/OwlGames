@@ -22,11 +22,11 @@ import type {
 export const getMyProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await getServerSupabase();
   if (!supabase) return null;
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  // getClaims 는 JWT 서명을 로컬에서 검증한다 (비대칭 키) — 대칭 키 프로젝트면 알아서 getUser 로 돌아간다
+  const { data: auth } = await supabase.auth.getClaims();
+  const uid = auth?.claims.sub;
+  if (!uid) return null;
+  const { data } = await supabase.from("profiles").select("*").eq("id", uid).maybeSingle();
   return (data as Profile | null) ?? null;
 });
 

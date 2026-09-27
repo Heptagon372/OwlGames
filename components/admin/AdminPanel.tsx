@@ -856,7 +856,7 @@ function GachaCard({ config }: { config: AppConfig }) {
                             type="number"
                             min={0}
                             max={100}
-                            step={0.5}
+                            step={0.05}
                             value={v}
                             aria-label={`T${tier} ${i + 1}등 확률`}
                             onChange={(e) => set(tier, i, e.target.value)}

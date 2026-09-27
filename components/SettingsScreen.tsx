@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Check, Languages, Monitor, Volume2, VolumeX } from "lucide-react";
+import { Check, ChevronRight, Info, Languages, Monitor, Volume2, VolumeX } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { Card, TermLabel } from "./ui/Card";
 import { Button } from "./ui/Button";
@@ -16,6 +17,7 @@ const SCALE_KEYS = ["small", "normal", "large", "xlarge"] as const;
 
 export function SettingsScreen({ locale }: { locale: Locale }) {
   const t = useTranslations("settings");
+  const tAbout = useTranslations("about");
   const router = useRouter();
 
   const [scale, setScale] = useState<Scale>(DEFAULT_SCALE);
@@ -193,6 +195,16 @@ export function SettingsScreen({ locale }: { locale: Locale }) {
           <p className="px-1 pt-1 text-xs text-dim">{t("language.hint")}</p>
         </Card>
       </section>
+
+      {/* 제작진 · 개인정보 · 경품 안내 */}
+      <Link
+        href="/about"
+        className="grad-line flex min-h-14 items-center gap-3 rounded-card border border-transparent bg-white/5 px-4 transition-colors hover:bg-white/8"
+      >
+        <Info className="size-5 shrink-0 text-neon" />
+        <span className="flex-1 text-sm font-bold">{tAbout("link")}</span>
+        <ChevronRight className="size-4 text-dim" />
+      </Link>
 
       <p className="pb-2 text-center text-xs text-dim">{t("storedOnDevice")}</p>
     </div>

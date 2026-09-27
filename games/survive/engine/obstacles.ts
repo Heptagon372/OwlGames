@@ -11,11 +11,14 @@ import { msg, ref } from "@/games/core/i18n";
 import { CFG } from "../config";
 import { burst, damageEnemy, PC, pushLog, spawnOrb, TAG, type World } from "./world";
 
+// 크기는 그림(`public/assets/survive-obstacles/`, `engine/assets.ts` 의 `OBSTACLE_ART`)의
+// 단단한 부분 비율에 맞췄다 — 판정 사각형과 보이는 그림이 어긋나지 않게.
 export const OBSTACLE_KINDS = [
-  { id: "rack", hp: 30, w: 90, h: 60 },
-  { id: "box", hp: 15, w: 48, h: 48 },
-  { id: "extinguisher", hp: 10, w: 30, h: 30 },
-  { id: "cable", hp: 20, w: 70, h: 45 },
+  { id: "rack", hp: 30, w: 100, h: 42 },
+  { id: "box", hp: 15, w: 54, h: 50 },
+  { id: "extinguisher", hp: 10, w: 36, h: 60 },
+  { id: "cable", hp: 20, w: 78, h: 40 },
+  { id: "portal", hp: 25, w: 88, h: 42 },
 ] as const;
 
 const MAX_W = Math.max(...OBSTACLE_KINDS.map((k) => k.w));

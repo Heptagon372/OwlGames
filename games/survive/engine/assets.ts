@@ -67,20 +67,20 @@ const MOB_BASE = "/assets/survive-mobs";
  *  (원형은 속도선이 왼쪽에, 오각형은 레이저가 오른쪽에 붙어 있어서 몸통이 가운데가 아니다)
  */
 export const MOB_ART = {
-  tri: { body: 0.86, cx: 0.5, cy: 0.55 },
-  square: { body: 0.82, cx: 0.5, cy: 0.5 },
-  circle: { body: 0.56, cx: 0.59, cy: 0.5 },
-  penta: { body: 0.64, cx: 0.36, cy: 0.48 },
-  hexa: { body: 0.46, cx: 0.48, cy: 0.61 },
-  hepta: { body: 0.58, cx: 0.49, cy: 0.46 },
-  octa: { body: 0.83, cx: 0.5, cy: 0.5 },
-  nona: { body: 0.7, cx: 0.5, cy: 0.53 },
-  deca: { body: 0.62, cx: 0.52, cy: 0.56 },
-  hendeca: { body: 0.55, cx: 0.51, cy: 0.49 },
-  dodeca: { body: 0.86, cx: 0.5, cy: 0.5 },
-  trideca: { body: 0.48, cx: 0.52, cy: 0.56 },
-  tetradeca: { body: 0.63, cx: 0.5, cy: 0.61 },
-  chrono: { body: 0.37, cx: 0.5, cy: 0.59 },
+  tri: { body: 0.92, cx: 0.51, cy: 0.55 },
+  square: { body: 0.84, cx: 0.5, cy: 0.51 },
+  circle: { body: 0.67, cx: 0.57, cy: 0.53 },
+  penta: { body: 0.65, cx: 0.38, cy: 0.49 },
+  hexa: { body: 0.47, cx: 0.47, cy: 0.6 },
+  hepta: { body: 0.54, cx: 0.49, cy: 0.48 },
+  octa: { body: 0.85, cx: 0.5, cy: 0.49 },
+  nona: { body: 0.74, cx: 0.51, cy: 0.54 },
+  deca: { body: 0.67, cx: 0.52, cy: 0.56 },
+  hendeca: { body: 0.59, cx: 0.5, cy: 0.51 },
+  dodeca: { body: 0.84, cx: 0.5, cy: 0.48 },
+  trideca: { body: 0.48, cx: 0.49, cy: 0.55 },
+  tetradeca: { body: 0.6, cx: 0.49, cy: 0.6 },
+  chrono: { body: 0.42, cx: 0.51, cy: 0.58 },
 } as const;
 
 export type MobArt = keyof typeof MOB_ART;
@@ -107,4 +107,45 @@ export function mobArt(name: string): HTMLImageElement | null {
 /** 몬스터 그림 주소 (가이드 화면 등 DOM 용) */
 export function mobArtSrc(name: MobArt): string {
   return `${MOB_BASE}/${name}.webp`;
+}
+
+/* ── 장애물 (사용자 제공 네온 오브젝트 시트) ───────────────────── */
+
+const OBST_BASE = "/assets/survive-obstacles";
+
+/**
+ * 장애물 그림마다 **단단한 부분이 그림에서 차지하는 비율** (글로우·파편은 그 바깥이다).
+ * 판정 사각형(w×h)에 단단한 부분을 맞추려면 이 값으로 나눠서 그린다.
+ * 부서진 그림은 **같은 배율로 잘려 있어서**(`scripts/slice-survive-obstacles.py`) 자기 크기 비율만 곱하면 된다.
+ */
+export const OBSTACLE_ART = {
+  rack: { w: 0.84, h: 0.62 },
+  box: { w: 0.75, h: 0.69 },
+  extinguisher: { w: 0.83, h: 0.79 },
+  cable: { w: 0.85, h: 0.73 },
+  portal: { w: 0.91, h: 0.71 },
+} as const;
+
+export type ObstacleArt = keyof typeof OBSTACLE_ART;
+
+const obstImages = new Map<string, HTMLImageElement>();
+const obstReady = new Set<string>();
+
+export function preloadObstacles(): void {
+  if (typeof window === "undefined" || obstImages.size) return;
+  for (const name of Object.keys(OBSTACLE_ART)) {
+    for (const key of [name, `${name}-broken`]) {
+      const img = new Image();
+      img.decoding = "async";
+      img.onload = () => obstReady.add(key);
+      img.src = `${OBST_BASE}/${key}.webp`;
+      obstImages.set(key, img);
+    }
+  }
+}
+
+/** 장애물 그림 (아직 로딩 전이면 null → 도형 폴백) */
+export function obstacleArt(name: string, broken: boolean): HTMLImageElement | null {
+  const key = broken ? `${name}-broken` : name;
+  return obstReady.has(key) ? (obstImages.get(key) ?? null) : null;
 }

@@ -27,7 +27,7 @@ export default async function PendingPage() {
       </header>
 
       <Card className="mt-6 text-center">
-        <OwlMark sleepy className="mx-auto size-24 animate-float" />
+        <OwlMark className="mx-auto size-24 animate-float" />
         <h1 className="display mt-4 text-2xl">{t("title")}</h1>
         <p className="mt-2 text-sm leading-relaxed text-mute">
           {profile ? t("hello", { name: profile.name }) : ""}

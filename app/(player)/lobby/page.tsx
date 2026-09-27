@@ -1,4 +1,6 @@
+import { JoinClubBanner } from "@/components/JoinClubBanner";
 import type { Metadata } from "next";
+import { BrandBanner } from "@/components/brand/BrandBanner";
 import { GameLogo } from "@/components/GameLogo";
 import { LobbyVideo } from "@/components/LobbyVideo";
 import Link from "next/link";
@@ -68,7 +70,8 @@ export default async function LobbyPage({
         </div>
       )}
 
-      {/* 홍보 영상 */}
+      {/* 브랜드 배너 · 홍보 영상 */}
+      <BrandBanner priority className="mb-2 max-w-sm drop-shadow-[0_0_38px_rgb(167_139_250/0.28)]" />
       <LobbyVideo className="mb-4" />
 
       {/* 내 랭크 — 유리판 위로 랭크 색이 번진다 */}
@@ -215,6 +218,8 @@ export default async function LobbyPage({
           {top.length === 0 && <p className="px-4 py-8 text-center text-sm text-dim">{t("empty")}</p>}
         </Card>
       </section>
+
+      <JoinClubBanner className="mt-8" />
     </PlayerShell>
   );
 }

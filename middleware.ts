@@ -36,10 +36,10 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // 세션 갱신 겸 인증 확인 (getUser는 Auth 서버에서 토큰을 검증한다)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // 세션 갱신 겸 인증 확인. getClaims 는 만료된 토큰을 갱신하고 JWT 서명을 로컬에서 검증한다 —
+  // 로비·랭킹이 30초마다 새로 고칠 때마다 Auth 서버를 왕복하지 않는다 (대칭 키 프로젝트면 getUser 로 돌아간다)
+  const { data: auth } = await supabase.auth.getClaims();
+  const uid = auth?.claims.sub;
 
   const path = request.nextUrl.pathname;
   const redirect = (to: string) => {
@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
   const isPlayerRoute = PLAYER_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
   const needsLogin = isPlayerRoute || path === "/pending" || path.startsWith("/booth") || path.startsWith("/admin");
 
-  if (!user) {
+  if (!uid) {
     return needsLogin ? redirect(`/auth/login?next=${encodeURIComponent(path)}`) : response;
   }
 
@@ -65,7 +65,7 @@ export async function middleware(request: NextRequest) {
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, verified")
-    .eq("id", user.id)
+    .eq("id", uid)
     .maybeSingle();
 
   if (!profile) {

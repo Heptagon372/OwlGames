@@ -40,20 +40,37 @@ export type EnemySpec = {
  *  - 사각형 = 삼각형 ×2 체력, 팔각형 = 사각형 ×2 체력
  *  - 십각형 = 원형 ×2 속도
  *  - 십이각형 = 느리고 약하지만 한 대가 아프다
- *  - 십사각형 = 체력이 가장 높고 가장 느리다
+ *  - 십사각형 = 체력이 가장 높고 가장 느리다 (그래서 가장 크다)
+ *  - 몸집(`r`)은 적지 않는다 — `sizeOf(hp, speed)` 가 정한다
  */
-export const MOB_SPEC: Record<MobKind, EnemySpec> = {
-  tri:       { hp: 10,  speed: 60,  r: 9,  dmg: 5,  xp: 1,  sides: 3,  trait: "none",   special: false, max: 999 },
-  square:    { hp: 20,  speed: 46,  r: 11, dmg: 6,  xp: 2,  sides: 4,  trait: "none",   special: false, max: 999 },
-  circle:    { hp: 15,  speed: 110, r: 9,  dmg: 5,  xp: 2,  sides: 0,  trait: "none",   special: false, max: 999 },
-  penta:     { hp: 45,  speed: 55,  r: 14, dmg: 8,  xp: 5,  sides: 5,  trait: "charge", special: true,  max: 6 },
-  hepta:     { hp: 40,  speed: 50,  r: 14, dmg: 6,  xp: 5,  sides: 7,  trait: "shoot4", special: true,  max: 6 },
-  octa:      { hp: 40,  speed: 38,  r: 16, dmg: 9,  xp: 4,  sides: 8,  trait: "none",   special: false, max: 999 },
-  deca:      { hp: 8,   speed: 220, r: 9,  dmg: 6,  xp: 2,  sides: 10, trait: "none",   special: false, max: 999 },
-  hendeca:   { hp: 70,  speed: 30,  r: 18, dmg: 5,  xp: 10, sides: 11, trait: "summon", special: true,  max: 2 },
-  dodeca:    { hp: 22,  speed: 34,  r: 15, dmg: 30, xp: 5,  sides: 12, trait: "none",   special: false, max: 999 },
-  tetradeca: { hp: 260, speed: 22,  r: 22, dmg: 10, xp: 16, sides: 14, trait: "regen",  special: true,  max: 3 },
+/**
+ * 몸집은 체력·속도에서 나온다 — **체력이 많을수록 크고, 빠를수록 작다**.
+ * 삼각형(체력 10 · 속도 60)이 기준(9px)이고 7~24px 사이로 묶는다.
+ * 그림(`assets.ts` 의 `MOB_ART`)도 이 반지름에 맞춰 그려지므로, 수치만 고치면 보이는 크기도 같이 바뀐다.
+ */
+export function sizeOf(hp: number, speed: number): number {
+  const r = 9 * (hp / 10) ** 0.3 * (60 / speed) ** 0.22;
+  return Math.round(Math.min(24, Math.max(7, r)));
+}
+
+type MobStat = Omit<EnemySpec, "r">;
+
+const MOB_STAT: Record<MobKind, MobStat> = {
+  tri:       { hp: 10,  speed: 60,  dmg: 5,  xp: 1,  sides: 3,  trait: "none",   special: false, max: 999 },
+  square:    { hp: 20,  speed: 46,  dmg: 6,  xp: 2,  sides: 4,  trait: "none",   special: false, max: 999 },
+  circle:    { hp: 15,  speed: 110, dmg: 5,  xp: 2,  sides: 0,  trait: "none",   special: false, max: 999 },
+  penta:     { hp: 45,  speed: 55,  dmg: 8,  xp: 5,  sides: 5,  trait: "charge", special: true,  max: 6 },
+  hepta:     { hp: 40,  speed: 50,  dmg: 6,  xp: 5,  sides: 7,  trait: "shoot4", special: true,  max: 6 },
+  octa:      { hp: 40,  speed: 38,  dmg: 9,  xp: 4,  sides: 8,  trait: "none",   special: false, max: 999 },
+  deca:      { hp: 8,   speed: 220, dmg: 6,  xp: 2,  sides: 10, trait: "none",   special: false, max: 999 },
+  hendeca:   { hp: 70,  speed: 30,  dmg: 5,  xp: 10, sides: 11, trait: "summon", special: true,  max: 2 },
+  dodeca:    { hp: 22,  speed: 34,  dmg: 30, xp: 5,  sides: 12, trait: "none",   special: false, max: 999 },
+  tetradeca: { hp: 260, speed: 22,  dmg: 10, xp: 16, sides: 14, trait: "regen",  special: true,  max: 3 },
 };
+
+export const MOB_SPEC = Object.fromEntries(
+  (Object.keys(MOB_STAT) as MobKind[]).map((k) => [k, { ...MOB_STAT[k], r: sizeOf(MOB_STAT[k].hp, MOB_STAT[k].speed) }]),
+) as Record<MobKind, EnemySpec>;
 
 /** 보스·소환물은 등장할 때 수치를 따로 넣는다 (config 의 보스 블록). 여기엔 모양만 */
 const SHAPE_ONLY = { hp: 1, speed: 0, r: 20, dmg: 0, xp: 0, trait: "none", special: true, max: 999 } as const;

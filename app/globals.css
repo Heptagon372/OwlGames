@@ -69,6 +69,17 @@
   --animate-jitter: jitter 0.35s ease-in-out infinite;
   --animate-drop: drop 1.1s cubic-bezier(0.5, 0, 0.9, 0.6) both;
   --animate-flash: flash 0.5s ease-out both;
+  /* 뽑기 집게 (components/GachaMachine.tsx) — 훑기 → 내려가기 → 쥐기 → 올라오기 → 배출 */
+  --animate-claw-hunt: claw-hunt 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  --animate-claw-home: claw-home 1.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+  --animate-claw-dive: claw-dive 2.6s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  --animate-claw-lift: claw-lift 1.5s cubic-bezier(0.3, 0, 0.2, 1) both;
+  --animate-claw-open: claw-open 2.6s ease-in-out infinite;
+  --animate-claw-close: claw-close 0.45s ease-out both;
+  --animate-capsule-bob: capsule-bob 1.4s ease-in-out infinite;
+  --animate-capsule-fall: capsule-fall 1.4s cubic-bezier(0.5, 0, 0.9, 0.5) both;
+  --animate-stick: stick 1.3s ease-in-out infinite;
+  --animate-fade-in: fade-in 0.3s ease-out both;
   /* 테마 스위치 — 해가 호를 그리며 뜨고 진다 */
   --animate-arc-rise: arc-rise 0.62s cubic-bezier(0.4, 0, 0.2, 1) both;
   --animate-arc-set: arc-set 0.62s cubic-bezier(0.4, 0, 0.2, 1) both;
@@ -107,6 +118,65 @@
     0% { opacity: 0; transform: scale(0.2); }
     40% { opacity: 1; }
     100% { opacity: 0; transform: scale(2.4); }
+  }
+
+  /* 집게가 레일을 좌우로 훑는다 */
+  @keyframes claw-hunt {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(-52px); }
+    46% { transform: translateX(46px); }
+    66%, 100% { transform: translateX(14px); }
+  }
+  /* 결과가 나오면 가운데(배출구 위)로 돌아온다 */
+  @keyframes claw-home {
+    0% { transform: translateX(14px); }
+    55%, 100% { transform: translateX(0); }
+  }
+  /* 훑다가 내려갔다 올라온다 */
+  @keyframes claw-dive {
+    0%, 66% { transform: translateY(0); }
+    84% { transform: translateY(46px); }
+    100% { transform: translateY(24px); }
+  }
+  /* 쥔 캡슐을 들고 올라온다 */
+  @keyframes claw-lift {
+    0% { transform: translateY(24px); }
+    40%, 100% { transform: translateY(0); }
+  }
+  /* 내려갈 때 벌어진다 */
+  @keyframes claw-open {
+    0%, 66% { transform: scaleX(1); }
+    88%, 100% { transform: scaleX(1.45); }
+  }
+  /* 잡는 순간 오므린다 */
+  @keyframes claw-close {
+    0% { transform: scaleX(1.45); }
+    60% { transform: scaleX(0.78); }
+    100% { transform: scaleX(0.88); }
+  }
+  /* 유리관 안 캡슐이 들썩인다 */
+  @keyframes capsule-bob {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    30% { transform: translateY(-5px) rotate(-8deg); }
+    60% { transform: translateY(-2px) rotate(6deg); }
+  }
+  /* 집게에서 놓인 캡슐이 배출구로 떨어진다 */
+  @keyframes capsule-fall {
+    0%, 42% { opacity: 0; transform: translateY(0) rotate(0deg); }
+    43% { opacity: 1; }
+    88% { opacity: 1; transform: translateY(154px) rotate(220deg); }
+    94% { transform: translateY(142px) rotate(232deg); }
+    100% { opacity: 1; transform: translateY(150px) rotate(238deg); }
+  }
+  /* 조이스틱이 좌우로 기운다 */
+  @keyframes stick {
+    0%, 100% { transform: rotate(0deg); }
+    30% { transform: rotate(-16deg); }
+    70% { transform: rotate(13deg); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   @keyframes hue {
@@ -693,4 +763,16 @@
    17개 색을 두 벌 관리하는 대신 글자에만 필터를 걸어 한 단계 눌러 준다. */
 :root[data-theme="light"] .rank-ink {
   filter: brightness(0.62) saturate(1.5);
+}
+
+/* 브랜드 그림(배너·부엉이 마크)은 검은 배경에서 빛나도록 그려져서 밝은 하늘 위에서는 떠 버린다.
+   라이트 테마에서는 **같은 그림의 진한 사본**(scripts/slice-brand.py 의 for_light)으로 바꿔 끼운다. */
+.brand-day {
+  display: none;
+}
+:root[data-theme="light"] .brand-night {
+  display: none;
+}
+:root[data-theme="light"] .brand-day {
+  display: block;
 }
