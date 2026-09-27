@@ -176,9 +176,9 @@ export const BGM: Record<"lobby" | "run" | "boss" | BossKind, string | null> = {
   /** 시작 화면 */
   lobby: null,
   /** 평소 전투 */
-  run: null,
+  run: "/assets/survive-bgm/survival-loop.mp3",
   /** 보스 공통 */
-  boss: null,
+  boss: "/assets/survive-bgm/clash-of-titans.mp3",
   /** 보스별 (없으면 boss) */
   hexa: null,
   nona: null,

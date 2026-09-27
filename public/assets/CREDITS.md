@@ -83,3 +83,5 @@
 - 게임 로고 4종 (`logos/`): 사용자(S.OWL) 제공 그림. 원본 `scripts/src/game-logos.webp`, 자르기 `scripts/slice-game-logos.py`.
 - 로비 홍보 영상 (`video/lobby.*`): 사용자(S.OWL) 제공 AI 생성 영상. 소리 제거·재인코딩(H.264 CRF 26 / VP9 CRF 36).
 - 로비 배경음악 (`bgm/neon-city-loop.mp3`): 사용자(S.OWL) 제공 곡 "Neon City Loop". 128kbps 로 재인코딩·메타데이터 제거.
+- 서바이버즈 배경음악 (`survive-bgm/`): 사용자(S.OWL) 제공 곡 "Survival Loop"(전투) · "Clash of Titans"(보스전). 128kbps 재인코딩.
+- 아울 레스토랑 배경음악 (`chef-bgm/diner-arcade-groove.mp3`): 사용자(S.OWL) 제공 곡 "Diner Arcade Groove". 128kbps 재인코딩.

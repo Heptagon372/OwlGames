@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 밸런스 시뮬·디버그 출력 (npm run sim 류가 남기는 파일)
+/probe.txt
+/trace.txt

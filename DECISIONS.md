@@ -727,6 +727,8 @@ TS 사본 `lib/anticheat.ts`, 테스트 `tests/security.test.ts`.
 | 사용자 곡 "Neon City Loop"(3분 32초)을 128kbps mp3 로 줄여 `public/assets/bgm/`. 재생은 기존 `lib/sound.ts` 의 `playMusic`(크로스페이드·설정 음량) | 새 재생기를 만들지 않는다. 설정 화면의 "배경음악" 값과 같은 값을 쓴다 |
 | `MusicDock`: 탭바 위 오른쪽에 떠 있는 유리 알약 — 🔇 한 번에 끄기/켜기(직전 음량 기억) · 🎵 누르면 음량 슬라이더. `PlayerShell` 화면(로비·랭킹·티켓·내 기록)에만 | 요청: "바로 끌 수 있고 조절 가능한 float". 버튼은 44px |
 | 게임 화면(`GameShell`)에 들어가면 `stopMusic` — 게임마다 자기 소리를 쓴다 | 서바이버즈 BGM 과 겹치지 않게. 로비로 돌아오면 다시 튼다 |
+| 서바이버즈 BGM 채움: 전투 `run` = "Survival Loop", 보스전 `boss`(4종 공통) = "Clash of Titans" (`games/survive/audio.ts` 의 `BGM`). 시작 화면(`lobby`)은 비워 둠 | 사용자 제공 곡. 보스가 나오면 0.6초, 끝나면 1.2초 크로스페이드 (기존 `setBgm` 규칙) |
+| 아울 레스토랑 BGM: "Diner Arcade Groove" — `ChefRun` 이 영업 시작에 `playMusic`, 영업 종료(`g.over`)에 1.2초 페이드아웃, 화면을 떠나면 `stopMusic`. 메뉴는 조용히 | 서바이버즈와 같은 규칙(시작 화면 무음 · 판 중에만) |
 | 브라우저 자동재생 정책 때문에 **첫 탭/클릭 뒤에** 소리가 난다 | `playMusic` 이 원래 첫 입력까지 기다린다 |
 
 ## 6. 남은 이슈 / 튜닝 포인트

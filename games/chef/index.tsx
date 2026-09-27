@@ -46,7 +46,10 @@ import { ITEM_KEYS } from "./theme";
 import { BugArt, Decor, PropIcon, ToolIcon, UiIcon, preloadArt, type BadgeName, type DecorName, type UiName } from "./ui/art";
 import { startFixedLoop } from "@/games/flight/engine/loop";
 import { fetchChefRecord, type ChefRecord } from "@/lib/client-queries";
-import { playSfx } from "@/lib/sound";
+import { playMusic, playSfx, stopMusic } from "@/lib/sound";
+
+/** 영업 중 배경음악 (사용자 제공 "Diner Arcade Groove" — public/assets/CREDITS.md). 메뉴에서는 조용히 */
+const CHEF_BGM = "/assets/chef-bgm/diner-arcade-groove.mp3";
 import type { GameComponentProps } from "../core/types";
 
 function isTouch(): boolean {
@@ -295,14 +298,25 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
     [t],
   );
 
+  /* 배경음악 — 영업 시작에 켜고, 화면을 떠나면 끈다 (영업 종료는 루프에서) */
+  useEffect(() => {
+    playMusic(CHEF_BGM, 1.0);
+    return () => stopMusic(0.8);
+  }, []);
+
   /* 루프 */
   useEffect(() => {
     const device: "mobile" | "desktop" = touch ? "mobile" : "desktop";
     let ended = false;
+    let musicOff = false;
     let lastPaint = 0;
     const loop = startFixedLoop(
       (dt) => {
         update(g, dt);
+        if (g.over && !musicOff) {
+          musicOff = true;
+          stopMusic(1.2);
+        }
         if (g.over && !ended && g.overT >= CFG.run.endDelay) {
           ended = true;
           loop.stop();
