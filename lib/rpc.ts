@@ -114,6 +114,20 @@ export async function setUserEnergy(userId: string, value: number): Promise<void
   await call<null>("admin_set_energy", { p_user_id: userId, p_value: value });
 }
 
+/** 플레이 잠금 (admin). minutes 0 = 해제 */
+export async function setUserLock(userId: string, minutes: number, reason?: string): Promise<void> {
+  await call<{ status: string }>("admin_set_lock", {
+    p_user_id: userId,
+    p_minutes: Math.max(0, Math.floor(minutes)),
+    p_reason: reason ?? null,
+  });
+}
+
+/** 포인트 급상승 검토 완료 → 다시 뽑을 수 있다 (admin) */
+export async function clearReview(userId: string): Promise<void> {
+  await call<null>("admin_clear_review", { p_user_id: userId });
+}
+
 export async function setStock(place: number, stock: number): Promise<void> {
   await call<null>("admin_set_stock", { p_place: place, p_stock: stock });
 }

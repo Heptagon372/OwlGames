@@ -119,7 +119,7 @@ flowchart TD
 ### 5.3 티켓
 - 랭크 상승 1회당 티켓 1장 → 나무 시작이므로 **최대 16장 = 1인 최대 뽑기 16회** (별도 제한 로직 불필요, 구조적으로 보장)
 - 한 번에 여러 랭크를 건너뛰면 건너뛴 만큼 지급
-- **뽑기 확률은 "뽑는 시점의 현재 랭크" 기준** → 티켓을 모아뒀다가 랭크 올리고 뽑는 전략 허용 (의도된 설계, `/ticket`에 안내 문구 표시)
+- ~~뽑기 확률은 "뽑는 시점의 현재 랭크" 기준~~ → **티켓을 얻은 랭크의 티어** 기준으로 바꿨다 (DECISIONS §5-28 — 모아 뽑기로 상위 상품을 쓸어가는 것을 막는다)
 
 ---
 
@@ -377,8 +377,8 @@ create table app_config (
 | `start_game_session(game)` | user | verified·운영시간 체크, 기존 active 세션 expire 처리 후 신규 발급 |
 | `submit_game_session(session_id, raw_score, meta)` | user | 본인 세션·경과시간이 `game_limits` 범위 안인지 검증 → 포인트 계산 → profiles 갱신 → 랭크업 시 `rank_events`·`tickets` INSERT → 결과 JSON 반환 `{points, level_before, level_after, rank_before, rank_after, tickets_gained}` |
 | `issue_redeem_code(count)` | user | 기존 active 코드 revoke·티켓 복귀 → unused 티켓 count장 reserved → 코드 생성(혼동문자 0/O/1/I 제외) |
-| `booth_lookup_code(code)` | staff | 만료 체크 후 유저정보·현재 랭크·티어·남은 reserved 수 반환 |
-| `booth_draw(code)` | staff | reserved 티켓 1장 used → 현재 랭크 티어로 추첨(재고 0 등수 제외) → 재고 차감 → draws INSERT → 결과 반환. 남은 티켓 0이면 코드 used |
+| `booth_lookup_code(code)` | staff | 만료 체크 후 유저정보·현재 랭크·다음 티켓 티어·남은 reserved 수·검토/잠금 상태 반환 |
+| `booth_draw(code)` | staff | reserved 티켓 1장 used → 그 티켓을 얻은 랭크의 티어로 추첨(검토 보류·잠금·본인 코드 거부, §5-28)(재고 0 등수 제외) → 재고 차감 → draws INSERT → 결과 반환. 남은 티켓 0이면 코드 used |
 | `booth_mark_claimed(draw_id)` | staff | 수령 처리 |
 | `admin_verify_user(user_id)` | staff | verified = true |
 | `admin_delete_user(user_id)` | admin | auth.users 삭제(cascade) — 학번 중복 해결용 |

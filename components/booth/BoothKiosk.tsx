@@ -19,6 +19,14 @@ import type { BoothDrawResult, BoothLookup } from "@/lib/types";
 type Step = "input" | "user" | "drawing" | "result";
 
 /** 부스 키오스크 (§8.2) — 태블릿 가로 기준. 결과는 서버 RPC가 준 값만 표시 */
+/** 뽑을 수 없는 이유 (서버 booth_draw 도 같은 이유로 막는다 — 화면은 미리 알려줄 뿐) */
+function blockReason(l: BoothLookup): string | null {
+  if (l.own_code) return "본인 코드예요. 다른 부원이 뽑아주세요";
+  if (l.locked) return "잠긴 계정이에요. 관리자에게 확인하세요";
+  if (l.review_required) return `검토 보류 — ${l.review_reason ?? "포인트 급상승"}. 관리자 확인 후 뽑을 수 있어요`;
+  return null;
+}
+
 export function BoothKiosk() {
   const [tab, setTab] = useState<"draw" | "energy" | "approve">("draw");
   const [step, setStep] = useState<Step>("input");
@@ -70,7 +78,7 @@ export function BoothKiosk() {
       const wait = Math.max(0, 3000 - (Date.now() - startedAt));
       setTimeout(() => {
         setResult(res);
-        setLookup((l) => (l ? { ...l, remaining: res.remaining } : l));
+        setLookup((l) => (l ? { ...l, remaining: res.remaining, tier: res.next_tier ?? l.tier } : l));
         setGacha("reveal");
         setTimeout(() => setStep("result"), 1200);
       }, wait);
@@ -169,10 +177,21 @@ export function BoothKiosk() {
                     <p className="text-3xl font-black">{lookup.name}</p>
                     <p className="num text-lg text-mute">{lookup.student_id}</p>
                     <p className="rank-ink mt-1 font-bold" style={{ color: rankInfo(lookup.rank_idx).colors[0] }}>
-                      {rankInfo(lookup.rank_idx).name} · Lv {lookup.level} · 티어 T{lookup.tier}
+                      {rankInfo(lookup.rank_idx).name} · Lv {lookup.level} · 다음 티켓 T{lookup.tier}
                     </p>
                   </div>
                 </div>
+                {blockReason(lookup) && (
+                  <p className="mt-4 rounded-tile border border-alert/50 bg-alert/10 px-4 py-3 text-center font-bold text-alert">
+                    🚫 {blockReason(lookup)}
+                  </p>
+                )}
+                <div className="mt-4 flex items-center justify-between rounded-tile border border-line bg-night px-4 py-3">
+                  <span className="text-sm text-mute">남은 뽑기</span>
+                  <span className="num text-2xl font-black text-neon">{lookup.remaining}회</span>
+                </div>
+                <p className="mt-3 text-center text-xs text-dim">👀 학생증과 이름·학번을 대조해주세요</p>
+                {error && <p className="mt-3 text-center font-bold text-alert">{error}</p>}
               </Card>
             )}
           </div>
@@ -188,7 +207,7 @@ export function BoothKiosk() {
                   block
                   className="mt-5"
                   onClick={draw}
-                  disabled={!lookup || lookup.remaining <= 0}
+                  disabled={!lookup || lookup.remaining <= 0 || !!blockReason(lookup)}
                 >
                   🎰 뽑기 {lookup && lookup.remaining > 0 ? `(${lookup.remaining}회 남음)` : ""}
                 </Button>
@@ -240,7 +259,7 @@ export function BoothKiosk() {
                         setGacha("idle");
                         setStep("user");
                       }}
-                      disabled={!lookup || lookup.remaining <= 0}
+                      disabled={!lookup || lookup.remaining <= 0 || !!blockReason(lookup)}
                     >
                       다음 뽑기
                     </Button>

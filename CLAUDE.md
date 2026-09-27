@@ -21,6 +21,15 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 
 - **포인트·레벨·랭크·티켓·추첨·아울 에너지는 전부 서버(Postgres RPC, `security definer`)에서 계산한다.**
   클라이언트는 `lib/rpc.ts` 래퍼로만 호출하고, 결과를 표시만 한다.
+- **보안 (DECISIONS §5-27)**: `submit_game_session`·`start_game_session` 은 **보안 래퍼**이고 게임 본문은
+  `submit_game_session_core`·`start_game_session_core`(클라이언트 실행 권한 없음)다. **게임 본문을 고칠 때는 `_core` 를 create or replace** 할 것 —
+  래퍼를 통째로 다시 만들면 원점수 상한(`app_config.security`)·자동 잠금·메타 검사가 사라진다(`tests/security.test.ts` 가 막는다).
+  새 함수는 anon 기본 실행권한이 없다 — 필요한 역할에만 `grant` 하고, 로그인 사용자가 부르면 안 되는 헬퍼는 `authenticated` 에서도 `revoke` 한다. 동적 SQL(`execute '...' || 값`) 금지.
+  사용자 입력을 PostgREST **필터 문자열**(`.or(...)`)에 넣을 때는 `lib/validate.ts` 의 `safeSearchTerm` 을 거친다.
+  로그인·가입 입력 규칙은 `lib/validate.ts` 와 DB 트리거 `profiles_validate` 가 같은 규칙이다.
+  **시간 포인트는 "진행으로 증명되는 시간"까지만**(`security_play_sec` ↔ TS 사본 `lib/anticheat.ts`) — 게임 메타 키(`duration_s`·`distance_m`·
+  `served_total`·`pieces`·`stage`)를 바꾸면 양쪽을 같이. 한 판·1시간 포인트가 크면 **뽑기만 검토 보류**(`review_required`, 관리자 → 로그에서 확인 완료).
+  **뽑기 티어는 티켓을 얻은 랭크 기준**(`tickets.earned_rank_idx`)이고, 부원은 본인 코드 뽑기·본인 에너지 지급을 못 한다 (§5-28).
 - `lib/rank.ts`는 DB 함수(`level_from_points` 등)와 **같은 수식**이어야 한다. 바꾸면 양쪽 + `tests/rank.test.ts`를 함께 고친다.
 - 게임은 Canvas 2D + rAF 직접 구현(엔진 금지). 공통 루프·캔버스 헬퍼는 `games/core/`.
   아울 레스토랑(주문·재료 탭 화면)만 한글 가독성·접근성 때문에 DOM/SVG로 그린다.
@@ -137,6 +146,8 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 서바이버즈 보스 패턴 | `games/survive/engine/bosses/*.ts` (공통 경고·레이저는 `common.ts`) |
 | 서바이버즈 가이드(시작 화면) | `games/survive/ui/Guide.tsx` — 이름·수치는 데이터·`CFG`에서 자동, 문장만 `hud.survive.guide` (보스 패턴을 추가하면 `BOSS_PATTERNS`에도) |
 | 서바이버즈 거부 기준 | `app_config.game_guards.survive` (DB) — 배포 없이 조정 가능 |
+| 원점수 상한·자동 잠금·검토 보류 | `app_config.security` (DB, 관리자만 읽힘) — `max_raw_per_min`·`raw_flat`·`auto_lock`·`play`(진행 한도)·`review`. 잠금 해제는 관리자 → 유저, 검토 완료는 관리자 → 로그 |
+| 로그인·가입 입력 규칙·시도 제한 | `lib/validate.ts` + `profiles_validate` 트리거 · `lib/rate-limit.ts` |
 | 뽑기 확률·상품 | `app_config.gacha_table`, `prizes` 테이블 (관리자 화면에서 재고 수정) |
 | 부스 위치 안내 | `app_config.booth_location` |
 | 아울 에너지(스태미나) | `app_config.owl_energy` (DB) · 표시 기본값은 `lib/config.ts` · 게임 내 드롭은 각 게임 `config.ts`의 `CFG.owlEnergy` (서버 조건과 같은 값이어야 한다) |

@@ -3,6 +3,7 @@
 // 부스·전광판·관리자 화면에서 쓰는 브라우저 측 조회. Supabase 가 없으면 빈 값.
 
 import { getBrowserSupabase } from "./supabase/client";
+import { safeSearchTerm } from "./validate";
 import {
   EMPTY_BOARD_STATS,
   type AuditRow,
@@ -31,7 +32,8 @@ export async function fetchUsers(query: string): Promise<Profile[]> {
   const supabase = getBrowserSupabase();
   if (!supabase) return [];
   let req = supabase.from("profiles").select("*").order("total_points", { ascending: false }).limit(50);
-  const q = query.trim();
+  // 필터 문자열에 그대로 넣으므로 반드시 safeSearchTerm 을 거친다 (필터 인젝션 방지)
+  const q = safeSearchTerm(query);
   if (q) req = req.or(`name.ilike.%${q}%,student_id.ilike.%${q}%`);
   const { data } = await req;
   return (data as Profile[] | null) ?? [];
@@ -191,6 +193,35 @@ export async function fetchUnclaimedDraws(): Promise<UnclaimedDraw[]> {
     .order("drawn_at", { ascending: false })
     .limit(50);
   return (data as unknown as UnclaimedDraw[] | null) ?? [];
+}
+
+/** 뽑기 보류(검토 대기) 계정 — 관리자 로그 탭 (DECISIONS §5-28) */
+export async function fetchReviewQueue(): Promise<Profile[]> {
+  const supabase = getBrowserSupabase();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("review_required", true)
+    .order("total_points", { ascending: false })
+    .limit(50);
+  return (data as Profile[] | null) ?? [];
+}
+
+export type TopSession = GameSessionRow & { profiles?: { name: string; student_id: string } | null };
+
+/** 최근 24시간 포인트가 큰 판 — 검토할 때 메타(플레이 시간·원점수 보정)를 같이 본다 */
+export async function fetchTopSessions(limit = 30): Promise<TopSession[]> {
+  const supabase = getBrowserSupabase();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("game_sessions")
+    .select("*, profiles(name, student_id)")
+    .eq("status", "submitted")
+    .gte("submitted_at", new Date(Date.now() - 24 * 3600_000).toISOString())
+    .order("points", { ascending: false })
+    .limit(limit);
+  return (data as unknown as TopSession[] | null) ?? [];
 }
 
 export async function fetchRejectedSessions(): Promise<GameSessionRow[]> {

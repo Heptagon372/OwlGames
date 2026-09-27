@@ -30,7 +30,10 @@ export default async function TicketPage() {
 
   const unused = tickets.filter((t) => t.status === "unused").length;
   const used = tickets.filter((t) => t.status === "used").length;
-  const tier = tierFromRank(profile.rank_idx);
+  // 티어는 티켓을 얻은 랭크 기준 (DECISIONS §5-28) — 다음에 뽑힐 티켓(가장 오래된 것)의 티어를 보여준다.
+  // 남은 티켓이 없으면 다음에 얻을 티켓(= 다음 랭크)의 티어
+  const nextTicket = tickets.find((t) => t.status !== "used");
+  const tier = tierFromRank(nextTicket ? nextTicket.earned_rank_idx : Math.min(profile.rank_idx + 1, 16));
   const booth = config.booth_location;
   const r = rankInfo(profile.rank_idx);
 
@@ -48,10 +51,16 @@ export default async function TicketPage() {
         <div className="text-right">
           <RankBadge rankIdx={profile.rank_idx} size="md" />
           <p className="rank-ink num mt-1 text-[11px]" style={{ color: r.colors[0] }}>
-            T{tier}
+            {t("nextTier")} T{tier}
           </p>
         </div>
       </Card>
+
+      {profile.review_required && (
+        <p className="mt-4 rounded-tile border border-amber/40 bg-amber/10 px-4 py-3 text-sm leading-relaxed text-amber">
+          {t("reviewNote")}
+        </p>
+      )}
 
       <TicketIssuer unused={unused} initialCode={activeCode} ttlMin={config.redeem_code_ttl_min} />
 

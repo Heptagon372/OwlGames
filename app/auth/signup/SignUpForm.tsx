@@ -38,6 +38,7 @@ export function SignUpForm({ studentIdPattern }: { studentIdPattern: string }) {
           required
           mono
           inputMode="numeric"
+          maxLength={20}
           pattern={studentIdPattern.replace(/^\^|\$$/g, "")}
           placeholder="202612345"
           autoComplete="username"
@@ -48,7 +49,8 @@ export function SignUpForm({ studentIdPattern }: { studentIdPattern: string }) {
           name="password"
           type="password"
           required
-          minLength={6}
+          minLength={8}
+          maxLength={72}
           autoComplete="new-password"
           hint={t("passwordHint")}
         />
@@ -57,7 +59,8 @@ export function SignUpForm({ studentIdPattern }: { studentIdPattern: string }) {
           name="password2"
           type="password"
           required
-          minLength={6}
+          minLength={8}
+          maxLength={72}
           autoComplete="new-password"
         />
         <FormError message={state?.error} />
