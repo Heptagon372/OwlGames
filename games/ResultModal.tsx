@@ -12,6 +12,8 @@ import { Modal } from "@/components/ui/Modal";
 import { formatNumber } from "@/lib/format";
 import { GAMES } from "@/lib/games";
 import { rankInfo } from "@/lib/rank";
+import { STAGE_MAX as CHEF_STAGES } from "./chef/config";
+import { RECIPE, type RecipeId } from "./chef/data/recipes";
 import type { GameId, SubmitResult } from "@/lib/types";
 
 const BAR_MS = 1400;
@@ -28,38 +30,56 @@ function gameStats(game: GameId, meta: Record<string, unknown> | null, t: T): St
   const damage = () => (n("damage_taken") === 0 ? t("noDamage") : t("times", { count: n("damage_taken") }));
 
   if (game === "flight") {
+    // 2.0 — 도달 단계 (16 이상은 ∞). 옛 빌드 기록은 stage_max 가 없어서 페이즈로 보여준다
+    const stageMax = n("stage_max");
     const stats = [
+      {
+        label: stageMax ? t("stage") : t("phase"),
+        value: !stageMax
+          ? `P${n("phase_max")}`
+          : stageMax > 15
+            ? t("stageInfinite", { level: stageMax - 15 })
+            : t("stageValue", { stage: stageMax }),
+      },
       { label: t("distance"), value: `${formatNumber(n("distance_m"))} m` },
       { label: t("comboMax"), value: formatNumber(n("combo_max")) },
       { label: t("nearMiss"), value: formatNumber(n("near_miss")) },
       { label: t("items"), value: t("count", { count: formatNumber(n("items")) }) },
-      { label: t("phase"), value: `P${n("phase_max")}` },
     ];
-    if (n("special_cleared") > 0) {
-      stats.push({ label: t("special"), value: t("specialValue", { count: n("special_cleared") }) });
-    }
+    if (n("perfect_count") > 0) stats.push({ label: t("perfect"), value: formatNumber(n("perfect_count")) });
+    if (n("fever_count") > 0) stats.push({ label: t("fever"), value: t("times", { count: n("fever_count") }) });
+    if (n("power_count") > 0) stats.push({ label: t("power"), value: t("times", { count: n("power_count") }) });
     return stats;
   }
-  if (game === "logic") {
-    return [
-      { label: t("solved"), value: t("solvedValue", { count: formatNumber(n("solved")) }) },
-      { label: t("optimal"), value: t("times", { count: formatNumber(n("optimal")) }) },
-      { label: t("tierMax"), value: `T${n("tier_max")}` },
-      { label: t("comboMax"), value: formatNumber(n("combo_max")) },
-      { label: t("hints"), value: t("times", { count: formatNumber(n("hints")) }) },
-      { label: t("avgSolve"), value: t("seconds", { sec: (n("avg_solve_ms") / 1000).toFixed(1) }) },
-    ];
-  }
-  if (game === "space") {
+  if (game === "owlis") {
     const stats = [
-      { label: t("stage"), value: stage() },
-      { label: t("survived"), value: t("seconds", { sec: formatNumber(n("duration_s")) }) },
-      { label: t("kills"), value: formatNumber(n("kills")) },
-      { label: t("graze"), value: `${formatNumber(n("graze"))} ⭐` },
-      { label: t("livesLeft"), value: "🦉".repeat(Math.max(0, n("lives_left"))) || t("none") },
-      { label: t("damage"), value: damage() },
+      { label: t("survived"), value: t("seconds", { sec: formatNumber(Math.floor(n("duration_s"))) }) },
+      { label: t("comboMax"), value: `x${n("max_combo")}` },
+      { label: t("aiLevel"), value: typeof meta.level_label === "string" ? meta.level_label : "-" },
+      { label: t("attackSent"), value: t("count", { count: formatNumber(n("attack_sent")) }) },
+      { label: t("cleared"), value: t("count", { count: formatNumber(n("cleared")) }) },
+      { label: t("avgCombo"), value: n("avg_combo").toFixed(2) },
     ];
-    if (meta.boss_killed) stats.push({ label: t("bossKilled"), value: t("bossKilledValue") });
+    if (n("counters") > 0) stats.push({ label: t("counters"), value: t("times", { count: n("counters") }) });
+    if (n("ko") > 0) stats.push({ label: t("ko"), value: t("times", { count: n("ko") }) });
+    return stats;
+  }
+  if (game === "chef") {
+    // 16 = ∞ (INFINITE RESTAURANT)
+    const stageMax = n("stage_max");
+    const top = typeof meta.top_dish === "string" && meta.top_dish in RECIPE ? RECIPE[meta.top_dish as RecipeId] : null;
+    const stats = [
+      {
+        label: t("stage"),
+        value: stageMax > CHEF_STAGES ? t("stageInfinite", { level: Math.max(1, n("inf_level")) }) : t("stageValue", { stage: stageMax || 1 }),
+      },
+      { label: t("orders"), value: t("count", { count: formatNumber(n("orders")) }) },
+      { label: t("comboMax"), value: formatNumber(n("max_combo")) },
+      { label: t("perfect"), value: t("times", { count: formatNumber(n("perfects")) }) },
+    ];
+    if (top) stats.push({ label: t("topDish"), value: `${top.emoji} ×${formatNumber(n("top_count"))}` });
+    if (n("clean_builds") > 0) stats.push({ label: t("cleanBuild"), value: t("times", { count: n("clean_builds") }) });
+    if (n("courses") > 0) stats.push({ label: t("fullStack"), value: t("times", { count: n("courses") }) });
     return stats;
   }
   if (game === "survive") {
@@ -77,20 +97,7 @@ function gameStats(game: GameId, meta: Record<string, unknown> | null, t: T): St
     if (n("revives_used") > 0) stats.push({ label: t("revives"), value: t("times", { count: n("revives_used") }) });
     return stats;
   }
-  if (game === "typer") {
-    return [
-      { label: t("destroyed"), value: t("count", { count: formatNumber(n("hits")) }) },
-      { label: t("missed"), value: t("count", { count: formatNumber(n("misses")) }) },
-      { label: t("comboMax"), value: formatNumber(n("max_combo")) },
-      { label: t("stage"), value: t("stageValue", { stage: n("stage_max") || 1 }) },
-    ];
-  }
-  return [
-    { label: t("correct"), value: t("count", { count: formatNumber(n("correct")) }) },
-    { label: t("wrong"), value: t("count", { count: formatNumber(n("wrong")) }) },
-    { label: t("maxStreak"), value: formatNumber(n("max_streak")) },
-    { label: t("stage"), value: t("stageValue", { stage: n("stage_max") || 1 }) },
-  ];
+  return [];
 }
 
 /** 결과 모달 (§7 공통) — 원점수 · 포인트 · 경험치 바 · 레벨업/랭크업 연출 · 티켓 알림 */
@@ -172,7 +179,7 @@ export function ResultModal({
 
   return (
     <>
-      <Modal open title={`${gameMeta.emoji} ${t("title", { title })}`} dismissible={false}>
+      <Modal open title={t("title", { title })} dismissible={false}>
         <div className="grid gap-4">
           <div className="grid grid-cols-2 gap-2">
             <div className="glass rounded-tile p-4 text-center">

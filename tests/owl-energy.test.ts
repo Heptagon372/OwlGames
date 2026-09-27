@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { CFG } from "@/games/flight/config";
 import { createSpawner } from "@/games/flight/engine/spawner";
 import { DEFAULT_CONFIG } from "@/lib/config";
-import { demoAddEnergy, demoEnergyStatus, demoSpendEnergy } from "@/lib/demo";
 
 // 아울 에너지: 10분마다 1개, 최대 10개, 게임 한 판에 1개 (서버가 최종 판정)
 describe("아울 에너지 설정", () => {
@@ -16,59 +15,29 @@ describe("아울 에너지 설정", () => {
   });
 });
 
-describe("데모 모드 에너지", () => {
-  it("게임을 시작하면 1개 줄고, 0이 되면 시작할 수 없다", () => {
-    const before = demoEnergyStatus().energy;
-    expect(demoSpendEnergy()).toBe(true);
-    expect(demoEnergyStatus().energy).toBe(before - 1);
-
-    // 남은 만큼 모두 소모하면 더는 시작할 수 없다
-    let guard = 0;
-    while (demoEnergyStatus().energy > 0 && guard++ < 50) demoSpendEnergy();
-    expect(demoEnergyStatus().energy).toBe(0);
-    expect(demoSpendEnergy()).toBe(false);
-  });
-
-  it("부스 지급은 자동충전 상한을 넘어 hard_cap까지 채운다", () => {
-    const { cap, hard_cap } = demoEnergyStatus();
-    demoAddEnergy(cap); // 상한까지
-    const granted = demoAddEnergy(hard_cap); // 넘치게 지급
-    expect(demoEnergyStatus().energy).toBe(hard_cap);
-    expect(granted).toBeLessThanOrEqual(hard_cap);
-    expect(demoAddEnergy(1)).toBe(0); // 이미 가득
-  });
-
-  it("가득 차 있으면 다음 충전 카운트다운이 없다", () => {
-    const s = demoEnergyStatus();
-    expect(s.energy).toBeGreaterThanOrEqual(s.cap);
-    expect(s.next_refill_sec).toBe(0);
-  });
-});
-
 describe("아울러닝 에너지 드롭 (§높은 스테이지에서 가끔)", () => {
   const always = () => 0; // 확률 판정을 항상 통과시키는 난수
+  const PPM = CFG.physics.pxPerMeter;
 
-  function countDrops(phase: number): number {
-    const sp = createSpawner(always, 0);
-    for (let i = 0; i < 6; i++) sp.ensure(i * 2000, phase, null, CFG.scroll.v0);
+  /** startM 부터 steps × 2000px 만큼 청크를 깔고 아울 에너지 개수를 센다 */
+  function countDrops(startM: number, steps: number, rand = always): number {
+    const sp = createSpawner(rand, startM * PPM);
+    for (let i = 0; i < steps; i++) sp.ensure(startM * PPM + i * 2000);
     return sp.entities.filter((s) => s.e.t === "item" && s.e.kind === "owlEnergy").length;
   }
 
-  it("낮은 페이즈에서는 등장하지 않는다", () => {
-    for (let phase = 0; phase < CFG.owlEnergy.minPhase; phase++) {
-      expect(countDrops(phase), `phase ${phase}`).toBe(0);
-    }
+  it("서버 조건(P3 이상 · 900m 이상) 전에는 등장하지 않는다", () => {
+    // 0m → 약 750m 까지만 깐다 (앞으로 2화면 + 청크 폭 여유)
+    expect(countDrops(0, 8)).toBe(0);
+    expect(CFG.owlEnergy.minMeters).toBe(900);
   });
 
-  it("높은 페이즈에서도 한 판에 한 개만 등장한다", () => {
-    expect(countDrops(CFG.owlEnergy.minPhase)).toBe(1);
-    expect(countDrops(4)).toBe(1);
+  it("높은 단계에서도 한 판에 한 개만 등장한다", () => {
+    expect(countDrops(1000, 6)).toBe(1);
+    expect(countDrops(2000, 6)).toBe(1);
   });
 
   it("확률을 통과하지 못하면 등장하지 않는다", () => {
-    const never = () => 0.99;
-    const sp = createSpawner(never, 0);
-    for (let i = 0; i < 6; i++) sp.ensure(i * 2000, 4, null, CFG.scroll.v0);
-    expect(sp.entities.filter((s) => s.e.t === "item" && s.e.kind === "owlEnergy")).toHaveLength(0);
+    expect(countDrops(1000, 6, () => 0.99)).toBe(0);
   });
 });

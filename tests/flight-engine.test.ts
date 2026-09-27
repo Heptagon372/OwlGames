@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CFG, comboMult, nextColor, phaseFromMeters, scrollFromMeters } from "@/games/flight/config";
+import { CFG, comboMult, isOverdrive, nextColor, phaseFromMeters, scrollFromMeters, stageFromMeters } from "@/games/flight/config";
 import { createGame, currentRaw, update } from "@/games/flight/engine/game";
 import * as Energy from "@/games/flight/engine/energy";
 import * as Score from "@/games/flight/engine/score";
@@ -60,27 +60,38 @@ describe("점수 (§11.1)", () => {
     expect(comboMult(999)).toBe(2.5);
   });
 
-  it("원점수가 기획서 공식과 정확히 같다", () => {
+  it("원점수가 서버 재계산식과 정확히 같다 (2.0)", () => {
     const s = Score.initScore();
-    // 통과 12회 + 니어미스 3회 + 아이템 몇 개
-    for (let i = 0; i < 12; i++) Score.onPass(s, null, false);
-    for (let i = 0; i < 3; i++) Score.onNearMiss(s, null);
-    Score.onItem(s, "feather", null);
-    Score.onItem(s, "gem", null);
-    s.specialCleared = 1;
+    // 통과 12회 + 니어미스 3회 + PERFECT 4회 + 아이템 몇 개 + 배율·보너스
+    for (let i = 0; i < 12; i++) Score.onPass(s);
+    for (let i = 0; i < 3; i++) Score.onNearMiss(s, 1.5);
+    for (let i = 0; i < 4; i++) Score.onPerfect(s, 2);
+    Score.onItem(s, "feather");
+    Score.onItem(s, "gem", 3);
+    Score.addBonus(s, 250);
 
-    const raw = Score.rawScore({ meters: 1000, turboMeters: 0, s, energyLeft: 40 });
-    const expected =
-      1000 + s.passScore + s.nearScore + s.itemScore + 1 * CFG.score.specialClear + 40 * CFG.score.energyLeft;
-    expect(raw).toBe(Math.round(expected));
+    const raw = Score.rawScore({ meters: 1000, s, energyLeft: 40 });
+    const mult = s.multSum / s.multCount;
+    // 서버: 거리 + 통과×10×평균배율 + 니어미스×50×평균배율 + PERFECT×40 + 아이템 + 에너지×2 + bonus
+    const server =
+      1000 +
+      s.passCount * CFG.score.perPass * mult +
+      s.nearMiss * CFG.score.nearMiss * mult +
+      s.perfect * CFG.perfect.score +
+      s.itemScore +
+      40 * CFG.score.energyLeft +
+      s.bonusScore;
+    expect(Math.abs(raw - server) / server).toBeLessThan(0.05);
+    expect(s.itemScore).toBe(10 + 150); // 아이템 기본 점수는 배율 없이
   });
 
-  it("특수 구간 보너스는 따로 집계되어 서버에 전달된다", () => {
+  it("배율로 더 번 몫은 bonus 로 따로 집계되고, 배율 곱은 상한에서 멈춘다", () => {
     const s = Score.initScore();
-    Score.onPass(s, "colorRush", true); // 게이트 점수 ×2
-    expect(Score.specialBonusScore(s, 0)).toBe(CFG.score.perPass);
-    const turbo = Score.specialBonusScore(s, 300);
-    expect(turbo).toBe(CFG.score.perPass + 300);
+    Score.onPerfect(s, 3);
+    expect(s.bonusScore).toBe(CFG.perfect.score * 2);
+    const t = Score.initScore();
+    Score.onItem(t, "star", 999);
+    expect(t.bonusScore).toBe(50 * (CFG.multCap - 1));
   });
 
   it("니어미스 판정 여유는 12px", () => {
@@ -90,23 +101,43 @@ describe("점수 (§11.1)", () => {
   });
 });
 
-describe("페이즈·스크롤 (§3 · §9)", () => {
-  it("거리로 페이즈가 해금된다", () => {
+describe("15단계 · 페이즈 · 스크롤 (2.0 §2)", () => {
+  it("거리로 단계가 오르고, 15단계 뒤에는 ∞ 레벨이 쌓인다", () => {
+    expect(stageFromMeters(0)).toBe(1);
+    expect(stageFromMeters(CFG.stages[1].from)).toBe(2);
+    expect(stageFromMeters(CFG.stages[14].from)).toBe(15);
+    expect(stageFromMeters(CFG.infinite.from - 1)).toBe(15);
+    expect(stageFromMeters(CFG.infinite.from)).toBe(16);
+    expect(stageFromMeters(CFG.infinite.from + CFG.infinite.every)).toBe(17);
+    for (let i = 1; i < CFG.stages.length; i++) expect(CFG.stages[i].from).toBeGreaterThan(CFG.stages[i - 1].from);
+  });
+
+  it("단계 → 내부 페이즈 P0~P4 는 줄지 않는다", () => {
     expect(phaseFromMeters(0)).toBe(0);
-    expect(phaseFromMeters(199)).toBe(0);
-    expect(phaseFromMeters(200)).toBe(1);
-    expect(phaseFromMeters(900)).toBe(3);
+    let prev = 0;
+    for (let m = 0; m <= 4000; m += 25) {
+      const p = phaseFromMeters(m);
+      expect(p).toBeGreaterThanOrEqual(prev);
+      prev = p;
+    }
     expect(phaseFromMeters(9999)).toBe(4);
   });
 
-  it("속도는 단조 증가하고 상한을 넘지 않는다", () => {
+  it("속도는 단조 증가하고 ∞ 상한을 넘지 않는다", () => {
     let prev = 0;
-    for (let m = 0; m <= 4000; m += 50) {
+    for (let m = 0; m <= 8000; m += 50) {
       const v = scrollFromMeters(m);
       expect(v).toBeGreaterThanOrEqual(prev - 0.001);
-      expect(v).toBeLessThanOrEqual(CFG.scroll.vMax);
+      expect(v).toBeLessThanOrEqual(CFG.scroll.vMax * CFG.infinite.scrollMaxMult + 0.001);
       prev = v;
     }
+  });
+
+  it("OVERDRIVE 는 15단계 마지막 300m 에만 걸린다", () => {
+    expect(isOverdrive(CFG.infinite.from - CFG.overdrive.lastMeters - 1)).toBe(false);
+    expect(isOverdrive(CFG.infinite.from - 10)).toBe(true);
+    expect(isOverdrive(CFG.infinite.from)).toBe(false);
+    expect(CFG.infinite.from - CFG.overdrive.lastMeters).toBeGreaterThan(CFG.stages[14].from);
   });
 
   it("색은 R → B → P 순으로 순환한다", () => {
@@ -142,6 +173,7 @@ describe("게임 규칙", () => {
     const g = createGame(3);
     update(g, CFG.physics.dt, { flap: true, cycle: false, color: null });
     g.spawner.entities.length = 0;
+    g.stage = CFG.beginner.untilStage + 1; // 초보 보호(색 틀림 -10)가 끝난 뒤 기준
     g.color = "R";
     g.score.combo = 5;
     const before = g.energy.value;

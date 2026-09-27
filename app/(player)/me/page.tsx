@@ -1,3 +1,4 @@
+import { GameMark } from "@/components/GameLogo";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -9,7 +10,7 @@ import { Card, Chip, TermLabel } from "@/components/ui/Card";
 import { ButtonLink } from "@/components/ui/Button";
 import { PLACE_EMOJI } from "@/lib/config";
 import { formatDateTime, formatNumber } from "@/lib/format";
-import { GAMES } from "@/lib/games";
+import { isGameId } from "@/lib/games";
 import { getMyDraws, getMyProfile, getOwlEnergy, getMySessions } from "@/lib/queries";
 import { rankInfo } from "@/lib/rank";
 
@@ -108,9 +109,9 @@ export default async function MePage() {
         <Card className="divide-y divide-line p-0">
           {sessions.map((s) => (
             <div key={s.id} className="flex items-center gap-3 px-4 py-3">
-              <span className="text-xl">{GAMES[s.game].emoji}</span>
+              <GameMark game={s.game} />
               <div className="min-w-0 flex-1">
-                <p className="font-bold">{tg(`${s.game}.title`)}</p>
+                <p className="font-bold">{isGameId(s.game) ? tg(`${s.game}.title`) : tg("retired")}</p>
                 <p className="num text-[11px] text-dim">
                   {s.submitted_at ? formatDateTime(s.submitted_at) : "-"} ·{" "}
                   {t("rawScore", { score: formatNumber(s.raw_score ?? 0) })}

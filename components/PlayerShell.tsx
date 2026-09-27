@@ -4,7 +4,8 @@ import { getTranslations } from "next-intl/server";
 import { Logo } from "./brand/Logo";
 import { RankBadge } from "./RankBadge";
 import { ExpBar } from "./ExpBar";
-import { DemoBanner } from "./DemoBanner";
+import { MusicDock } from "./MusicDock";
+import { SetupBanner } from "./SetupBanner";
 import { OwlEnergyBar } from "./OwlEnergyBar";
 import { ThemeToggle } from "./ThemeToggle";
 import { cn } from "@/lib/cn";
@@ -31,12 +32,12 @@ export async function PlayerShell({
   current: string;
   children: React.ReactNode;
 }) {
-  const [r, t, tr, tc] = [
-    rankInfo(profile.rank_idx),
-    await getTranslations("nav"),
-    await getTranslations("ranks"),
-    await getTranslations("common"),
-  ];
+  const r = rankInfo(profile.rank_idx);
+  const [t, tr, tc] = await Promise.all([
+    getTranslations("nav"),
+    getTranslations("ranks"),
+    getTranslations("common"),
+  ]);
   return (
     <div className="mx-auto flex min-h-dvh-safe w-full max-w-2xl flex-col">
       {/* 유리 헤더: 아래쪽에만 시안→바이올렛 헤어라인이 깔린다 */}
@@ -63,9 +64,11 @@ export async function PlayerShell({
         <span className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-neon/45 to-transparent" />
       </header>
 
-      <DemoBanner />
+      <SetupBanner />
 
       <main className="flex-1 px-4 pb-28 pt-4">{children}</main>
+
+      <MusicDock />
 
       {/* 유리 탭바: 선택된 탭만 바이올렛으로 빛나고 위에 그라데이션 헤어라인 */}
       <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-2xl bg-night/70 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150">

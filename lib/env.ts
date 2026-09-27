@@ -1,8 +1,8 @@
-// Supabase 환경변수가 없으면 데모 모드: 가짜 데이터로 모든 화면을 미리 볼 수 있고 DB에는 아무것도 쓰지 않는다.
+// Supabase 연결 정보. 없으면 조회는 빈 값을 돌려주고 로그인·게임은 막힌다 (가짜 데이터는 없다 — DECISIONS §5-22).
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
-export const isDemo = !SUPABASE_URL || !SUPABASE_ANON_KEY;
+export const isConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 

@@ -3,7 +3,8 @@
 // 정책: 앞 구간에서 막히지 않은 통로를 찾아 그 중심을 목표로 삼고, 수직속도를 P 제어한다.
 import { CFG, type SizeKey } from "../config";
 import type { DeathCause, FlightStats } from "../types";
-import { solidRects } from "./collision";
+import { isSolid, solidRects } from "./collision";
+import { laserSpanAt, laserState } from "./hazards";
 import { hitbox } from "./owl";
 import { createGame, currentRaw, finalStats, update, type Game, type Input } from "./game";
 
@@ -32,11 +33,27 @@ function hazardSpans(g: Game, size: SizeKey): Span[] {
     if (s.gone) continue;
     const sx = s.x - g.worldX;
     if (sx + s.w < OWL_X - 10 || sx > OWL_X + LOOK_PX) continue;
-    if (s.e.t === "item" || s.e.t === "gate") continue;
-    const t = (OWL_X + g.worldX - s.chunkX) / s.chunkScroll;
+    if (!isSolid(s.e)) continue;
+    // 앞에 있는 건 "도착했을 때"의 위치로 본다 (움직이는 벽·가짜 틈)
+    const tNow = (OWL_X + g.worldX - s.chunkX) / s.chunkScroll;
+    const tArrive = (s.x - s.chunkX) / s.chunkScroll;
+    const t = sx > OWL_X ? Math.max(tNow, tArrive) : tNow;
     for (const r of solidRects(s.e, sx, size, t)) {
       spans.push({ y0: r.y - margin, y1: r.y + r.h + margin });
     }
+  }
+  // 경고 중이거나 켜진 레이저
+  for (const l of g.lasers) {
+    const st = laserState(l);
+    if (st === "done") continue;
+    if (st === "wait" && l.delay - l.t > 0.5) continue;
+    const span = laserSpanAt(l, OWL_X);
+    if (span) spans.push({ y0: span.y0 - ry - 10, y1: span.y1 + ry + 10 });
+  }
+  // 날아오는 미사일 · 조준이 고정된 락온
+  for (const m of g.missiles) {
+    if (m.state === "fly" && m.x > OWL_X - 20) spans.push({ y0: m.y - ry - 40, y1: m.y + ry + 40 });
+    if (m.state === "lock" && m.t - m.delay > 0.6) spans.push({ y0: m.aimY - ry - 36, y1: m.aimY + ry + 36 });
   }
   return spans;
 }
@@ -72,7 +89,7 @@ function targetY(g: Game): number {
     const center = (gp.y0 + gp.y1) / 2;
     let score = Math.min(gp.y1 - gp.y0, 220) - Math.abs(center - g.y) * 1.1;
     for (const s of items) {
-      const iy = s.e.t === "item" ? s.e.y : 0;
+      const iy = s.fy ?? (s.e.t === "item" ? s.e.y : 0);
       if (iy >= gp.y0 && iy <= gp.y1) score += 60;
     }
     if (score > bestScore) {
@@ -83,7 +100,8 @@ function targetY(g: Game): number {
 
   // 통로 안에 아이템이 있으면 그쪽으로
   for (const s of items) {
-    const iy = s.e.t === "item" ? s.e.y : 0;
+    if (s.e.t === "item" && s.e.kind === "golden") continue; // 좁은 틈은 사람도 망설인다
+    const iy = s.fy ?? (s.e.t === "item" ? s.e.y : 0);
     if (iy > best.y0 + 30 && iy < best.y1 - 30) return iy;
   }
   const center = (best.y0 + best.y1) / 2;
@@ -97,15 +115,26 @@ export function botInput(g: Game): Input {
   const target = targetY(g);
   // 목표 y로 가기 위한 희망 수직속도 (P 제어) → 지금 속도가 그보다 빠르면 날갯짓
   const low = g.energy.value <= g.energy.max * CFG.energy.lowRatio;
-  const desiredVy = Math.max(-420, Math.min(460, (target - g.y) * 3.2)) + (low ? 110 : 0);
+  // 에너지가 모자라면 "중력 쪽"으로 조금 흘려 보낸다
+  const desiredVy = Math.max(-420, Math.min(460, (target - g.y) * 3.2)) + (low ? 110 * g.grav : 0);
   const wasFlapping = flapState.get(g) ?? false;
   const band = 45;
-  const flap = wasFlapping ? g.vy > desiredVy - band : g.vy > desiredVy + band;
+  // 중력 반전 중엔 날갯짓이 아래로 민다 → 판단도 뒤집는다
+  const flap =
+    g.grav === 1
+      ? wasFlapping
+        ? g.vy > desiredVy - band
+        : g.vy > desiredVy + band
+      : wasFlapping
+        ? g.vy < desiredVy + band
+        : g.vy < desiredVy - band;
   flapState.set(g, flap);
   return {
     flap,
     cycle: false,
     color: g.nextGate && g.nextGate !== g.color ? g.nextGate : null,
+    skill: g.powerReady,
+    pick: g.choice ? 0 : null,
   };
 }
 
@@ -137,6 +166,7 @@ export function summarize(results: BotResult[]) {
   const raws = sorted((r) => r.raw);
   const meters = sorted((r) => r.meters);
   const points = raws.map((raw) => CFG.platform.basePoints + Math.min(CFG.platform.maxBonus, Math.floor(raw / CFG.platform.K)));
+  const stages = sorted((r) => r.stats.stage_max);
   return {
     runs: results.length,
     durationMean: round(mean(durations)),
@@ -145,6 +175,8 @@ export function summarize(results: BotResult[]) {
     rawMean: Math.round(mean(raws)),
     metersMedian: median(meters),
     pointsMedian: median(points),
+    stageMedian: median(stages),
+    stageMax: stages[stages.length - 1],
     byCause: {
       wall: results.filter((r) => r.cause === "wall").length,
       energy: results.filter((r) => r.cause === "energy").length,

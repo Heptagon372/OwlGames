@@ -19,6 +19,8 @@ export async function GachaOdds({
   const tiers = Object.keys(table).sort();
   const names = new Map(prizes.map((p) => [p.place, p.name]));
   const soldOut = new Set(prizes.filter((p) => p.stock <= 0).map((p) => p.place));
+  // 등수 개수는 확률표가 정한다 — 6등급으로 늘었을 때 머리글만 5칸으로 남는 일이 없게
+  const places = Array.from({ length: table[tiers[0]]?.length ?? prizes.length }, (_, i) => i + 1);
 
   return (
     <div className={cn("no-scrollbar overflow-x-auto", className)}>
@@ -26,7 +28,7 @@ export async function GachaOdds({
         <thead>
           <tr className="border-b border-line text-xs text-mute">
             <th className="py-2 pr-2 text-left font-bold">{t("tier")}</th>
-            {[1, 2, 3, 4, 5].map((place) => (
+            {places.map((place) => (
               <th key={place} className="px-1 py-2 text-right font-bold">
                 <span className="block text-base leading-none">{PLACE_EMOJI[place - 1]}</span>
                 <span className={cn("block", soldOut.has(place) && "text-alert line-through")}>
@@ -34,6 +36,10 @@ export async function GachaOdds({
                 </span>
               </th>
             ))}
+            <th className="px-1 py-2 text-right font-bold">
+              <span className="block text-base leading-none">🫥</span>
+              <span className="block">{t("miss")}</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -41,6 +47,8 @@ export async function GachaOdds({
             const mine = currentTier === Number(tier);
             const row = table[tier];
             const sum = row.reduce((a, b) => a + b, 0);
+            // 꽝은 남는 몫이다 (서버 gacha_pick 과 같은 규칙) — 0.05 같은 값 때문에 소수점 둘째 자리까지 반올림
+            const miss = Math.round((100 - sum) * 100) / 100;
             return (
               <tr
                 key={tier}
@@ -58,7 +66,7 @@ export async function GachaOdds({
                     {v}%
                   </td>
                 ))}
-                <td className="sr-only">{sum}</td>
+                <td className={cn("num px-1 py-2 text-right", !mine && "text-mute")}>{miss}%</td>
               </tr>
             );
           })}

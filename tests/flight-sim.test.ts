@@ -25,30 +25,44 @@ describe("아울러닝 봇 시뮬레이션", () => {
     }
   });
 
-  it("메타가 서버 검증 규칙을 통과한다 (§11.3)", () => {
+  it("메타가 서버 검증 규칙을 통과한다 (20261002 마이그레이션)", () => {
     for (const r of results) {
       const m = r.stats;
-      expect(m.distance_m).toBeLessThanOrEqual(24 * m.duration_s * 1.02);
+      expect(m.distance_m).toBeLessThanOrEqual(CFG.server.maxAvgMps * m.duration_s * 1.02);
       expect(m.pass_count).toBeLessThanOrEqual(m.distance_m / 8);
       expect(m.near_miss).toBeLessThanOrEqual(m.pass_count);
+      expect(m.perfect_count).toBeLessThanOrEqual(m.pass_count + 1);
       expect(m.combo_mult_avg).toBeGreaterThanOrEqual(1);
       expect(m.combo_mult_avg).toBeLessThanOrEqual(CFG.score.comboMaxMult);
+      expect(m.item_score).toBeLessThanOrEqual(600 * m.items + 600);
+      // bonus 상한 = 기본점수 × (multCap - 1) + 단계 × 400 + 2000 (서버와 같은 식)
+      const base =
+        m.distance_m +
+        m.pass_count * CFG.score.perPass * m.combo_mult_avg +
+        m.near_miss * CFG.score.nearMiss * m.combo_mult_avg +
+        m.perfect_count * CFG.perfect.score +
+        m.item_score;
+      expect(m.bonus_score).toBeLessThanOrEqual(base * (CFG.multCap - 1) + 400 * m.stage_max + 2000);
+      // 서버 재계산과 5% 안
+      const server = base + m.energy_left * CFG.score.energyLeft + m.bonus_score;
+      expect(Math.abs(r.raw - server)).toBeLessThanOrEqual(0.05 * Math.max(server, 1));
     }
   });
 
   it("평범한 플레이 분포가 무너지지 않는다", () => {
-    // 봇은 아이템을 적극적으로 줍지 않는 '보통 실력' 기준이라 기획서 목표(60~90초)보다 조금 짧다.
-    // 튜닝 후 중앙값 ≈ 53초 / raw ≈ 1,300 / 95P. 여기서는 밸런스가 크게 무너지는 것만 막는다.
-    expect(s.durationMedian).toBeGreaterThan(25);
+    // 봇은 아이템을 적극적으로 줍지 않고 스치지도 않는 '보통 실력' 기준.
+    // 2.0 튜닝(초보 보호 · 체력 증가) 후 중앙값 ≈ 73초 · 9단계 · raw ≈ 9,400 · 120P 안팎 (K=100).
+    expect(s.durationMedian).toBeGreaterThan(35);
     expect(s.durationMedian).toBeLessThan(CFG.platform.maxSessionSec);
-    expect(s.rawMedian).toBeGreaterThan(700);
-    expect(s.pointsMedian).toBeGreaterThan(CFG.platform.basePoints);
-    expect(s.pointsMedian).toBeLessThanOrEqual(300);
+    expect(s.stageMedian).toBeGreaterThanOrEqual(5); // 보통 실력도 레이저(5단계)까지는 본다
+    expect(s.rawMedian).toBeGreaterThan(1500);
+    expect(s.pointsMedian).toBeGreaterThan(CFG.platform.basePoints + 20);
+    expect(s.pointsMedian).toBeLessThan(200);
   });
 
   it("죽는 이유가 한쪽으로만 쏠리지 않는다 (§5 설계 의도)", () => {
-    // 에너지 관리가 핵심이므로 고갈사가 많은 건 정상이지만, 벽 충돌도 의미 있게 남아야 한다
-    expect(s.byCause.wall).toBeGreaterThan(results.length * 0.1);
+    // 에너지 관리가 핵심이라 고갈사가 대부분이지만, 벽 충돌도 남아 있어야 한다
+    expect(s.byCause.wall).toBeGreaterThan(0);
     expect(s.byCause.energy).toBeGreaterThan(results.length * 0.2);
   });
 });

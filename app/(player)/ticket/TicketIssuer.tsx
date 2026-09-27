@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Minus, Plus, RefreshCw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
+import { GachaTicket } from "@/components/GachaTicket";
 import { Card, TermLabel } from "@/components/ui/Card";
 import { formatCountdown } from "@/lib/format";
 import { expireStale, issueRedeemCode } from "@/lib/rpc";
@@ -69,28 +70,40 @@ export function TicketIssuer({ unused, initialCode, ttlMin }: Props) {
 
   if (code && !expired) {
     return (
-      <Card className="mt-4 text-center">
-        <TermLabel className="text-left">redeem --code</TermLabel>
-        <p className="mt-3 text-sm text-mute">{t("showCode")}</p>
-        <p className="num mt-3 text-[40px] font-black tracking-[0.25em] text-neon text-glow">{code.code}</p>
-        <div className="mx-auto mt-4 w-fit rounded-2xl bg-white p-3">
-          <QRCodeSVG value={code.code} size={148} level="M" marginSize={0} />
+      <div className="mt-4">
+        <GachaTicket
+          className="animate-pop"
+          stub={
+            <>
+              <div className="rounded-xl bg-white p-2">
+                <QRCodeSVG value={code.code} size={104} level="M" marginSize={0} />
+              </div>
+              <p className="num mt-2 text-center text-[11px] text-dim">{formatCountdown(remainSec)}</p>
+            </>
+          }
+        >
+          <p className="text-center text-sm text-mute">{t("showCode")}</p>
+          <p className="num mt-3 text-center text-[42px] font-black leading-none tracking-[0.25em] text-neon text-glow">
+            {code.code}
+          </p>
+          <p className="mt-4 text-center text-sm">
+            {t.rich("draws", {
+              count: code.ticket_count,
+              time: formatCountdown(remainSec),
+              n: (c) => <span className="num font-bold text-ink">{c}</span>,
+              t: (c) => <span className="num font-bold text-aqua">{c}</span>,
+            })}
+          </p>
+          <p className="mt-1 text-center text-xs text-dim">{t("expiryNote")}</p>
+        </GachaTicket>
+        <div className="mt-3 text-center">
+          <Button variant="outline" size="sm" onClick={issue} disabled={pending}>
+            <RefreshCw className="size-4" />
+            {t("reissue")}
+          </Button>
+          {error && <p className="mt-2 text-sm text-alert">{error}</p>}
         </div>
-        <p className="mt-4 text-sm">
-          {t.rich("draws", {
-            count: code.ticket_count,
-            time: formatCountdown(remainSec),
-            n: (c) => <span className="num font-bold text-ink">{c}</span>,
-            t: (c) => <span className="num font-bold text-aqua">{c}</span>,
-          })}
-        </p>
-        <p className="mt-1 text-xs text-dim">{t("expiryNote")}</p>
-        <Button variant="outline" size="sm" className="mt-4" onClick={issue} disabled={pending}>
-          <RefreshCw className="size-4" />
-          {t("reissue")}
-        </Button>
-        {error && <p className="mt-2 text-sm text-alert">{error}</p>}
-      </Card>
+      </div>
     );
   }
 

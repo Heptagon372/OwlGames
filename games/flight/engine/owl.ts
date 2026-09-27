@@ -3,10 +3,16 @@ import { CFG, type Color, type SizeKey, SIZE_ORDER } from "../config";
 
 export type OwlPhysics = { y: number; vy: number };
 
-/** 한 프레임 적분. flapping이면 상승 가속이 더해진다 */
-export function stepPhysics(p: OwlPhysics, flapping: boolean, dt: number, flapMult = 1): OwlPhysics {
-  const accel = CFG.physics.gravity + (flapping ? CFG.physics.flap * flapMult : 0);
-  const vy = clamp(p.vy + accel * dt, CFG.physics.vyMaxUp, CFG.physics.vyMaxDown);
+/**
+ * 한 프레임 적분. flapping이면 상승 가속이 더해진다.
+ * `grav`가 -1이면 중력 반전 — 위로 "떨어지고", 날갯짓은 아래로 민다 (2.0 §9).
+ * `extra`는 파동·폭풍 같은 바깥 힘 (px/s², 아래가 +).
+ */
+export function stepPhysics(p: OwlPhysics, flapping: boolean, dt: number, flapMult = 1, grav: 1 | -1 = 1, extra = 0): OwlPhysics {
+  const accel = grav * (CFG.physics.gravity + (flapping ? CFG.physics.flap * flapMult : 0)) + extra;
+  const lo = grav === 1 ? CFG.physics.vyMaxUp : -CFG.physics.vyMaxDown;
+  const hi = grav === 1 ? CFG.physics.vyMaxDown : -CFG.physics.vyMaxUp;
+  const vy = clamp(p.vy + accel * dt, lo, hi);
   return { y: p.y + vy * dt, vy };
 }
 

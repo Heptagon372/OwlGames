@@ -2,15 +2,17 @@ import { ArrowRight, Gift, Settings, Sparkles, Ticket, Trophy } from "lucide-rea
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Logo } from "@/components/brand/Logo";
-import { OwlMark } from "@/components/brand/OwlMark";
-import { DemoBanner } from "@/components/DemoBanner";
+import { BrandBanner } from "@/components/brand/BrandBanner";
+import { GameLogo } from "@/components/GameLogo";
+import { JoinClubBanner } from "@/components/JoinClubBanner";
+import { SetupBanner } from "@/components/SetupBanner";
 import { OpenStatus } from "@/components/OpenStatus";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RankBadge } from "@/components/RankBadge";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, Chip, TermLabel } from "@/components/ui/Card";
 import { PLACE_EMOJI } from "@/lib/config";
-import { GAMES } from "@/lib/games";
+import { GAME_IDS, GAMES } from "@/lib/games";
 import { getAppConfig, getIsOpen, getMyProfile, getPrizes } from "@/lib/queries";
 import { RANKS } from "@/lib/rank";
 
@@ -22,21 +24,28 @@ const STEPS = [
 ] as const;
 
 export default async function LandingPage() {
-  const [config, open, prizes, profile, t, tg] = await Promise.all([
+  const [config, open, prizes, profile, t, tg, tAbout] = await Promise.all([
     getAppConfig(),
     getIsOpen(),
     getPrizes(),
     getMyProfile(),
     getTranslations("landing"),
     getTranslations("games"),
+    getTranslations("about"),
   ]);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pb-16">
-      <DemoBanner />
-      <header className="flex items-center justify-between py-4">
-        <Logo size="sm" />
-        <div className="flex items-center gap-1">
+      <SetupBanner />
+      {/* 375px 에서 로고 부제까지 넣으면 줄이 접혀서 헤더가 두 줄이 된다 — 좁을 때는 부제를 숨긴다 */}
+      <header className="flex items-center justify-between gap-2 py-4">
+        <span className="sm:hidden">
+          <Logo size="sm" compact />
+        </span>
+        <span className="hidden sm:block">
+          <Logo size="sm" />
+        </span>
+        <div className="flex shrink-0 items-center gap-1">
           <OpenStatus open={open} hours={config.open_hours} />
           <ThemeToggle />
           <Link
@@ -53,13 +62,9 @@ export default async function LandingPage() {
       <section className="card grad-line glow-iris relative mt-4 overflow-hidden px-6 py-10 text-center">
         <div className="grid-bg pointer-events-none absolute inset-0 opacity-40" aria-hidden />
         <div className="relative">
-          <OwlMark className="mx-auto size-28 animate-float drop-shadow-[0_0_40px_rgb(255_176_32/0.35)]" />
-          <h1 className="display mt-5 font-mono text-[44px] sm:text-6xl">
-            <span className="grad-text">OWL</span>
-            <span className="text-neon text-glow">_</span>
-            <span className="grad-text">GAMES</span>
-          </h1>
-          <p className="mt-2 font-mono text-xs tracking-[0.3em] text-aqua">S.OWL · 아울게임즈</p>
+          <h1 className="sr-only">OWL GAMES · 아울게임즈</h1>
+          <BrandBanner priority className="max-w-md animate-float drop-shadow-[0_0_46px_rgb(167_139_250/0.3)]" />
+          <p className="mt-1 font-mono text-xs tracking-[0.3em] text-aqua">S.OWL · 아울게임즈</p>
           <p className="mt-5 text-[15px] leading-relaxed text-mute">
             {t("tagline")}
             <br />
@@ -86,20 +91,15 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* 게임 5종 */}
+      {/* 게임 */}
       <section className="mt-10">
         <TermLabel>{t("gamesLabel")}</TermLabel>
-        <h2 className="display mt-1 mb-4 text-[26px]">{t("gamesTitle")}</h2>
-        <div className="grid gap-3">
+        <h2 className="display mt-1 mb-4 text-[26px]">{t("gamesTitle", { count: GAME_IDS.length })}</h2>
+        <div className="grid grid-cols-2 gap-3">
           {Object.values(GAMES).map((g) => (
-            <Card key={g.id} neon className="flex items-center gap-4">
-              <div className="grid size-14 shrink-0 place-items-center rounded-tile border border-white/25 bg-white/10 text-3xl backdrop-blur-sm">
-                {g.emoji}
-              </div>
-              <div className="min-w-0">
-                <p className="font-extrabold">{tg(`${g.id}.title`)}</p>
-                <p className="truncate text-sm text-mute">{tg(`${g.id}.tagline`)}</p>
-              </div>
+            <Card key={g.id} neon className="flex flex-col items-center gap-2 p-3">
+              <GameLogo game={g.id} alt={tg(`${g.id}.title`)} className="h-24 w-full" />
+              <p className="line-clamp-2 text-center text-xs text-mute">{tg(`${g.id}.tagline`)}</p>
             </Card>
           ))}
         </div>
@@ -118,7 +118,7 @@ export default async function LandingPage() {
                   <s.icon className="size-4 text-neon" />
                   <p className="font-bold">{t(`steps.${s.key}.title`)}</p>
                 </div>
-                <p className="mt-2 text-sm text-mute">{t(`steps.${s.key}.desc`)}</p>
+                <p className="mt-2 text-sm text-mute">{t(`steps.${s.key}.desc`, { count: GAME_IDS.length })}</p>
               </Card>
             </li>
           ))}
@@ -168,6 +168,8 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      <JoinClubBanner className="mt-10" />
+
       <footer className="mt-12 border-t border-line pt-6 text-center">
         <p className="font-mono text-[11px] text-dim">
           {t("footer", { start: config.open_hours.start, end: config.open_hours.end })}
@@ -175,6 +177,12 @@ export default async function LandingPage() {
         <p className="mt-1 font-mono text-[11px] text-dim">
           {config.booth_location.building} {config.booth_location.floor} · {config.booth_location.spot}
         </p>
+        <Link
+          href="/about"
+          className="mt-3 inline-flex min-h-11 items-center px-3 font-mono text-[11px] text-mute underline decoration-neon/40 underline-offset-4 transition-colors hover:text-neon"
+        >
+          {tAbout("link")}
+        </Link>
       </footer>
     </div>
   );

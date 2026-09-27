@@ -2,6 +2,7 @@
 // 스피드 라인 · 잔상 · 바람 먼지 · 터보 링 · 화면 줌.
 import { CFG } from "../config";
 import type { Game } from "./game";
+import { backdropFor } from "./sprites";
 
 export type SpeedLine = { x: number; y: number; len: number; w: number; a: number; v: number };
 export type Dust = { x: number; y: number; vx: number; vy: number; r: number; a: number };
@@ -18,21 +19,35 @@ export type Fx = {
   /** 0~1 — 현재 속도가 최고 속도에 얼마나 가까운지 */
   speedT: number;
   spawnAcc: number;
+  /** 단계별 하늘 그림 — 바뀌면 이전 그림에서 1.5초 동안 겹쳐 바뀐다 */
+  backdrop: string;
+  backdropPrev: string | null;
+  backdropT: number;
 };
 
 export function createFx(): Fx {
-  return { lines: [], dust: [], rings: [], trail: [], zoom: 1, speedT: 0, spawnAcc: 0 };
+  return { lines: [], dust: [], rings: [], trail: [], zoom: 1, speedT: 0, spawnAcc: 0, backdrop: "bg-01", backdropPrev: null, backdropT: 1 };
 }
 
 const W = CFG.view.w;
 const H = CFG.view.h;
 
 export function updateFx(fx: Fx, g: Game, dt: number, reduced: boolean): void {
-  const target = (g.scroll - CFG.scroll.v0) / (CFG.scroll.vMax * CFG.special.turboMult - CFG.scroll.v0);
+  const sky = backdropFor(g.stage);
+  if (sky !== fx.backdrop) {
+    fx.backdropPrev = fx.backdrop;
+    fx.backdrop = sky;
+    fx.backdropT = 0;
+  }
+  fx.backdropT = Math.min(1, fx.backdropT + dt / 1.5);
+  if (fx.backdropT >= 1) fx.backdropPrev = null;
+
+  const target = (g.scroll - CFG.scroll.v0) / (CFG.scroll.vMax * CFG.events.turboMult[1] - CFG.scroll.v0);
   fx.speedT += (Math.max(0, Math.min(1, target)) - fx.speedT) * Math.min(1, dt * 4);
 
   // 터보 구간에서는 화면을 살짝 당긴다
-  const zoomTarget = g.special?.kind === "turbo" ? 1.06 : 1;
+  const fast = g.turboT > 0 || g.overdrive;
+  const zoomTarget = fast ? 1.06 : g.feverT > 0 ? 1.03 : 1;
   fx.zoom += (zoomTarget - fx.zoom) * Math.min(1, dt * 3);
 
   if (reduced) {
@@ -90,7 +105,7 @@ export function updateFx(fx: Fx, g: Game, dt: number, reduced: boolean): void {
   }
 
   // 터보 링
-  if (g.special?.kind === "turbo") {
+  if (fast) {
     if (fx.rings.length < 6 && Math.random() < dt * 6) fx.rings.push({ r: 30, a: 0.55 });
     for (let i = fx.rings.length - 1; i >= 0; i--) {
       const r = fx.rings[i];

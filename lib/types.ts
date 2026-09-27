@@ -1,7 +1,12 @@
 // DB 행 / RPC 응답 타입 (supabase/migrations 와 1:1)
 
 export type UserRole = "user" | "staff" | "admin";
-export type GameId = "typer" | "flight" | "phish" | "logic" | "survive" | "space";
+export type GameId = "flight" | "survive" | "owlis" | "chef";
+/**
+ * 내린 게임 (나이트 타이퍼·아울 로직·피싱 헌터·아울스페이스). DB enum 에는 값이 남아 있어서 **예전 세션 행**의 `game` 에 나올 수 있다 —
+ * 화면에서는 `lib/games.ts` 의 `gameEmoji`/`isGameId` 로 걸러서 그린다.
+ */
+export type RetiredGameId = "typer" | "logic" | "phish" | "space";
 
 export type Profile = {
   id: string;
@@ -14,8 +19,17 @@ export type Profile = {
   rank_idx: number;
   /** 아울 에너지 (마이그레이션 20260925 이후) */
   owl_energy?: number;
+  /** 플레이 잠금 (마이그레이션 20261008 이후) — 지금보다 뒤면 잠김 */
+  locked_until?: string | null;
+  lock_reason?: string | null;
+  /** 포인트 급상승 → 관리자 확인 전까지 뽑기 보류 (마이그레이션 20261009 이후) */
+  review_required?: boolean;
+  review_reason?: string | null;
   created_at: string;
 };
+
+/** 승인 대기 목록 (부스·관리자) */
+export type PendingUser = Pick<Profile, "id" | "name" | "student_id" | "created_at">;
 
 export type LeaderboardRow = {
   user_id: string;
@@ -140,6 +154,8 @@ export type BoardStats = {
   draws: number;
 };
 
+export const EMPTY_BOARD_STATS: BoardStats = { participants: 0, plays: 0, challengers: 0, draws: 0 };
+
 // ---- RPC 응답 ----
 
 /** 아울 에너지 (스태미나) — 10분마다 1개, 최대 10개 */
@@ -177,6 +193,10 @@ export type SubmitResult = {
   owl_energy_gained?: number;
   /** 제출 후 남은 아울 에너지 */
   owl_energy?: number;
+  /** 포인트 급상승으로 뽑기가 검토 보류됐는가 (20261009) */
+  review_required?: boolean;
+  /** 비정상 제출이 쌓여 잠겼으면 잠금 끝 시각 (20261008) */
+  locked_until?: string | null;
 };
 
 export type IssuedCode = {
@@ -193,9 +213,15 @@ export type BoothLookup = {
   student_id: string;
   rank_idx: number;
   level: number;
+  /** 다음에 뽑을 티켓의 티어 (티켓을 얻은 랭크 기준, 20261009) */
   tier: number;
   remaining: number;
   expires_at: string;
+  review_required?: boolean;
+  review_reason?: string | null;
+  locked?: boolean;
+  /** 조회한 부원 본인의 코드 — 다른 부원이 뽑아야 한다 */
+  own_code?: boolean;
 };
 
 export type BoothDrawResult = {
@@ -205,4 +231,6 @@ export type BoothDrawResult = {
   tier: number;
   rank_idx: number;
   remaining: number;
+  /** 다음 티켓의 티어 (남은 게 없으면 null) */
+  next_tier?: number | null;
 };

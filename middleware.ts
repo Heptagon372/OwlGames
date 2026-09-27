@@ -1,12 +1,25 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { SUPABASE_ANON_KEY, SUPABASE_URL, isDemo } from "@/lib/env";
+import { SUPABASE_ANON_KEY, SUPABASE_URL, isConfigured } from "@/lib/env";
 
 // §4 라우트 접근 규칙: role · verified · 운영시간
 const PLAYER_PREFIXES = ["/lobby", "/game", "/rank", "/ticket", "/me"];
 
 export async function middleware(request: NextRequest) {
-  if (isDemo) return NextResponse.next({ request });
+  if (!isConfigured) {
+    // Supabase 미설정: 볼 데이터가 없으니 로그인이 필요한 화면은 로그인(설정 안내 배너)으로 보낸다
+    const path = request.nextUrl.pathname;
+    const needsLogin =
+      PLAYER_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`)) ||
+      path === "/pending" ||
+      path.startsWith("/booth") ||
+      path.startsWith("/admin");
+    if (!needsLogin) return NextResponse.next({ request });
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/login";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -23,10 +36,10 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // 세션 갱신 겸 인증 확인 (getUser는 Auth 서버에서 토큰을 검증한다)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // 세션 갱신 겸 인증 확인. getClaims 는 만료된 토큰을 갱신하고 JWT 서명을 로컬에서 검증한다 —
+  // 로비·랭킹이 30초마다 새로 고칠 때마다 Auth 서버를 왕복하지 않는다 (대칭 키 프로젝트면 getUser 로 돌아간다)
+  const { data: auth } = await supabase.auth.getClaims();
+  const uid = auth?.claims.sub;
 
   const path = request.nextUrl.pathname;
   const redirect = (to: string) => {
@@ -42,7 +55,7 @@ export async function middleware(request: NextRequest) {
   const isPlayerRoute = PLAYER_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
   const needsLogin = isPlayerRoute || path === "/pending" || path.startsWith("/booth") || path.startsWith("/admin");
 
-  if (!user) {
+  if (!uid) {
     return needsLogin ? redirect(`/auth/login?next=${encodeURIComponent(path)}`) : response;
   }
 
@@ -52,7 +65,7 @@ export async function middleware(request: NextRequest) {
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, verified")
-    .eq("id", user.id)
+    .eq("id", uid)
     .maybeSingle();
 
   if (!profile) {
@@ -77,6 +90,19 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
+// 미들웨어는 판단할 것이 있는 경로에서만 돈다. 예전 "전부 통과" 매처는 첫 화면·전광판·설정은 물론
+// 배경음악(.mp3)·홍보 영상(.mp4)·폰트 요청마다 Supabase Auth 왕복을 한 번씩 끼워 넣고 있었다 —
+// 부스 와이파이에서 첫 연결이 느리던 가장 큰 이유다. 최종 판단은 어차피 서버 RPC 가 한다.
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2)$).*)"],
+  matcher: [
+    "/lobby/:path*",
+    "/game/:path*",
+    "/rank/:path*",
+    "/ticket/:path*",
+    "/me/:path*",
+    "/pending",
+    "/booth/:path*",
+    "/admin/:path*",
+    "/auth/:path*",
+  ],
 };

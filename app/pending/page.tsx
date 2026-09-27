@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { PendingWatcher } from "./PendingWatcher";
 import { Logo } from "@/components/brand/Logo";
 import { OwlMark } from "@/components/brand/OwlMark";
-import { DemoBanner } from "@/components/DemoBanner";
+import { SetupBanner } from "@/components/SetupBanner";
 import { Card, TermLabel } from "@/components/ui/Card";
 import { SignOutButton } from "@/components/SignOutButton";
 import { getAppConfig, getMyProfile } from "@/lib/queries";
@@ -20,14 +20,14 @@ export default async function PendingPage() {
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-16">
-      <DemoBanner />
+      <SetupBanner />
       <header className="flex items-center justify-between py-5">
         <Logo size="sm" />
         <SignOutButton />
       </header>
 
       <Card className="mt-6 text-center">
-        <OwlMark sleepy className="mx-auto size-24 animate-float" />
+        <OwlMark className="mx-auto size-24 animate-float" />
         <h1 className="display mt-4 text-2xl">{t("title")}</h1>
         <p className="mt-2 text-sm leading-relaxed text-mute">
           {profile ? t("hello", { name: profile.name }) : ""}

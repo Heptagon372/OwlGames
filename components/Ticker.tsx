@@ -11,12 +11,17 @@ function line(e: BoardEvent): string {
 
 /** 전광판 하단 티커 (§9) */
 export function Ticker({ events, className }: { events: BoardEvent[]; className?: string }) {
-  const items = events.length
-    ? events
-    : ([{ id: 0, kind: "rank_up", masked_name: "S*L", rank_idx: 0, place: null, prize_name: null, created_at: "" }] as BoardEvent[]);
+  // 소식이 아직 없으면 가짜 이벤트 대신 안내 한 줄만 흘린다
+  const empty = events.length === 0;
   const row = (key: string) => (
     <div key={key} className="flex shrink-0 items-center gap-10 pr-10" aria-hidden={key === "b"}>
-      {items.map((e) => (
+      {empty && (
+        <span className="flex items-center gap-2 whitespace-nowrap text-xl font-bold">
+          <span className="text-aqua">🦉 게임하고 랭크를 올려 S.OWL 부스에서 뽑기에 도전하세요</span>
+          <span className="text-dim">·</span>
+        </span>
+      )}
+      {events.map((e) => (
         <span key={`${key}-${e.id}`} className="flex items-center gap-2 whitespace-nowrap text-xl font-bold">
           <span className={e.kind === "draw" ? "text-neon" : "text-aqua"}>{line(e)}</span>
           <span className="text-dim">·</span>

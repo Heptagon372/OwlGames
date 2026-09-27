@@ -1,6 +1,8 @@
 -- =====================================================================
 -- OWL GAMES — 아울러닝(flight) 서버 검증 / 원점수 재계산 테스트
 --   대상: 20260924000000_owlrunning.sql 의 submit_game_session
+--         + 20261003000000_owlrunning_v2.sql (K 100 · 평균 30m/s · flight_raw/flight_reject_reason 헬퍼 · 2.0 메타)
+--   1.x 메타(bonus_score 없음)는 예전 식 그대로 채점되므로 아래 1~5 케이스는 식이 그대로다. K 만 100 으로 바뀌었다.
 --   명세: OWLRUNNING_GDD.md §11.1 / §11.2 / §11.3, §16 수용기준 7
 --
 --   실행: psql "<connection-string>" -f supabase/tests/flight_validation.sql
@@ -19,7 +21,7 @@
 begin;
 set local plpgsql.check_asserts = on;
 
--- 설정은 일부러 "고쳐주지 않는다". K_flight=20 / flight 3~185초는 마이그레이션이
+-- 설정은 일부러 "고쳐주지 않는다". K_flight=100 / flight 3~185초는 마이그레이션이
 -- 보장해야 하는 값이라, 틀려 있으면 아래 0번 단계에서 바로 터지는 게 맞다.
 
 do $$
@@ -48,7 +50,7 @@ declare
 begin
   -- ===== 0. 설정 확인 (§11.2) =========================================
   v_k := (public.cfg('game_k') ->> 'flight')::numeric;
-  assert v_k = 20, format('K_flight 는 20 이어야 함 (실제 %s)', v_k);
+  assert v_k = 100, format('K_flight 는 100 이어야 함 (실제 %s)', v_k);
   assert (public.cfg('game_k') ->> 'typer')::numeric = 4,  'typer K 가 바뀌면 안 됨';
   assert (public.cfg('game_k') ->> 'phish')::numeric = 10, 'phish K 가 바뀌면 안 됨';
 
@@ -78,15 +80,15 @@ begin
   assert v_r ->> 'status' = 'ok', format('정상 제출인데 %s', v_r);
   assert (v_r ->> 'raw_score')::int = 4000,
          format('클라이언트 점수를 유지해야 함 (실제 %s)', v_r ->> 'raw_score');
-  v_expect := 30 + least(270, floor(4000::numeric / 20))::int;   -- = 230
-  assert v_expect = 230, format('기대 포인트 계산이 틀림: %s', v_expect);
+  v_expect := 30 + least(270, floor(4000::numeric / 100))::int;   -- = 70
+  assert v_expect = 70, format('기대 포인트 계산이 틀림: %s', v_expect);
   assert (v_r ->> 'points')::int = v_expect,
-         format('포인트는 30+min(270,floor(raw/20)) = %s 여야 함 (실제 %s)', v_expect, v_r ->> 'points');
+         format('포인트는 30+min(270,floor(raw/100)) = %s 여야 함 (실제 %s)', v_expect, v_r ->> 'points');
 
   select * into v_row from public.game_sessions where id = v_sid;
   assert v_row.status = 'submitted', format('세션 상태 %s', v_row.status);
   assert v_row.raw_score = 4000, format('저장된 raw_score %s', v_row.raw_score);
-  assert v_row.points = 230, format('저장된 points %s', v_row.points);
+  assert v_row.points = 70, format('저장된 points %s', v_row.points);
   assert not jsonb_exists(v_row.meta, 'raw_adjusted'),
          format('오차 5퍼센트 안이면 raw_adjusted 를 남기면 안 됨: %s', v_row.meta);
   assert (v_row.meta ->> 'elapsed_sec')::numeric between 90 and 95,
@@ -98,7 +100,7 @@ begin
 
   -- ===== 2. 거부 케이스 (§11.3) ======================================
   v_cases := jsonb_build_array(
-    -- (a) 거리 뻥튀기: 92초 × 24m/s × 1.02 = 2252m 가 상한인데 9000m 를 주장
+    -- (a) 거리 뻥튀기: 92초 × 30m/s × 1.02 = 2815m 가 상한인데 9000m 를 주장 (2.0 평균 속도 상한)
     jsonb_build_object(
       'name',    '거리 뻥튀기',
       'elapsed', 92, 'raw', 12000,
@@ -127,7 +129,13 @@ begin
       'name',    '클라이언트 시간 위조',
       'elapsed', 20, 'raw', 900,
       'reason',  '플레이 시간이 서버 기록과 맞지 않아요',
-      'meta',    c_meta_ok || '{"distance_m":300,"pass_count":20,"near_miss":5}'::jsonb)
+      'meta',    c_meta_ok || '{"distance_m":300,"pass_count":20,"near_miss":5}'::jsonb),
+    -- (f) 2.0: PERFECT 가 통과 수 + 1 보다 많다
+    jsonb_build_object(
+      'name',    'PERFECT > 통과',
+      'elapsed', 92, 'raw', 5000,
+      'reason',  'PERFECT 수가 통과 횟수보다 많아요',
+      'meta',    c_meta_ok || '{"bonus_score":0,"perfect_count":63,"stage_max":8}'::jsonb)
   );
 
   for v_case in select * from jsonb_array_elements(v_cases) loop
@@ -158,7 +166,7 @@ begin
   end loop;
 
   -- 거부는 랭킹/포인트에 아무 영향이 없어야 한다
-  assert (select total_points from public.profiles where id = c_uid) = 230,
+  assert (select total_points from public.profiles where id = c_uid) = 70,
          format('거부 케이스가 포인트를 건드림: %s',
                 (select total_points from public.profiles where id = c_uid));
 
@@ -173,8 +181,8 @@ begin
          format('메타가 정상이면 거부가 아니라 보정이어야 함: %s', v_r);
   assert (v_r ->> 'raw_score')::int = c_raw_srv::int,
          format('서버 재계산 값 %s 를 써야 함 (실제 %s)', c_raw_srv, v_r ->> 'raw_score');
-  v_expect := 30 + least(270, floor(c_raw_srv / 20))::int;   -- 30 + 196 = 226
-  assert v_expect = 226, format('기대 포인트 계산이 틀림: %s', v_expect);
+  v_expect := 30 + least(270, floor(c_raw_srv / 100))::int;   -- 30 + 39 = 69
+  assert v_expect = 69, format('기대 포인트 계산이 틀림: %s', v_expect);
   assert (v_r ->> 'points')::int = v_expect,
          format('보정 후 포인트는 %s 여야 함 (실제 %s)', v_expect, v_r ->> 'points');
 
@@ -308,6 +316,33 @@ begin
          format('phish 포인트 %s (기대 180)', v_r ->> 'points');
   select * into v_row from public.game_sessions where id = v_sid;
   assert not jsonb_exists(v_row.meta, 'raw_adjusted'), 'phish 에 raw_adjusted 가 붙음';
+
+  -- ===== 4.5 아울러닝 2.0 채점 (flight_raw) ===========================
+  --   base = 1284 + 61×10×1.8 + 14×50×1.8 + 20×40 + 640 = 1284 + 1098 + 1260 + 800 + 640 = 5082
+  --   raw  = base + 38×2 + bonus 3000 = 8158
+  --   bonus 상한 = base×4 + 8×400 + 2000 = 25528 → 3000 은 그대로
+  assert public.flight_raw(c_meta_ok || '{"bonus_score":3000,"perfect_count":20,"stage_max":8}'::jsonb) = 8158,
+         format('2.0 재계산 %s (기대 8158)',
+                public.flight_raw(c_meta_ok || '{"bonus_score":3000,"perfect_count":20,"stage_max":8}'::jsonb));
+  -- bonus 뻥튀기는 상한에서 잘린다: 5082 + 76 + 25528 = 30686
+  assert public.flight_raw(c_meta_ok || '{"bonus_score":999999,"perfect_count":20,"stage_max":8}'::jsonb) = 30686,
+         'bonus 상한 클램프가 틀림';
+  -- 1.x 메타는 예전 식 (3928)
+  assert public.flight_raw(c_meta_ok) = c_raw_srv, format('1.x 재계산 %s', public.flight_raw(c_meta_ok));
+  assert public.flight_reject_reason(c_meta_ok, 92) is null, '정상 메타가 거부됨';
+
+  insert into public.game_sessions (user_id, game, started_at)
+  values (c_uid, 'flight', now() - interval '92 seconds')
+  returning id into v_sid;
+  v_r := public.submit_game_session(v_sid, 8200,
+           c_meta_ok || '{"bonus_score":3000,"perfect_count":20,"stage_max":8,"build":"2.0.0"}'::jsonb);
+  assert v_r ->> 'status' = 'ok', format('2.0 정상 제출인데 %s', v_r);
+  assert (v_r ->> 'raw_score')::int = 8200, format('5%% 안이면 클라이언트 값 (실제 %s)', v_r ->> 'raw_score');
+  assert (v_r ->> 'points')::int = 30 + floor(8200::numeric / 100)::int,
+         format('2.0 포인트 %s', v_r ->> 'points');
+
+  update public.game_sessions set submitted_at = now() - interval '1 hour'
+   where user_id = c_uid and status = 'submitted';
 
   -- ===== 5. 제네릭 검증은 flight 규칙보다 먼저다 =====================
   --   185초를 넘긴 세션은 flight 사유가 아니라 기존 사유로 거부되어야 한다.

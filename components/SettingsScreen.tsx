@@ -1,25 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Check, Languages, Monitor, Volume2, VolumeX } from "lucide-react";
+import { Check, ChevronRight, Info, Languages, Monitor, Volume2, VolumeX } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { Card, TermLabel } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { cn } from "@/lib/cn";
 import { LOCALES, LOCALE_COOKIE, LOCALE_LABEL, LOCALE_MAX_AGE, type Locale } from "@/lib/locale";
-import { applyScale, currentScale, DEFAULT_SCALE, SCALES, type Scale } from "@/lib/prefs";
+import { applyScale, currentScale, DEFAULT_SCALE, DEFAULT_SOUND, SCALES, type Scale, type SoundPrefs } from "@/lib/prefs";
 import { getSoundPrefs, playSfx, setSoundPrefs } from "@/lib/sound";
 
 const SCALE_KEYS = ["small", "normal", "large", "xlarge"] as const;
 
 export function SettingsScreen({ locale }: { locale: Locale }) {
   const t = useTranslations("settings");
+  const tAbout = useTranslations("about");
   const router = useRouter();
 
   const [scale, setScale] = useState<Scale>(DEFAULT_SCALE);
-  const [sound, setSound] = useState({ on: true, volume: 0.6 });
+  const [sound, setSound] = useState<SoundPrefs>(DEFAULT_SOUND);
   const [busy, setBusy] = useState(false);
 
   // 저장된 값은 브라우저에만 있어서 마운트 뒤에 읽는다 (SSR 과 어긋나지 않게)
@@ -34,7 +36,7 @@ export function SettingsScreen({ locale }: { locale: Locale }) {
     playSfx("tap");
   }, []);
 
-  const pickSound = useCallback((next: { on: boolean; volume: number }) => {
+  const pickSound = useCallback((next: SoundPrefs) => {
     setSound(next);
     setSoundPrefs(next);
     if (next.on) playSfx("ok");
@@ -129,6 +131,24 @@ export function SettingsScreen({ locale }: { locale: Locale }) {
               onChange={(e) => pickSound({ ...sound, volume: Number(e.target.value) / 100 })}
               className="h-11 w-full accent-[var(--color-neon)]"
             />
+            <Row title={t("sound.music")} hint={t("sound.musicHint")}>
+              <span className="num text-xs text-dim">{Math.round(sound.music * 100)}</span>
+            </Row>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={Math.round(sound.music * 100)}
+              disabled={!sound.on}
+              aria-label={t("sound.music")}
+              onChange={(e) => {
+                const next = { ...sound, music: Number(e.target.value) / 100 };
+                setSound(next);
+                setSoundPrefs(next);
+              }}
+              className="h-11 w-full accent-[var(--color-neon)]"
+            />
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={() => playSfx("ok")} disabled={!sound.on}>
                 {t("sound.previewOk")}
@@ -175,6 +195,16 @@ export function SettingsScreen({ locale }: { locale: Locale }) {
           <p className="px-1 pt-1 text-xs text-dim">{t("language.hint")}</p>
         </Card>
       </section>
+
+      {/* 제작진 · 개인정보 · 경품 안내 */}
+      <Link
+        href="/about"
+        className="grad-line flex min-h-14 items-center gap-3 rounded-card border border-transparent bg-white/5 px-4 transition-colors hover:bg-white/8"
+      >
+        <Info className="size-5 shrink-0 text-neon" />
+        <span className="flex-1 text-sm font-bold">{tAbout("link")}</span>
+        <ChevronRight className="size-4 text-dim" />
+      </Link>
 
       <p className="pb-2 text-center text-xs text-dim">{t("storedOnDevice")}</p>
     </div>

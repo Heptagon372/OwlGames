@@ -30,10 +30,18 @@ export function LoginForm() {
           required
           mono
           inputMode="numeric"
+          maxLength={20}
           placeholder="202612345"
           autoComplete="username"
         />
-        <Field label={t("password")} name="password" type="password" required autoComplete="current-password" />
+        <Field
+          label={t("password")}
+          name="password"
+          type="password"
+          required
+          maxLength={72}
+          autoComplete="current-password"
+        />
         <FormError message={state?.error} />
         <SubmitButton />
       </form>

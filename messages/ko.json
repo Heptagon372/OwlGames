@@ -12,7 +12,6 @@
     "settings": "설정",
     "loading": "loading...",
     "closedNow": "지금은 운영시간이 아니라 게임을 시작할 수 없어요.",
-    "demoNote": "DEMO · 점수는 저장되지 않아요",
     "scoreUnit": "점",
     "appName": "아울게임즈 OWL GAMES",
     "appShort": "아울게임즈",
@@ -52,11 +51,13 @@
     },
     "sound": {
       "title": "소리",
-      "master": "효과음",
-      "masterHint": "버튼·결과 화면의 짧은 소리",
+      "master": "소리",
+      "masterHint": "효과음과 게임 배경음악을 한꺼번에 켜고 꺼요",
       "on": "켜짐",
       "off": "꺼짐",
-      "volume": "음량",
+      "volume": "전체 음량",
+      "music": "배경음악",
+      "musicHint": "전체 음량 안에서 배경음악만 따로 줄여요",
       "previewOk": "성공음",
       "previewCoin": "획득음",
       "previewLevel": "레벨업"
@@ -74,13 +75,13 @@
     "haveAccount": "이미 계정이 있어요",
     "closed": "지금은 운영시간이 아니에요 — {start}~{end}에 만나요",
     "gamesLabel": "games --list",
-    "gamesTitle": "미니게임 6종",
+    "gamesTitle": "미니게임 {count}종",
     "howLabel": "how-it-works",
     "howTitle": "이렇게 진행돼요",
     "steps": {
       "play": {
         "title": "게임 플레이",
-        "desc": "미니게임 6종으로 포인트 획득"
+        "desc": "미니게임 {count}종으로 포인트 획득"
       },
       "rank": {
         "title": "레벨 · 랭크 상승",
@@ -116,14 +117,14 @@
     "ticketHintNone": "랭크가 오를 때마다 1장씩 받아요",
     "gamesLabel": "games --play",
     "gamesTitle": "뭐 하고 놀까요?",
-    "pointRange": "30~300P",
+    "pointRange": "{base}P + 분당 {rate}P",
     "closedGame": "운영시간에 열려요",
     "rankLabel": "ranking --top 10",
     "rankTitle": "실시간 랭킹",
     "empty": "아직 기록이 없어요"
   },
   "gameShell": {
-    "duration": "{duration} · 한 판 30~300P",
+    "duration": "{duration} · 기본 {base}P + 분당 {rate}P + 점수 보너스 (상한 없음)",
     "start": "시작하기",
     "starting": "세션 준비 중...",
     "submitting": "SUBMITTING...",
@@ -150,13 +151,7 @@
       "phase": "도달 페이즈",
       "special": "특수 구간",
       "specialValue": "{count}회 완주",
-      "solved": "해결",
-      "solvedValue": "{count}문제",
-      "optimal": "최적화",
       "times": "{count}회",
-      "tierMax": "최고 티어",
-      "hints": "힌트",
-      "avgSolve": "평균 풀이",
       "seconds": "{sec}초",
       "stage": "스테이지",
       "stageValue": "STAGE {stage}",
@@ -164,84 +159,69 @@
       "survived": "생존",
       "kills": "처치",
       "killsWithObstacles": "{kills} (장애물 {obstacles})",
-      "graze": "GRAZE",
-      "livesLeft": "남은 생명",
-      "none": "없음",
       "damage": "피격",
       "noDamage": "무피격 ✨",
-      "bossKilled": "보스",
-      "bossKilledValue": "격파 ✅",
       "levelReached": "레벨",
       "evolutions": "진화",
       "count": "{count}개",
       "revives": "부활",
-      "destroyed": "파괴",
-      "missed": "놓침",
-      "correct": "정답",
-      "wrong": "오답",
-      "maxStreak": "최고 연속"
+      "aiLevel": "AI LEVEL",
+      "attackSent": "보낸 공격",
+      "cleared": "터뜨린 블록",
+      "avgCombo": "평균 연쇄",
+      "counters": "COUNTER",
+      "ko": "AI K.O.",
+      "stageInfinite": "∞ Lv.{level}",
+      "perfect": "PERFECT",
+      "fever": "OWL FEVER",
+      "power": "COLOR POWER",
+      "events": "이벤트",
+      "orders": "처리한 주문",
+      "topDish": "가장 많이 만든 메뉴",
+      "cleanBuild": "CLEAN BUILD",
+      "fullStack": "FULL STACK"
     }
   },
   "games": {
-    "typer": {
-      "title": "나이트 타이퍼",
-      "tagline": "떨어지는 명령어를 쳐서 방화벽을 뚫어라",
-      "duration": "60초",
-      "rules": [
-        "떨어지는 명령어를 정확히 입력하고 Enter",
-        "바닥에 닿으면 방화벽 게이지 +20%, 100%면 종료",
-        "연속 성공 시 콤보 ×1.2 → ×1.5 → ×2.0"
-      ]
-    },
-    "phish": {
-      "title": "피싱 헌터",
-      "tagline": "진짜일까 피싱일까? 보안관 부엉이의 판별",
-      "duration": "90초",
-      "rules": [
-        "← 왼쪽 스와이프 = 🚨 피싱",
-        "→ 오른쪽 스와이프 = ✅ 정상",
-        "연속 정답 보너스, 오답은 −5초",
-        "카드마다 제한시간 — 단계가 오를수록 짧아져요"
-      ]
-    },
     "flight": {
       "title": "아울러닝",
-      "tagline": "색을 맞추고, 몸집을 고르고, 날갯짓을 아끼며 더 멀리",
-      "duration": "최대 180초",
+      "tagline": "색을 맞추고, 장애물을 피하고, 능력을 발동시켜 어디까지?",
+      "duration": "최대 180초 · 15단계 + ∞",
       "rules": [
-        "꾹 누르면 상승 · 떼면 활공 (에너지는 날갯짓할 때만 줄어요)",
-        "색 게이트는 같은 색·도형으로 통과 — 틀려도 죽지 않고 에너지만 깎여요",
-        "🪶 에너지 · 🟢🔵 크기 · 🛡️🌈 버프를 챙기며 더 멀리"
-      ]
-    },
-    "logic": {
-      "title": "아울 로직",
-      "tagline": "게이트를 끼워 잠긴 인증 회로를 복구하라",
-      "duration": "70초부터 (풀면 늘어나요)",
-      "rules": [
-        "부품을 탭 → 빈 슬롯을 탭하면 회로가 바로 돌아가요",
-        "목표 진리표가 전부 맞으면 자동으로 클리어",
-        "최소 부품으로 풀면 최적화 보너스, 5연속이면 OVERDRIVE"
-      ]
-    },
-    "space": {
-      "title": "아울스페이스",
-      "tagline": "맞으면 끝, 스치면 점수",
-      "duration": "최대 180초",
-      "rules": [
-        "드래그로 회피 — 발사는 자동 (세로 화면)",
-        "적 탄을 스치면 GRAZE 점수 + 칩이 쌓여요",
-        "생명 3개. 위험하면 💣 봄으로 전탄 소거"
+        "꾹 누르면 상승 · 떼면 활공 — 색 게이트는 같은 색으로 PERFECT",
+        "레이저·미사일·중력 반전… 단계마다 새 위기가 와요 (벽만 즉사)",
+        "NEAR MISS·PERFECT로 🔥 FEVER, 10연속이면 COLOR POWER (Q)"
       ]
     },
     "survive": {
       "title": "아울 서바이버즈",
-      "tagline": "살아남아 보스를 잡아라",
-      "duration": "최대 180초",
+      "tagline": "끝없는 전장에서 살아남아라",
+      "duration": "무한 생존",
       "rules": [
         "이동만 하세요 — 공격은 전부 자동 (가로 화면)",
-        "레벨업마다 스킬 카드 3장 중 1장 선택",
-        "보스를 잡아야 다음 스테이지가 열려요"
+        "단계마다 새 도형이 나오고, 보스를 잡아야 넘어가요",
+        "15단계 십오각형을 잡으면 무한 진행"
+      ]
+    },
+    "owlis": {
+      "title": "아울리스",
+      "tagline": "네가 잘할수록, 상대 AI도 강해진다",
+      "duration": "무한 (패배할 때까지)",
+      "rules": [
+        "두 칸짜리 아울 블록을 돌려 쌓고, 같은 색 4개가 붙으면 터져요",
+        "떨어진 블록이 또 붙으면 연쇄(COMBO) — 길수록 AI에게 방해 블록을 보내요",
+        "AI는 내 실력을 보고 LEVEL 1 → 5 → 5+로 진화해요. 내 필드가 차면 끝"
+      ]
+    },
+    "retired": "종료된 게임",
+    "chef": {
+      "title": "아울 레스토랑",
+      "tagline": "코드를 요리하고, 버그를 피해라!",
+      "duration": "25단계 + 무한",
+      "rules": [
+        "손님이 주문한 코딩 음식을 레시피 순서대로 쌓아 제출해요",
+        "도마·팬·냄비·오븐·믹서를 동시에 돌려 여러 테이블을 챙겨요",
+        "🐛 버그가 앉은 테이블엔 내면 안 돼요. 손님 한 명이라도 기다리다 지치면 끝"
       ]
     }
   },
@@ -291,11 +271,13 @@
     "studentId": "학번",
     "studentIdHint": "숫자 9자리 · 학생증 확인에 사용돼요",
     "password": "비밀번호",
-    "passwordHint": "6자 이상",
+    "passwordHint": "8자 이상 · 학번과 다르게",
     "password2": "비밀번호 확인",
-    "errName": "이름을 2~20자로 입력해주세요.",
+    "errName": "이름은 한글·영문 2~20자로 입력해주세요. (숫자·기호는 쓸 수 없어요)",
     "errStudentId": "학번 형식이 올바르지 않아요. (숫자 9자리)",
-    "errPassword": "비밀번호는 6자 이상이어야 해요.",
+    "errPassword": "비밀번호는 8자 이상, 72바이트 이하여야 해요.",
+    "errPasswordSame": "비밀번호를 학번과 다르게 정해주세요.",
+    "errRateLimited": "시도가 너무 많아요. {min}분 뒤에 다시 해주세요.",
     "errPasswordMatch": "비밀번호가 서로 달라요.",
     "errServer": "서버 설정이 올바르지 않아요.",
     "errSignupFailed": "가입에 실패했어요: {reason}",
@@ -334,7 +316,9 @@
     "summary": "사용 가능 · 지금까지 {total}장 획득 / {used}장 사용",
     "oddsLabel": "gacha --odds",
     "oddsTitle": "뽑기 확률",
-    "oddsNote": "확률은 <b>뽑는 시점의 랭크</b> 기준이에요. 티켓을 모아뒀다가 랭크를 올린 뒤 뽑으면 더 좋은 확률로 뽑을 수 있어요.",
+    "oddsNote": "확률은 <b>티켓을 얻은 랭크</b> 기준이에요. 티켓마다 티어가 정해져 있어서, 모아 뒀다 뽑아도 확률은 같아요. 오래된 티켓부터 뽑아요.",
+    "nextTier": "다음 티켓",
+    "reviewNote": "최근 포인트가 크게 올라 운영진 확인 중이에요. 확인이 끝나면 부스에서 뽑을 수 있어요. 포인트와 티켓은 그대로예요.",
     "boothLabel": "booth --location",
     "boothTitle": "부스로 오세요",
     "mapAlt": "부스 위치 지도",
@@ -369,8 +353,8 @@
     "watching": "승인되면 자동으로 로비로 이동합니다",
     "boothLabel": "booth --location"
   },
-  "demo": {
-    "banner": "DEMO MODE · Supabase 미설정 — 가짜 데이터로 돌아가며 저장되지 않아요 (운영시간 제한 없음)"
+  "setup": {
+    "banner": "Supabase 미설정 — .env.local 에 연결 정보를 넣어야 로그인·게임·기록이 동작해요"
   },
   "browser": {
     "notice": "브라우저가 오래돼서 화면이 조금 깨져 보일 수 있어요. 크롬·사파리 최신 버전을 권장합니다.",
@@ -380,7 +364,8 @@
     "tier": "티어",
     "place": "{place}등",
     "mine": "내 티어",
-    "note": "표에 없는 확률은 꽝이에요. 재고가 없는 등수는 추첨에서 제외되고 그 확률은 꽝으로 처리돼요."
+    "note": "표의 확률은 한 번 뽑을 때 기준이에요. 재고가 없는 등수는 추첨에서 제외되고 그 확률은 꽝으로 처리돼요.",
+    "miss": "꽝"
   },
   "issuer": {
     "failed": "코드 발급에 실패했어요",
@@ -398,5 +383,857 @@
   },
   "modal": {
     "close": "닫기"
+  },
+  "hud": {
+    "common": {
+      "pause": "일시정지",
+      "pauseNote": "남은 일시정지 {sec}초",
+      "resume": "계속하기",
+      "rotateLandscape": "가로로 돌려주세요",
+      "pauseLeft": "일시정지 {sec}초 남음"
+    },
+    "flight": {
+      "raw": "{text}",
+      "canvasAria": "아울러닝 게임 화면",
+      "startTitle": "누르고 있으면 날아올라요",
+      "startHint": "떼면 활공 · 색 버튼으로 게이트 색을 맞추세요",
+      "startKeys": "PC: Space 상승 · 1/2/3 색 · Q 스킬 · Esc 일시정지",
+      "deathWall": "💥 벽 충돌",
+      "deathEnergy": "🪫 에너지 고갈",
+      "rotateNote": "아울러닝은 가로 화면에서 플레이해요",
+      "next": "다음",
+      "colorAria": "색상 변경 (현재 {color})",
+      "color": {
+        "R": "레드",
+        "B": "블루",
+        "P": "퍼플"
+      },
+      "skillAria": "COLOR POWER 발동 ({skill})",
+      "skillName": {
+        "breaker": "BREAKER",
+        "freeze": "FREEZE",
+        "phantom": "PHANTOM"
+      },
+      "stageTitle": "{tag} · {name}",
+      "stageName": {
+        "flight": "비행 훈련",
+        "color": "색의 등장",
+        "energy": "에너지",
+        "size": "크기 변화",
+        "laser": "레이저",
+        "moving": "움직이는 벽",
+        "wave": "파동",
+        "power": "색 스킬",
+        "storm": "아이템 폭풍",
+        "missile": "추적 미사일",
+        "turbo": "터보",
+        "glitch": "거짓말하는 색",
+        "barrage": "레이저 폭격",
+        "chaos": "CHAOS",
+        "final": "OWL FINAL RUN",
+        "infinite": "무한 비행"
+      },
+      "stageHint": {
+        "flight": "꾹 누르면 상승 · 떼면 하강",
+        "color": "게이트와 같은 색으로 통과하면 PERFECT!",
+        "energy": "날갯짓은 에너지를 써요 — 누르고, 떼고, 활공!",
+        "size": "작아지면 좁은 길로, 커지면 벽을 부숴요",
+        "laser": "⚠ 빨간 경고선이 뜨면 비켜요",
+        "moving": "벽이 움직여요 — 가짜 틈을 조심!",
+        "wave": "화면이 출렁이고, 중력이 뒤집혀요",
+        "power": "PERFECT 10연속 → COLOR POWER (Q / 스킬 버튼)",
+        "storm": "아이템이 쏟아져요 — 욕심을 부려 봐요",
+        "missile": "LOCK ON 이 멈추는 순간 위아래로 피해요",
+        "turbo": "빨라지는 만큼 점수도 ×2",
+        "glitch": "GLITCH 가 번쩍이면 진짜 색이 나와요",
+        "barrage": "번호 순서대로 레이저가 떨어져요",
+        "chaos": "중력 · 색 · 화면이 전부 미쳐요",
+        "final": "마지막 300m 는 OVERDRIVE!",
+        "infinite": "버틸수록 빨라진다"
+      },
+      "infiniteIn": "STAGE 15 COMPLETE — ∞ INFINITE MODE",
+      "infiniteSub": "이제부터는 최고 기록 싸움",
+      "infiniteLevel": "∞ Lv.{level}",
+      "infiniteLevelSub": "더 빠르게 · 더 자주 · 더 짧은 경고",
+      "overdrive": "🔥 OVERDRIVE",
+      "overdriveSub": "속도 ×1.3 · 점수 ×2 · 에너지가 저절로 줄어요",
+      "smash": "💥 SMASH!",
+      "plusScore": "+{n}점",
+      "empty": "🪫 에너지 고갈",
+      "emptySub": "3초 안에 깃털을 먹으면 살아나요",
+      "revive": "🪶 살았다!",
+      "owlEnergy": "🦉 아울 에너지 발견!",
+      "owlEnergySub": "게임을 한 판 더 할 수 있어요",
+      "colorBurst": "🌈 PERFECT COLOR CHAIN",
+      "colorBurstSub": "COLOR BURST — 잠시 모든 게이트 자동 통과",
+      "powerReady": "⚡ COLOR POWER 충전!",
+      "powerReadySub": "Q / 스킬 버튼 — 🔴 BREAKER · 🔵 FREEZE · 🟣 PHANTOM",
+      "skill": {
+        "breaker": "💥 BREAKER",
+        "freeze": "❄️ FREEZE",
+        "phantom": "👻 PHANTOM"
+      },
+      "skillSub": {
+        "breaker": "앞의 장애물을 전부 부숴요",
+        "freeze": "시간이 느려져요",
+        "phantom": "잠시 모든 걸 통과해요"
+      },
+      "fever": "🦉🔥 OWL FEVER 🔥🦉",
+      "feverSub": "점수 ×3 · 에너지 절약 · 아이템 흡수",
+      "legend": {
+        "rage": "★ LEGENDARY — 🔥 RAGE",
+        "phantom": "★ LEGENDARY — 💜 PHANTOM",
+        "crown": "★ LEGENDARY — 👑 CROWN"
+      },
+      "event": {
+        "laser": "🔴 LASER WARNING",
+        "featherRain": "🪶 FEATHER RAIN",
+        "storm": "🌪 STORM",
+        "phantomWorld": "🟣 PHANTOM WORLD",
+        "turbo": "⚡ TURBO MODE",
+        "colorChaos": "🎨 COLOR CHAOS",
+        "glitch": "📺 SCREEN GLITCH",
+        "golden": "🟡 GOLDEN OWL"
+      },
+      "eventSub": {
+        "laser": "초록 띠만 안전해요 — 3 · 2 · 1",
+        "featherRain": "연속으로 먹을수록 +10 → +20 → +30 → +50",
+        "storm": "바람이 부엉이를 밀어내요",
+        "phantomWorld": "5초 무적 · 아이템 점수 ×3",
+        "turbo": "속도 ×1.5 · 거리·아이템 점수 ×2",
+        "colorChaos": "색이 저절로 바뀌어요 — 다시 맞추세요",
+        "glitch": "화면만 깨져요 · 판정은 그대로",
+        "golden": "좁은 틈의 황금 부엉이 +500 — 먹을 것인가?"
+      },
+      "barrage": "⚠ LASER BARRAGE",
+      "barrageSub": "1 → 2 → 3 → 4 순서로 떨어져요",
+      "gravityFlip": "↑ GRAVITY FLIP",
+      "gravityFlipSub": "위로 떨어져요 — 누르면 아래로!",
+      "wave": "🌊 WAVE",
+      "waveSub": "물결이 부엉이를 흔들어요",
+      "choiceHint": "1 · 2 · 3 또는 탭 — {sec}초 뒤 자동 선택",
+      "choice": {
+        "energy": "ENERGY +50",
+        "score": "SCORE ×2",
+        "shield": "SHIELD ×2",
+        "magnet": "MAGNET",
+        "fever": "FEVER +60%",
+        "power": "COLOR POWER",
+        "rainbow": "RAINBOW"
+      },
+      "choiceSub": {
+        "energy": "에너지 즉시 회복",
+        "score": "12초 동안 점수 2배",
+        "shield": "충돌 2번 막기",
+        "magnet": "15초 동안 아이템 흡수",
+        "fever": "피버 게이지 충전",
+        "power": "스킬 바로 충전",
+        "rainbow": "8초 동안 모든 색 통과"
+      }
+    },
+    "survive": {
+      "raw": "{text}",
+      "boss": {
+        "hexa": "육각형",
+        "nona": "구각형",
+        "trideca": "십삼각형",
+        "chrono": "십오각형"
+      },
+      "bossTitle": {
+        "hexa": "레이저",
+        "nona": "포식자",
+        "trideca": "술래잡기",
+        "chrono": "시간을 지배하는 자"
+      },
+      "bossRuleText": {
+        "hexa": "꼭짓점 레이저와 즉사 폭격을 피하세요",
+        "nona": "몬스터를 먹고 커져요 — 때려서 폭발을 늦추세요",
+        "trideca": "콜로세움 안에서, 멀리서 싸우세요",
+        "chrono": "시간을 끌수록 불리해요 — 제한 시간 안에 잡으세요"
+      },
+      "mob": {
+        "tri": "삼각형",
+        "square": "사각형",
+        "circle": "원형",
+        "penta": "오각형 · 돌진",
+        "hepta": "칠각형 · 감속탄",
+        "octa": "팔각형 · 탱커",
+        "deca": "십각형 · 초고속",
+        "hendeca": "십일각형 · 소환",
+        "dodeca": "십이각형 · 강타",
+        "tetradeca": "십사각형 · 재생"
+      },
+      "obstacle": {
+        "rack": "서버랙",
+        "box": "자재 박스",
+        "extinguisher": "소화기",
+        "cable": "배선 더미",
+        "portal": "네온 게이트"
+      },
+      "stageIn": "STAGE {stage} 시작",
+      "stageBanner": "STAGE {stage}",
+      "bossIncoming": "👑 {boss} 접근 중",
+      "newMob": "새 몬스터 — {mob}",
+      "allOut": "총력전 — 모든 도형이 몰려와요",
+      "endless": "무한 단계 — 버틸수록 강해져요",
+      "bossIn": "{boss} 등장",
+      "bossName": "👑 {boss} — {title}",
+      "bossRule": "{rule}",
+      "bossDown": "{boss} 처치!",
+      "finalDown": "⏱️ 십오각형 처치 — 이제부터 무한 진행!",
+      "levelUp": "Lv.{level}  스킬 선택 가능",
+      "crit": "치명타 {dmg}",
+      "hurt": "{dmg} 피해   HP {hp}/{max}",
+      "revive": "HP 0 — 리스폰 프로토콜 발동 (무적 {sec}s)",
+      "failover": "페일오버 클러스터 — 화면 전체 폭발",
+      "down": "HP 0 — 시스템 침해",
+      "lethal": "즉사 판정!",
+      "stealthUsed": "스텔스 캐시 — 피격 1회 무효",
+      "stealthReady": "스텔스 캐시 충전 완료",
+      "dodged": "패킷 손실 — 공격을 흘렸어요",
+      "evolved": "⭐ {name} 진화 완료",
+      "evolution": "진화",
+      "skillUp": "{emoji} {name} Lv{lv}",
+      "skillNew": "{emoji} {name} 획득",
+      "vaccine": "백신 — 체력 +{hp}",
+      "logBomb": "로그 폭탄 — 화면 전체 {dmg} 피해",
+      "obstacleBreak": "{kind} 파괴 → ❤️ +{hp}",
+      "overBoss": "{boss}에게 당했어요",
+      "overMobs": "도형에 포위됐어요",
+      "overTime": "시간 초과 — 최후의 심판",
+      "overCap": "최대 플레이 시간에 도달했어요",
+      "timeUp": "최대 플레이 시간 — 런 종료",
+      "nonaBurst": "구각형 — 포식 폭발!",
+      "nonaArmor": "구각형 — 무적",
+      "nonaArmorSub": "노란 꼭짓점 쪽에서만 공격이 들어가요",
+      "nonaBuff": "구각형 — 몬스터 {n}마리 강화",
+      "triDash": "십삼각형 — {n}차 돌진",
+      "doom": "콜로세움 밖으로!",
+      "doomSub": "보스가 갈라져요 — 밖에 있어야 살아요",
+      "blackhole": "블랙홀 — 초록 안전 장판을 찾으세요",
+      "judgement": "최후의 심판",
+      "judgementSub": "초침이 12시를 가리키면…",
+      "timeResume": "시간이 다시 흐른다!",
+      "reverse": "시간 역주행",
+      "reverseSub": "전장의 시간이 되돌아가요 (내 성장은 그대로)",
+      "reverseLog": "시간 역주행 — 몬스터 {n} · 장애물 {o} 복원",
+      "bombHalf": "시한폭탄 폭발 — 체력 절반!",
+      "bombs": "시한폭탄 — 부수지 못하면 체력 절반",
+      "rewind": "시간 역행",
+      "rewindSub": "보스 체력이 과거로 돌아가요",
+      "timeStop": "시간 정지",
+      "timeStopSub": "틱…",
+      "clock": "시간의 시계",
+      "clockSub": "12시 · 6시 방향에서만 맞아요",
+      "clones": "시간의 분신",
+      "clonesSub": "진짜는 하나 — 분신은 30초 뒤 자폭해요",
+      "ui": {
+        "title": "아울 서바이버즈",
+        "tagline": "끝없이 펼쳐지는 전장에서 살아남아라",
+        "start": "게임 시작",
+        "theme": "화면",
+        "themeDark": "🌙 다크 (네온)",
+        "themeLight": "☀️ 라이트",
+        "best": "최고 기록 STAGE {stage}",
+        "controls": "PC: WASD · 모바일: 가상 조이스틱 — 공격은 자동",
+        "bosses": "보스 — 5 육각형 · 8 구각형 · 12 십삼각형 · 15 십오각형",
+        "stage": "STAGE {stage}",
+        "kill": "KILL {n}",
+        "level": "Lv.{level}",
+        "next": "다음 단계 {sec}초",
+        "bossFight": "보스를 잡아야 넘어가요",
+        "limit": "⏳ {time}",
+        "rage": "분노",
+        "fuse": "💣 {sec}초",
+        "endless": "♾️ 무한",
+        "hint": "이동만 하면 공격은 자동",
+        "rotate": "가로로 돌려주세요",
+        "rotateSub": "아울 서바이버즈는 가로 화면 전용이에요 (게임은 멈춰 있어요)",
+        "over": "☠️ 게임 오버",
+        "reached": "STAGE {stage} 도달",
+        "paused": "레벨업 카드 선택 중 — 게임 정지",
+        "canvas": "아울 서바이버즈 게임 화면",
+        "go": "GO!"
+      },
+      "guide": {
+        "open": "가이드",
+        "title": "게임 가이드",
+        "close": "시작 화면으로",
+        "tabs": {
+          "skills": "🗡️ 스킬",
+          "mobs": "🔺 몬스터",
+          "bosses": "👑 보스"
+        },
+        "rules": {
+          "title": "스킬 규칙",
+          "slots": "슬롯은 액티브 {active}칸 · 패시브 {passive}칸",
+          "level": "레벨업하면 카드 {choices}장 중 1장을 골라요 — 같은 스킬을 또 고르면 레벨 +1 (Lv{max}가 MAX)",
+          "evo": "액티브 Lv{active}(MAX) + 짝 패시브 Lv{passive} 이상이면 다음 레벨업에 ⭐ 진화 카드가 1번 자리에 떠요",
+          "reroll": "리롤 {reroll}회 · 스킵 {skip}회 (스킵하면 경험치 {xp}%를 바로 얻어요)"
+        },
+        "synergy": {
+          "title": "속성 연계",
+          "slowElectric": "❄️ 둔화된 적에게 ⚡ 전기 피해 → 피해 ×2",
+          "burnExplosion": "🔥 화상 입은 적에게 💥 폭발 → 주변 적에게 화상이 번져요",
+          "pullAoe": "🕳️ 빨려 들어가는 적에게 광역기 → 피해 ×1.5",
+          "markPierce": "🎯 표식 찍힌 적에게 관통 공격 → 치명타 확정"
+        },
+        "active": "🗡️ 액티브 {n}종",
+        "activeSub": "자동으로 발동하는 공격 스킬 — 레벨마다 피해 +25% · 쿨다운 -8%",
+        "passive": "🧠 패시브 {n}종",
+        "passiveSub": "능력치를 올려 주는 스킬 — 적힌 효과는 레벨당 수치예요. ⭐ 표시는 진화 재료",
+        "evolution": "⭐ 진화 {n}종",
+        "evolutionSub": "액티브 MAX + 짝 패시브를 모으면 나타나는 강화판",
+        "cd": "쿨 {sec}초",
+        "always": "상시",
+        "onKill": "{n}킬마다",
+        "starter": "시작 스킬",
+        "evoHint": "⭐ 진화 → {evo} (짝: {req})",
+        "feeds": "진화 재료: {list}",
+        "recipe": "{base} MAX + {req} Lv{lv}",
+        "mobsIntro": "단계마다 새 도형이 하나씩 풀리고, 앞 단계 도형도 계속 섞여 나와요. 보스가 없는 단계는 {sec}초 버티면 넘어가고, 단계가 오를 때마다 몬스터 체력 +{hp}% · 공격력 +{atk}%씩 강해져요.",
+        "flow": "단계 흐름",
+        "flowNote": "14단계는 보스 없이 모든 도형이 몰려오는 총력전({allOut}초). 15단계 십오각형을 잡으면 무한 단계로 넘어가고, 이후 {every}단계마다 십오각형이 다시 와요.",
+        "stageAt": "STAGE {stage}부터",
+        "special": "특수",
+        "maxAlive": "최대 {n}마리",
+        "hp": "체력",
+        "speed": "속도",
+        "dmg": "공격",
+        "mob": {
+          "tri": "가장 기본 잡몹. 시작 스킬 한 방에 쓰러져요.",
+          "square": "삼각형보다 두 배 단단하지만 느려요.",
+          "circle": "빠르게 쫓아오는 추적자. 체력은 삼각형과 사각형 사이.",
+          "penta": "{windup}초 동안 방향 예고선을 그은 뒤 돌진해요 (쿨 {cd}초). 돌진은 장애물을 부수고, 닿으면 {dmg} 피해.",
+          "hepta": "{cd}초마다 네 방향으로 감속탄을 쏴요. 맞으면 {sec}초 동안 이동속도 ×{mult}.",
+          "octa": "사각형보다 두 배 단단한 탱커. 느리지만 잘 안 죽어요.",
+          "deca": "원형보다 두 배 빨라요. 체력은 아주 낮으니 닿기 전에 잡으세요.",
+          "hendeca": "거리를 두고 버티며 {cd}초마다 삼각형·사각형·원형을 {n}마리씩 불러요. 보이면 먼저 잡으세요.",
+          "dodeca": "느리고 약하지만 한 대가 아주 아파요. 절대 몸으로 받지 마세요.",
+          "tetradeca": "가장 단단하고 가장 느려요. 매초 최대 체력의 {pct}%를 회복해요 (초록 링)."
+        },
+        "bossesIntro": "보스 단계는 보스를 잡아야 넘어가요. 즉사 공격 앞에는 항상 경고 원·경고선이 먼저 떠요 — ❤️‍🩹 부활 패시브는 즉사도 막아 줘요(최후의 심판 제외). 보스를 잡으면 화면의 경험치를 전부 빨아들여요.",
+        "bossStage": "STAGE {stage}",
+        "chronoStage": "STAGE {stage} · 이후 {every}단계마다 (체력 +{hp}%)",
+        "bossHp": "체력 {hp}",
+        "pattern": {
+          "hexa": {
+            "laser": {
+              "name": "꼭짓점 레이저",
+              "text": "꼭짓점 6곳에서 바깥으로 레이저를 쏴요. {warn}초 전에 경고선이 떠요. 체력 절반 이하면 두 겹으로 쏴요."
+            },
+            "bomb": {
+              "name": "즉사 폭격",
+              "text": "빨간 경고 원 {bombs}개(하나는 꼭 발밑) → {bombWarn}초 뒤 폭발. 맞으면 즉사! 체력 절반 이하면 개수가 늘어요."
+            }
+          },
+          "nona": {
+            "eat": {
+              "name": "포식",
+              "text": "주변 몬스터를 빨아들여 먹고 커져요 (최대 체력 ×{cap}까지). 포식 게이지가 차면 탄 {bullets}발과 함께 폭발해요. 때리면 게이지가 줄어요."
+            },
+            "armor": {
+              "name": "무적 · 약점",
+              "text": "체력 {armor}% 이하부터 무적. 노란 꼭짓점 쪽에서 들어오는 공격만 통해요. 약점은 {move}초마다 옮겨 가니 보스 주위를 도세요."
+            },
+            "buff": {
+              "name": "몬스터 강화",
+              "text": "{buffCd}초마다 주변 몬스터의 체력 ×{buffHp} · 공격력 ×{buffDmg} (보라 테두리)."
+            },
+            "shot": {
+              "name": "비례 탄",
+              "text": "{shotCd}초마다 {spread}갈래 탄. 보스 체력이 많을수록 탄이 크고 아파요."
+            }
+          },
+          "trideca": {
+            "arena": {
+              "name": "콜로세움",
+              "text": "등장하면 콜로세움이 생기고 다른 몬스터는 모두 사라져요. 경계 밖에 있으면 점점 커지는 지속 피해."
+            },
+            "dash": {
+              "name": "3연속 돌진",
+              "text": "{dashCd}초마다 직선 → 가로+세로 → 가로+세로+대각선으로 돌진해요. 돌진 {dashWarn}초 전에 경로가 표시돼요."
+            },
+            "laser": {
+              "name": "4방향 레이저",
+              "text": "{laserCd}초마다 위에서 떨어지듯 좁아지는 경고선 뒤에 발사. 지나간 자리에 🔴 밟으면 즉사 · 🔵 감속 장판이 {tile}초 남아요."
+            },
+            "doom": {
+              "name": "붕괴",
+              "text": "체력 {doom}% 이하에서 {doomCount}회, 보스가 갈라지는 {doomWarn}초 안에 콜로세움 밖으로 나가야 살아요."
+            },
+            "near": {
+              "name": "근접 페널티",
+              "text": "보스 {nearR}px 안에 오래 있을수록 느려져요 (최저 ×{nearMin}). 멀리서 싸우는 게 핵심."
+            },
+            "hole": {
+              "name": "블랙홀",
+              "text": "{holeWarn}초 경고 뒤 {holeLife}초 동안 {holeEvery}초마다 끌어당겨요. 초록 안전 장판 위에서는 버틸 수 있어요."
+            },
+            "slow": {
+              "name": "술래의 발",
+              "text": "매우 빠르지만 맞을수록 느려져요. 계속 때려서 발을 묶으세요."
+            }
+          },
+          "chrono": {
+            "time": {
+              "name": "제한 시간",
+              "text": "{limit}분 안에 잡아야 해요 (다시 올 때마다 +{step}분). 싸움이 길어질수록 보스의 체력·공격력·속도·패턴 빈도가 올라가요."
+            },
+            "rewind": {
+              "name": "시간 역행",
+              "text": "체력 {rewind}% 이하에서 한 번, {back}초 전 체력으로 되돌아가요."
+            },
+            "homing": {
+              "name": "시간 추적탄",
+              "text": "{homingCd}초마다 {homingN}발. 가까울수록 빨라지고 {homingLife}초 뒤 터져요."
+            },
+            "rain": {
+              "name": "시간 폭격",
+              "text": "발밑을 포함한 경고 원이 떨어져요. 시간이 갈수록 경고는 짧아지고 개수는 늘어요."
+            },
+            "bombs": {
+              "name": "시한폭탄",
+              "text": "{bombEvery}초마다 보스 주위를 도는 폭탄 {bombN}개. {fuse}초 안에 못 부수면 현재 체력의 절반을 잃어요."
+            },
+            "clones": {
+              "name": "시간의 분신",
+              "text": "분신 {cloneN}체가 나와요. 약하지만 공격력이 매우 높아요. {cloneLife}초 뒤 자폭하고, 진짜도 자리를 바꿔요."
+            },
+            "rage": {
+              "name": "시간의 분노",
+              "text": "게이지가 시간에 따라 올라 새로 나오는 몬스터가 강해져요. 경험치를 먹으면 게이지가 줄어요."
+            },
+            "clock": {
+              "name": "시간의 시계",
+              "text": "체력 {clock}% 이하부터 12시·6시 방향에서만 공격이 들어가요 ({clockOn}초 켜짐 / {clockOff}초 꺼짐)."
+            },
+            "stop": {
+              "name": "시간 정지",
+              "text": "{stopCd}초마다 {stopSec}초간 보스·몬스터·탄이 멈춰요 (나는 움직일 수 있어요). 풀리는 순간 주변 폭격 + 탄 가속 + 몬스터 돌진!"
+            },
+            "reverse": {
+              "name": "시간 역주행",
+              "text": "체력 {reverse}%에서 최근 처치한 몬스터·부순 장애물·폭격이 되살아나요. 내 레벨·스킬은 그대로."
+            },
+            "judgement": {
+              "name": "최후의 심판",
+              "text": "제한 시간이 끝나면 화면이 흑백이 되고, {judge}초 뒤 초침이 12시에 닿으면 즉사. 부활로도 못 막아요."
+            }
+          }
+        }
+      }
+    },
+    "owlis": {
+      "raw": "{text}",
+      "score": "SCORE",
+      "aiLevel": "AI LEVEL",
+      "time": "TIME",
+      "next": "NEXT",
+      "hold": "HOLD",
+      "attack": "ATTACK",
+      "feverGauge": "FEVER",
+      "fever": "OWL FEVER!",
+      "feverOn": "OWL FEVER!",
+      "you": "PLAYER",
+      "ai": "AI",
+      "comboPop": "{n} COMBO",
+      "rebootField": "REBOOT…",
+      "canvas": "아울리스 게임 화면 — 왼쪽이 내 필드, 오른쪽이 AI 필드",
+      "ready": "READY",
+      "gameOver": "GAME OVER",
+      "timeUpBig": "TIME UP",
+      "counter": "COUNTER!",
+      "counterSub": "{n}연쇄로 받아쳤다",
+      "emergency": "EMERGENCY CLEAR!",
+      "combo": "{n} COMBO!",
+      "feverSub": "점수·공격력 ×1.5",
+      "ko": "K.O.!",
+      "koSub": "AI 필드가 가득 찼다 — AI가 다시 시작해요",
+      "reboot": "AI REBOOT",
+      "evolved": "AI EVOLVED",
+      "levelNow": "LEVEL {lv}",
+      "hardcore": "WARNING — HARDCORE AI",
+      "hardcoreSub": "ACTIVATED",
+      "learning": "THE OWL IS LEARNING…",
+      "survival": "{min}분 생존!",
+      "plus": "+{n}",
+      "timeUp": "TIME UP",
+      "controls": {
+        "hold": "홀드",
+        "rotL": "반시계 회전",
+        "left": "왼쪽",
+        "soft": "빠르게 내리기",
+        "right": "오른쪽",
+        "rotR": "시계 회전",
+        "hard": "바로 떨어뜨리기"
+      },
+      "menu": {
+        "tagline": "내가 잘할수록 AI도 강해지는 끝없는 퍼즐 대결",
+        "play": "PLAY",
+        "record": "RECORD",
+        "how": "HOW TO PLAY",
+        "best": "최고 점수",
+        "longest": "최장 생존",
+        "maxCombo": "최대 연쇄",
+        "maxLevel": "최고 AI LEVEL",
+        "games": "플레이 수",
+        "rules": [
+          "두 칸짜리 블록을 회전·이동해 쌓아요. 같은 색이 상하좌우로 4개 이상 붙으면 터져요",
+          "터진 자리로 위 블록이 떨어져 또 붙으면 연쇄(COMBO). 연쇄가 길수록 점수 배율과 공격력이 커져요",
+          "공격은 먼저 내게 올 방해 블록(필드 위 빨간 칸)을 지우고, 남으면 AI에게 날아가요",
+          "회색 방해 블록은 옆에서 색 블록이 터질 때 같이 부서져요",
+          "AI는 내 연쇄·공격·위기 상황을 보고 LEVEL 1 → 5 → 5+로 진화해요. 강한 AI일수록 점수 배율이 커져요",
+          "가운데 ✕ 칸까지 차면 GAME OVER. AI 필드를 채우면 K.O. 보너스!"
+        ],
+        "controlsTitle": "조작",
+        "controlsTouch": "📱 드래그 = 좌우 이동 · 탭 = 회전(왼쪽 절반 반시계/오른쪽 절반 시계) · 아래로 끌기 = 빠르게 · 아래로 튕기기 = 바로 떨어뜨리기 · 위로 튕기기 = 홀드 (아래 버튼도 돼요)",
+        "controlsKeys": "⌨️ ← → 이동 · ↓ 빠르게 · ↑/X 회전 · Z 반대 회전 · Space 바로 떨어뜨리기 · C/Shift 홀드",
+        "hint": "PC는 Enter로 바로 시작"
+      }
+    },
+    "chef": {
+      "score": "SCORE",
+      "stage": "STAGE {n}/{max}",
+      "infLevel": "∞ LV {n}",
+      "ordersLeft": "주문 {n}/{max}",
+      "combo": "{n} COMBO",
+      "tickets": "ORDERS",
+      "ticketPick": "테이블이나 접시를 눌러 주문을 골라요",
+      "ticketNone": "빈 테이블",
+      "tableAria": "{n}번 테이블 — {dish}",
+      "tableEmpty": "빈 테이블",
+      "bugTag": "BUG!",
+      "plateAria": "{n}번 접시",
+      "plateInTool": "{tool}에서 조리 중",
+      "plateWrong": "⚠ 순서가 틀렸어요 — 되돌리기",
+      "serve": "제출",
+      "plateEmpty": "재료를 올려요",
+      "plateSelect": "눌러서 선택",
+      "finStep": "{tool}: {verb}",
+      "wrongLine": "⚠ {n}번째 줄이 레시피와 달라요 — 되돌리기(↩)로 고쳐요",
+      "slotAria": "{tool} {n}번 칸",
+      "undo": "되돌리기",
+      "trash": "비우기",
+      "stageClearSub": "STAGE {n} CLEAR",
+      "infSub": "이제부터 30초마다 더 바빠져요. 얼마나 버틸 수 있을까?",
+      "newTool": "NEW 도구 — {name}",
+      "newDish": "NEW 메뉴 — {name}",
+      "infUp": "손님이 더 빨리, 더 까다롭게",
+      "closingSub": "영업 시간이 끝났어요 — 수고했어요!",
+      "rejectBug": "버그가 있는 테이블에 냈어요",
+      "rejectCompile": "레시피와 달라요",
+      "need": "다음 재료: {item}",
+      "systemSub": "잠시 모든 테이블에 제출 금지!",
+      "bugTable": "🐛 {n}번 테이블에 버그가 와요 — 잠깐 다른 주문부터!",
+      "bugTool": "🐛 {tool}에 버그가 와요 — 잠깐 못 써요",
+      "blocked": {
+        "full": "도구가 꽉 찼어요",
+        "bug": "🐛 버그 때문에 못 써요",
+        "busy": "아직 조리 중이에요",
+        "noPlate": "먼저 주문(접시)을 골라요",
+        "raw": "손질부터 해야 해요 — 재료를 탭하면 도구로 가요",
+        "wrong": "순서가 틀렸어요 — 되돌리기(↩)로 고쳐요",
+        "notDone": "아직 레시피가 덜 끝났어요",
+        "cantUndo": "조리한 건 되돌릴 수 없어요 — 비우기(🗑)",
+        "locked": "아직 쓸 수 없어요",
+        "inTool": "접시가 조리 중이에요",
+        "wrongTool": "그 재료는 이 도구에 넣지 않아요 — 재료 칸의 🔪🍳 표시를 봐요",
+        "otherTable": "요리는 주문한 테이블에만 낼 수 있어요"
+      },
+      "tools": {
+        "board": "도마",
+        "pan": "프라이팬",
+        "pot": "냄비",
+        "oven": "오븐",
+        "mixer": "믹서"
+      },
+      "verbs": {
+        "fry": "튀기기",
+        "grill": "굽기",
+        "boil": "끓이기",
+        "noodle": "삶기",
+        "stir": "볶기",
+        "bake": "굽기",
+        "freeze": "얼리기",
+        "toss": "버무리기",
+        "mix": "섞기",
+        "roll": "말기",
+        "fold": "접기"
+      },
+      "items": {
+        "bun": "빵",
+        "sausage": "소시지",
+        "patty": "패티",
+        "cheese": "치즈",
+        "lettuce": "상추",
+        "sauce": "소스",
+        "potato": "감자",
+        "spice": "양념",
+        "tomato": "토마토",
+        "onion": "양파",
+        "ham": "햄",
+        "noodle": "면",
+        "egg": "계란",
+        "chicken": "닭",
+        "batter": "반죽",
+        "cream": "크림",
+        "berry": "딸기",
+        "syrup": "시럽",
+        "meat": "고기",
+        "rice": "밥",
+        "seaweed": "김",
+        "fish": "생선"
+      },
+      "labels": {
+        "ketchup": "케첩",
+        "dressing": "드레싱",
+        "salt": "소금",
+        "bread": "식빵",
+        "soup": "스프",
+        "seasoning": "시즈닝",
+        "hot": "핫소스",
+        "decor": "장식",
+        "dough": "도우",
+        "tomatoSauce": "토마토소스",
+        "topping": "토핑",
+        "cloud": "구름 크림",
+        "tortilla": "또띠아",
+        "beef": "고기",
+        "bacon": "베이컨",
+        "veggie": "채소",
+        "coat": "튀김옷",
+        "vinegar": "식초",
+        "soy": "간장",
+        "curry": "카레",
+        "broth": "육수",
+        "meatSauce": "고기소스",
+        "cheeseSauce": "치즈소스",
+        "salsa": "살사"
+      },
+      "recipes": {
+        "hotdog": "변수 핫도그",
+        "burger": "디버그 버거",
+        "fries": "코드 프라이",
+        "salad": "배열 샐러드",
+        "toast": "컴파일 토스트",
+        "sandwich": "클래스 샌드위치",
+        "ramen": "루프 라면",
+        "wings": "API 핫윙",
+        "pancake": "스택 팬케이크",
+        "cake": "큐 케이크",
+        "steak": "포인터 스테이크",
+        "pizza": "데이터 피자",
+        "spaghetti": "서버 스파게티",
+        "icecream": "클라우드 아이스크림",
+        "taco": "프레임워크 타코",
+        "donburi": "SQL 스테이크 덮밥",
+        "gitpasta": "Git 파스타",
+        "omelet": "스레드 오믈렛",
+        "gimbap": "JSON 김밥",
+        "chicken": "컴퓨터 치킨",
+        "sushi": "알고리즘 초밥",
+        "curry": "리눅스 카레",
+        "hotpot": "네트워크 핫팟",
+        "lasagna": "백엔드 라자냐",
+        "fullstack": "풀스택 코스요리"
+      },
+      "menu": {
+        "slogan": "COOK THE CODE · AVOID THE BUG",
+        "tagline": "코딩 음식 25종을 시간 안에 요리하고, 버그를 피해 최고 점수를 노려요",
+        "play": "PLAY",
+        "record": "RECORD",
+        "how": "HOW TO PLAY",
+        "best": "최고 점수",
+        "bestStage": "최고 단계",
+        "maxCombo": "최대 콤보",
+        "games": "플레이 수",
+        "rules": [
+          "손님이 앉으면 주문이 떠요. 테이블 아래 접시를 골라 코드 티켓의 순서대로 재료를 쌓아요",
+          "🔪🍳 표시가 붙은 재료는 탭하면 도구로 가요. 다 되면(✓) 도구를 탭해 선택된 접시에 올려요",
+          "▶ 표시가 뜬 접시를 한 번 더 누르면 도구에 넣거나(마무리) 손님에게 제출해요",
+          "순서를 틀리면 되돌리기(↩)나 비우기(🗑)로 고쳐요. 도구 칸에 잘못 올린 재료는 🗑 로 끌어 버려요. 틀린 요리를 내면 CompileError!",
+          "🐛 버그가 앉은 테이블엔 내지 마세요 — 요리를 버리고 콤보가 끊겨요. 버그는 곧 사라져요",
+          "주문을 처리할수록 STAGE 가 올라 한 단계에 새 메뉴가 하나씩 · 도구·손님도 늘어나요. 25단계의 풀스택 코스요리를 내면 ∞ 무한 영업",
+          "손님 한 명이라도 기다리다 지치면(인내도 0) GAME OVER"
+        ],
+        "controlsTitle": "조작",
+        "controlsTouch": "📱 탭 = 한 단계 · 재료나 다 된 재료를 원하는 접시로 끌어 놓기 · 접시를 도구·테이블로 끌어 놓기",
+        "controlsKeys": "⌨️ 1·2·3 접시 · Space 다음 행동(제출·마무리) · Q W E R T 도구 · 재료 칸의 글자 키 · Backspace 되돌리기 · Delete 비우기 · Esc 일시정지",
+        "hint": "PC는 Enter로 바로 시작",
+        "home": "로비로",
+        "settings": "설정"
+      },
+      "waitCourse": "풀스택 코스요리를 내면 ∞",
+      "trashHint": "선택한 접시 비우기 · 도구 칸 재료를 끌어 놓으면 버려요",
+      "pause": {
+        "title": "PAUSED",
+        "note": "시간이 멈췄어요. Esc 를 다시 누르거나 아래 버튼으로 계속해요",
+        "resume": "계속하기"
+      }
+    }
+  },
+  "music": {
+    "volume": "배경음악 음량",
+    "mute": "배경음악 끄기",
+    "unmute": "배경음악 켜기"
+  },
+  "about": {
+    "title": "제작진 · 안내",
+    "subtitle": "만든 사람들, 개인정보 처리 방침, 경품 안내",
+    "back": "돌아가기",
+    "link": "제작진 · 개인정보 · 경품 안내",
+    "updated": "2026년 9월 27일 기준",
+    "credits": {
+      "label": "credits --team",
+      "title": "만든 사람들",
+      "rows": [
+        {
+          "role": "게임 제작팀",
+          "name": "성공회대학교 IT동아리 S.OWL"
+        },
+        {
+          "role": "총괄",
+          "name": "윤승호"
+        },
+        {
+          "role": "이미지 · 기획",
+          "name": "ChatGPT"
+        },
+        {
+          "role": "개발",
+          "name": "Claude"
+        },
+        {
+          "role": "음악 제작",
+          "name": "SUNO"
+        },
+        {
+          "role": "서버 · 서비스",
+          "name": "AWS + 메가존클라우드"
+        },
+        {
+          "role": "효과음",
+          "name": "Kenney (CC0) · WebAudio 합성"
+        },
+        {
+          "role": "글꼴",
+          "name": "Pretendard · JetBrains Mono (OFL)"
+        }
+      ],
+      "note": "이 게임은 수익을 목적으로 두지 않습니다. 성공회대학교 S.OWL 부스 행사를 위해 만든 비영리 프로젝트예요."
+    },
+    "privacy": {
+      "label": "privacy --policy",
+      "title": "개인정보 처리 방침",
+      "intro": "행사를 굴리는 데 꼭 필요한 것만 받고, 행사가 끝나면 지웁니다.",
+      "items": [
+        {
+          "title": "받는 것",
+          "body": "이름, 학번, 비밀번호, 게임 기록(점수 · 플레이 시간 · 도달 단계), 포인트 · 레벨 · 랭크, 뽑기 티켓과 당첨 내역, 접속 기기 종류. 전화번호 · 이메일 · 주소 · 결제 정보는 받지 않습니다."
+        },
+        {
+          "title": "쓰는 이유",
+          "body": "학생증과 대조해 본인을 확인하고, 순위와 포인트를 계산하고, 경품을 지급 · 관리하고, 부정 이용을 막기 위해서입니다. 그 밖의 용도로는 쓰지 않습니다."
+        },
+        {
+          "title": "법적 근거",
+          "body": "가입할 때 받은 동의에 따릅니다 (개인정보 보호법 제15조 제1항 제1호). 동의는 언제든 철회할 수 있고, 철회하면 계정과 기록이 삭제됩니다."
+        },
+        {
+          "title": "비밀번호",
+          "body": "Supabase 인증이 해시(되돌릴 수 없는 형태)로 저장합니다. 운영진도 원문을 볼 수 없어요. 잊어버리면 재설정이 아니라 계정을 지우고 다시 가입해야 합니다."
+        },
+        {
+          "title": "남에게 보이는 것",
+          "body": "랭킹과 부스 전광판에는 가운데 글자를 가린 이름만 나옵니다(예: 홍*동). 학번과 기록 상세는 본인과 운영진만 볼 수 있습니다."
+        },
+        {
+          "title": "맡겨 둔 곳",
+          "body": "데이터베이스와 인증은 Supabase, 서비스 운영은 AWS와 메가존클라우드를 이용합니다. 서버가 국외에 있을 수 있습니다. 이 밖의 제3자에게 제공하거나 판매하지 않습니다."
+        },
+        {
+          "title": "보관 기간",
+          "body": "행사가 끝난 뒤 30일 안에 계정과 기록을 모두 지웁니다. 원하면 그 전에도 바로 지워 드립니다."
+        },
+        {
+          "title": "내 권리",
+          "body": "열람 · 정정 · 삭제 · 처리 정지를 요청할 수 있습니다. 부스에 오시면 그 자리에서 처리해 드립니다."
+        },
+        {
+          "title": "쿠키",
+          "body": "로그인 세션과 언어 · 화면 설정만 저장합니다. 광고나 행동 추적을 위한 쿠키는 쓰지 않고, 외부 분석 도구도 붙이지 않았습니다."
+        },
+        {
+          "title": "나이",
+          "body": "만 14세 미만은 가입할 수 없습니다."
+        }
+      ],
+      "contactTitle": "개인정보 문의",
+      "contact": "총괄 윤승호 (성공회대학교 IT동아리 S.OWL) · S.OWL 부스 또는 동아리 연락처로 문의해 주세요."
+    },
+    "prizes": {
+      "label": "prizes --terms",
+      "title": "경품 · 뽑기 안내",
+      "intro": "참가비도 결제도 없습니다. 경품은 동아리가 부스에서 무상으로 드립니다.",
+      "items": [
+        {
+          "title": "무료 참여",
+          "body": "참가비가 없고 게임 안에 결제 수단이 없습니다. 포인트나 티켓을 돈으로 살 수 없고, 운영진은 이 게임으로 어떤 수익도 얻지 않습니다."
+        },
+        {
+          "title": "확률 공개",
+          "body": "모든 등수의 확률과 꽝 확률을 티켓 화면에 상시 공개합니다. 확률은 티켓을 얻은 랭크(티어) 기준이고, 추첨은 서버에서 난수로만 이뤄져 사람이 결과에 개입할 수 없습니다."
+        },
+        {
+          "title": "재고",
+          "body": "재고가 0인 등수는 추첨에서 빠지고 그 확률은 꽝으로 처리됩니다. 재고가 모두 나가면 경품 행사가 먼저 끝날 수 있습니다."
+        },
+        {
+          "title": "수령",
+          "body": "경품은 행사 시간 안에 부스 현장에서만 받을 수 있습니다. 현금이나 다른 상품으로 바꾸거나 남에게 넘길 수 없고, 수령하지 않은 경품은 행사 종료와 함께 사라집니다."
+        },
+        {
+          "title": "제세공과금",
+          "body": "경품 가액이 건당 5만 원을 넘으면 소득세법상 기타소득에 해당해 제세공과금(22%)이 생길 수 있습니다. 해당하는 경품은 받으실 때 따로 안내해 드립니다."
+        },
+        {
+          "title": "부정 이용",
+          "body": "자동화 도구, 데이터 조작, 타인 계정 사용이 확인되면 경품 지급이 거부되고 계정이 잠깁니다. 이상 기록은 지급 전에 운영진이 확인합니다."
+        },
+        {
+          "title": "사행성이 아닙니다",
+          "body": "돈을 내고 참여하는 구조가 아니며, 확률형 아이템을 판매하지 않습니다. 게임을 해서 얻은 티켓으로 부스에서 한 번 뽑는 학내 행사용 이벤트입니다."
+        },
+        {
+          "title": "문의 · 이의",
+          "body": "추첨 결과나 경품에 이의가 있으면 부스 운영진에게 말씀해 주세요. 모든 추첨 기록은 서버에 남아 있어 확인할 수 있습니다."
+        }
+      ]
+    },
+    "legal": {
+      "label": "notice --misc",
+      "title": "그 밖의 안내",
+      "items": [
+        {
+          "title": "서비스",
+          "body": "학내 비영리 행사용 서비스라 예고 없이 멈추거나 점검할 수 있습니다. 고의나 중대한 과실이 없는 한 이용으로 생긴 손해에 대해 책임지지 않습니다."
+        },
+        {
+          "title": "저작권",
+          "body": "음악은 SUNO, 그림은 ChatGPT로 만들었고 일부 효과음은 Kenney의 CC0 에셋입니다. 글꼴은 Pretendard와 JetBrains Mono(둘 다 OFL)를 씁니다. 문서에 나오는 상표는 각 소유자의 것입니다."
+        },
+        {
+          "title": "이용 수칙",
+          "body": "본인 계정으로만 플레이해 주세요. 다른 사람의 학번으로 가입하거나 계정을 빌려 주는 것은 안 됩니다."
+        }
+      ]
+    }
+  },
+  "club": {
+    "label": "S.OWL RECRUIT",
+    "title": "지금 한번 동아리에 가입해보세요!",
+    "body": "이 게임을 만든 성공회대학교 IT동아리 S.OWL 에서 함께할 부원을 찾고 있어요. 개발 · 보안 · 게임, 뭐든 좋아요.",
+    "cta": "동아리 신청하기"
   }
 }

@@ -37,9 +37,39 @@ export function solidRects(e: Entity, worldX: number, size: SizeKey, timeSec = 0
       const r = CFG.entity.bugR;
       return [{ x: worldX - r, y: y - r, w: r * 2, h: r * 2 }];
     }
+    case "mover":
+    case "shifter": {
+      const gapY = gapCenter(e, timeSec);
+      const top = gapY - e.gapH / 2;
+      const bottom = gapY + e.gapH / 2;
+      return [
+        { x: worldX, y: -40, w: CFG.entity.pillarW, h: top + 40 },
+        { x: worldX, y: bottom, w: CFG.entity.pillarW, h: H - bottom + 40 },
+      ];
+    }
+    case "beam":
+      return [{ x: worldX, y: e.y0, w: BEAM_W, h: e.y1 - e.y0 }];
     default:
       return [];
   }
+}
+
+/** 세로 레이저 기둥 폭 */
+export const BEAM_W = 16;
+
+/** 가짜 틈이 옮겨 가는 데 걸리는 시간 */
+export const SHIFT_SEC = 0.35;
+
+/** 움직이는 벽 · 가짜 틈의 통로 중심 (청크 진행 시간 기준 — 검증·봇·렌더가 같은 값을 본다) */
+export function gapCenter(e: Extract<Entity, { t: "mover" | "shifter" }>, timeSec: number): number {
+  if (e.t === "mover") {
+    const mid = (e.gapY0 + e.gapY1) / 2;
+    const amp = (e.gapY1 - e.gapY0) / 2;
+    return mid + amp * Math.sin((2 * Math.PI * timeSec) / e.period + e.phase);
+  }
+  const k = Math.max(0, Math.min(1, (timeSec - e.switchT) / SHIFT_SEC));
+  const ease = k * k * (3 - 2 * k);
+  return e.gapA + (e.gapB - e.gapA) * ease;
 }
 
 export function bugY(e: Extract<Entity, { t: "bug" }>, timeSec: number): number {
@@ -65,7 +95,21 @@ export function entityWidth(e: Entity): number {
       return CFG.entity.bugR * 2;
     case "item":
       return CFG.entity.itemR * 2;
+    case "mover":
+    case "shifter":
+      return CFG.entity.pillarW;
+    case "zone":
+      return e.w;
+    case "trigger":
+      return 1;
+    case "beam":
+      return BEAM_W;
   }
+}
+
+/** 부딪히면 막히는(즉사 가능) 엔티티인가 */
+export function isSolid(e: Entity): boolean {
+  return e.t !== "item" && e.t !== "gate" && e.t !== "zone" && e.t !== "trigger";
 }
 
 /** 타원 ↔ 사각형 거리. 0이면 겹침 (타원 공간으로 정규화해서 원-사각 거리로 계산) */

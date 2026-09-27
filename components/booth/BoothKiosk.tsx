@@ -12,6 +12,7 @@ import { Card, Chip, TermLabel } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 import { PLACE_EMOJI } from "@/lib/config";
 import { formatCountdown } from "@/lib/format";
+import { playSfx } from "@/lib/sound";
 import { boothDraw, boothLookupCode, boothMarkClaimed } from "@/lib/rpc";
 import { rankInfo } from "@/lib/rank";
 import type { BoothDrawResult, BoothLookup } from "@/lib/types";
@@ -19,6 +20,14 @@ import type { BoothDrawResult, BoothLookup } from "@/lib/types";
 type Step = "input" | "user" | "drawing" | "result";
 
 /** 부스 키오스크 (§8.2) — 태블릿 가로 기준. 결과는 서버 RPC가 준 값만 표시 */
+/** 뽑을 수 없는 이유 (서버 booth_draw 도 같은 이유로 막는다 — 화면은 미리 알려줄 뿐) */
+function blockReason(l: BoothLookup): string | null {
+  if (l.own_code) return "본인 코드예요. 다른 부원이 뽑아주세요";
+  if (l.locked) return "잠긴 계정이에요. 관리자에게 확인하세요";
+  if (l.review_required) return `검토 보류 — ${l.review_reason ?? "포인트 급상승"}. 관리자 확인 후 뽑을 수 있어요`;
+  return null;
+}
+
 export function BoothKiosk() {
   const [tab, setTab] = useState<"draw" | "energy" | "approve">("draw");
   const [step, setStep] = useState<Step>("input");
@@ -63,18 +72,31 @@ export function BoothKiosk() {
     setStep("drawing");
     setGacha("spinning");
     setError(null);
+    playSfx("start");
+    // 집게가 훑는 동안 기계음 (연출이 끝나면 멈춘다)
+    const hum = setInterval(() => playSfx("tick", 0.8), 620);
     const startedAt = Date.now();
     try {
-      const res = await boothDraw(lookup.code, lookup.tier);
-      // 연출은 최소 3초 (§8.2)
-      const wait = Math.max(0, 3000 - (Date.now() - startedAt));
+      const res = await boothDraw(lookup.code);
+      // 집게 연출 한 바퀴(훑기 2.6초 + 내려가 쥐기)가 끝나야 결과를 꺼낸다 (§8.2 — 최소 3초)
+      const wait = Math.max(0, 3600 - (Date.now() - startedAt));
       setTimeout(() => {
+        clearInterval(hum);
+        playSfx("lock");
         setResult(res);
-        setLookup((l) => (l ? { ...l, remaining: res.remaining } : l));
+        setLookup((l) => (l ? { ...l, remaining: res.remaining, tier: res.next_tier ?? l.tier } : l));
         setGacha("reveal");
-        setTimeout(() => setStep("result"), 1200);
+        // 집게가 올라와 캡슐을 배출구에 떨어뜨리는 시간
+        setTimeout(() => {
+          setStep("result");
+          if (res.place == null) playSfx("fail");
+          else if (res.place <= 2) playSfx("legend");
+          else if (res.place <= 4) playSfx("rank");
+          else playSfx("coin");
+        }, 2100);
       }, wait);
     } catch (e) {
+      clearInterval(hum);
       setError(e instanceof Error ? e.message : "추첨에 실패했어요");
       setGacha("idle");
       setStep("user");
@@ -169,10 +191,15 @@ export function BoothKiosk() {
                     <p className="text-3xl font-black">{lookup.name}</p>
                     <p className="num text-lg text-mute">{lookup.student_id}</p>
                     <p className="rank-ink mt-1 font-bold" style={{ color: rankInfo(lookup.rank_idx).colors[0] }}>
-                      {rankInfo(lookup.rank_idx).name} · Lv {lookup.level} · 티어 T{lookup.tier}
+                      {rankInfo(lookup.rank_idx).name} · Lv {lookup.level} · 다음 티켓 T{lookup.tier}
                     </p>
                   </div>
                 </div>
+                {blockReason(lookup) && (
+                  <p className="mt-4 rounded-tile border border-alert/50 bg-alert/10 px-4 py-3 text-center font-bold text-alert">
+                    🚫 {blockReason(lookup)}
+                  </p>
+                )}
                 <div className="mt-4 flex items-center justify-between rounded-tile border border-line bg-night px-4 py-3">
                   <span className="text-sm text-mute">남은 뽑기</span>
                   <span className="num text-2xl font-black text-neon">{lookup.remaining}회</span>
@@ -194,7 +221,7 @@ export function BoothKiosk() {
                   block
                   className="mt-5"
                   onClick={draw}
-                  disabled={!lookup || lookup.remaining <= 0}
+                  disabled={!lookup || lookup.remaining <= 0 || !!blockReason(lookup)}
                 >
                   🎰 뽑기 {lookup && lookup.remaining > 0 ? `(${lookup.remaining}회 남음)` : ""}
                 </Button>
@@ -204,7 +231,21 @@ export function BoothKiosk() {
                 <div className="mt-5 w-full animate-pop text-center">
                   {result.place ? (
                     <>
-                      <p className="text-6xl">{PLACE_EMOJI[result.place - 1]}</p>
+                      <div className="relative mx-auto w-fit">
+                        {result.place <= 2 && (
+                          <>
+                            <span
+                              className="pointer-events-none absolute left-1/2 top-1/2 size-28 -translate-x-1/2 -translate-y-1/2 animate-flash rounded-full bg-amber/70 blur-lg"
+                              aria-hidden
+                            />
+                            <span
+                              className="pointer-events-none absolute left-1/2 top-1/2 size-32 -translate-x-1/2 -translate-y-1/2 animate-pulse-glow rounded-full border-2 border-amber/60"
+                              aria-hidden
+                            />
+                          </>
+                        )}
+                        <p className="relative text-6xl">{PLACE_EMOJI[result.place - 1]}</p>
+                      </div>
                       <p
                         className={cn(
                           "mt-2 text-4xl font-black",
@@ -246,7 +287,7 @@ export function BoothKiosk() {
                         setGacha("idle");
                         setStep("user");
                       }}
-                      disabled={!lookup || lookup.remaining <= 0}
+                      disabled={!lookup || lookup.remaining <= 0 || !!blockReason(lookup)}
                     >
                       다음 뽑기
                     </Button>

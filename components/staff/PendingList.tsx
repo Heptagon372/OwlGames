@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { fetchPendingUsers } from "@/lib/client-queries";
 import { verifyUser } from "@/lib/rpc";
 import { timeAgo } from "@/lib/format";
-import type { PendingUser } from "@/lib/demo";
+import type { PendingUser } from "@/lib/types";
 
 /** 가입 승인 (§11) — 학생증 대조 후 승인. staff 이상 */
 export function PendingList() {

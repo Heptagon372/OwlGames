@@ -28,7 +28,7 @@ export function validateSchema(c: Chunk): string[] {
   }
   if (c.tags.includes("breather") && c.difficulty > 2) push("breather 청크는 difficulty 2 이하여야 함");
 
-  const phaseGap = CFG.phases[c.phase].gapW;
+  const phaseGap = CFG.phaseRef[c.phase].gapW;
   // P0(0~200m)는 "아무 입력도 안 하면 죽지 않는다"를 보장해야 하므로 바닥 차선을 비워둔다 (§16-3)
   const FLOOR_LANE = 500;
   let hasGate = false;
@@ -100,7 +100,7 @@ type PathResult = { ok: boolean; exitReachable: boolean; flapFrames: number; fra
  */
 export function findPath(c: Chunk, size: SizeKey): PathResult {
   const dt = CFG.physics.dt;
-  const scroll = CFG.phases[c.phase].scroll;
+  const scroll = CFG.phaseRef[c.phase].scroll;
   const { rx, ry } = hitbox(size);
   const totalFrames = Math.ceil(c.width / (scroll * dt)) + 2;
   const H = CFG.view.h;
@@ -184,7 +184,7 @@ function hitsAnything(
 /** 아무 입력도 하지 않았을 때 끝까지 살아남는지 (P0 보장용) */
 export function survivesWithoutInput(c: Chunk, size: SizeKey = "M"): boolean {
   const dt = CFG.physics.dt;
-  const scroll = CFG.phases[c.phase].scroll;
+  const scroll = CFG.phaseRef[c.phase].scroll;
   const { rx, ry } = hitbox(size);
   const frames = Math.ceil(c.width / (scroll * dt)) + 2;
   let y = c.entryY;

@@ -1,7 +1,7 @@
 // app_config 키 타입과 기본값 (마이그레이션 시드와 동일).
 // 서버에서 읽지 못하면 이 값으로 화면을 그린다.
 
-import type { GameId } from "./types";
+import type { GameId, OwlEnergy } from "./types";
 import type { LevelCurve } from "./rank";
 
 export type OpenHours = { start: string; end: string; tz: string };
@@ -27,6 +27,9 @@ export type OwlEnergyConfig = {
   drop_daily_cap: number;
 };
 
+/** 포인트 식 (20261007_points_v2 · public.game_points 와 같은 값): 기본 + 분당 × 플레이 분 + 원점수 ÷ K */
+export type GamePoints = { base: number; per_min: Record<GameId, number> };
+
 /** 첫 관리자를 만들 수 있는 학번 (bootstrap_only = 관리자가 한 명도 없을 때만 동작) */
 export type MasterAdmin = { student_ids: string[]; bootstrap_only: boolean };
 
@@ -35,6 +38,7 @@ export type AppConfig = {
   force_open: ForceOpen;
   level_curve: LevelCurve;
   game_k: Record<GameId, number>;
+  game_points: GamePoints;
   game_limits: GameLimits;
   gacha_table: GachaTable;
   booth_location: BoothLocation;
@@ -48,22 +52,24 @@ export const DEFAULT_CONFIG: AppConfig = {
   open_hours: { start: "09:00", end: "18:00", tz: "Asia/Seoul" },
   force_open: "auto",
   level_curve: { base: 30, step: 5 },
-  game_k: { typer: 4, flight: 20, phish: 10, logic: 20, survive: 20, space: 20 },
+  game_k: { flight: 100, survive: 20, owlis: 40, chef: 200 },
+  // 난이도: 아울리스 < 레스토랑 < 서바이버즈 ≤ 아울러닝 → 어려울수록 분당 포인트가 크다
+  game_points: { base: 50, per_min: { owlis: 8, chef: 10, survive: 12, flight: 15 } },
   game_limits: {
-    typer: { min_sec: 10, max_sec: 65 },
     flight: { min_sec: 3, max_sec: 185 },
-    phish: { min_sec: 20, max_sec: 95 },
-    logic: { min_sec: 10, max_sec: 185 },
-    survive: { min_sec: 20, max_sec: 200 },
-    space: { min_sec: 20, max_sec: 200 },
+    survive: { min_sec: 20, max_sec: 2400 },
+    owlis: { min_sec: 10, max_sec: 1800 },
+    chef: { min_sec: 15, max_sec: 1210 },
   },
+  // [1등, 2등, 3등, 4등, 5등, 6등] · 나머지가 꽝 (DB 기본값과 같아야 한다 — §6 · DECISIONS §5-29)
+  // 1등(게이밍 PC) 0.05% → 3% · 6등(젤리) 25% → 40% · 꽝 57.95% → 14%
   gacha_table: {
-    "1": [0.01, 0.5, 3, 10, 20],
-    "2": [0.02, 0.8, 4, 12, 23],
-    "3": [0.03, 1.2, 5, 14, 26],
-    "4": [0.05, 1.6, 6.5, 16, 28],
-    "5": [0.08, 2.2, 8, 18, 30],
-    "6": [0.1, 3.0, 10, 20, 32],
+    "1": [0.05, 0.5, 1.5, 3, 12, 25],
+    "2": [0.1, 0.8, 2, 4, 14, 28],
+    "3": [0.3, 1.2, 3, 5, 16, 31],
+    "4": [0.8, 1.8, 4, 6, 18, 34],
+    "5": [1.5, 2.5, 5, 8, 20, 37],
+    "6": [3, 4, 7, 10, 22, 40],
   },
   booth_location: {
     building: "(미정) 건물",
@@ -98,6 +104,18 @@ export function mergeConfig(rows: { key: string; value: unknown }[] | null | und
   return cfg;
 }
 
+/** 에너지 상태를 못 읽었을 때 보여줄 값 (0개 — 서버가 판정하기 전에는 있다고 가정하지 않는다) */
+export function emptyEnergy(cfg: OwlEnergyConfig): OwlEnergy {
+  return {
+    energy: 0,
+    cap: cfg.cap,
+    hard_cap: cfg.hard_cap,
+    cost: cfg.cost,
+    next_refill_sec: 0,
+    full_in_sec: 0,
+  };
+}
+
 /** 운영시간 판정 (표시용 — 최종 판단은 서버 is_open()) */
 export function isOpenNow(cfg: Pick<AppConfig, "open_hours" | "force_open">, now: Date = new Date()): boolean {
   if (cfg.force_open === "open") return true;
@@ -112,4 +130,4 @@ export function isOpenNow(cfg: Pick<AppConfig, "open_hours" | "force_open">, now
 }
 
 export const PLACE_LABEL = ["1등", "2등", "3등", "4등", "5등"] as const;
-export const PLACE_EMOJI = ["🖥️", "🖱️", "🟫", "🍪", "🍬"] as const;
+export const PLACE_EMOJI = ["🖥️", "🖱️", "⌨️", "🔑", "🍪", "🍬"] as const;

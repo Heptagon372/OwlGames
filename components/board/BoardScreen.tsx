@@ -5,9 +5,8 @@ import { Logo } from "@/components/brand/Logo";
 import { RankBadge } from "@/components/RankBadge";
 import { Ticker } from "@/components/Ticker";
 import { Card } from "@/components/ui/Card";
-import { DEMO_PRIZES } from "@/lib/demo";
 import { fetchLeaderboard, fetchPrizes, fetchStats } from "@/lib/client-queries";
-import { formatNumber, maskName } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { PLACE_EMOJI } from "@/lib/config";
 import type { BoardEvent, BoardStats, LeaderboardRow, PrizeRow } from "@/lib/types";
@@ -46,30 +45,7 @@ export function BoardScreen({
   useEffect(() => {
     const supabase = getBrowserSupabase();
 
-    if (!supabase) {
-      // 데모: 가짜 이벤트를 흘려보낸다
-      const names = ["김민준", "이서연", "박도윤", "최하은", "정시우", "강지아"];
-      let id = 1000;
-      const t = setInterval(() => {
-        const draw = Math.random() < 0.5;
-        const place = 3 + Math.floor(Math.random() * 3);
-        setEvents((prev) =>
-          [
-            {
-              id: id++,
-              kind: draw ? "draw" : "rank_up",
-              masked_name: maskName(names[Math.floor(Math.random() * names.length)]),
-              rank_idx: Math.floor(Math.random() * 17),
-              place: draw ? place : null,
-              prize_name: draw ? DEMO_PRIZES[place - 1].name : null,
-              created_at: new Date().toISOString(),
-            } satisfies BoardEvent,
-            ...prev,
-          ].slice(0, 20),
-        );
-      }, 6000);
-      return () => clearInterval(t);
-    }
+    if (!supabase) return;
 
     const channel = supabase
       .channel("board-feed")

@@ -1,35 +1,41 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, RefreshCw, Save, Search, ShieldCheck, Trash2 } from "lucide-react";
+import { AlertTriangle, Lock, LockOpen, RefreshCw, Save, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { PendingList } from "@/components/staff/PendingList";
 import { RankBadge } from "@/components/RankBadge";
 import { Button } from "@/components/ui/Button";
 import { Card, Chip, TermLabel } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { cn } from "@/lib/cn";
-import { PLACE_EMOJI, type AppConfig, type ForceOpen } from "@/lib/config";
+import { PLACE_EMOJI, type AppConfig, type ForceOpen, type GachaTable } from "@/lib/config";
 import {
   fetchAuditLog,
   fetchPrizes,
   fetchRejectedSessions,
+  fetchReviewQueue,
+  fetchTopSessions,
   fetchUnclaimedDraws,
+  type TopSession,
   fetchUsers,
   type UnclaimedDraw,
 } from "@/lib/client-queries";
 import { formatDateTime, timeAgo } from "@/lib/format";
-import { GAMES } from "@/lib/games";
+import { GameMark } from "@/components/GameLogo";
+import { GAMES, gameTitleKo, isGameId } from "@/lib/games";
 import {
+  clearReview,
   deleteUser,
   fetchAdminStats,
   setConfigValue,
   setForceOpen,
   setStock,
   setUserEnergy,
+  setUserLock,
   setUserRole,
 } from "@/lib/rpc";
 import { formatNumber } from "@/lib/format";
-import type { AdminStats, AuditRow, GameId, GameSessionRow, PrizeRow, Profile, UserRole } from "@/lib/types";
+import type { AdminStats, AuditRow, GameSessionRow, PrizeRow, Profile, UserRole } from "@/lib/types";
 
 const TABS = [
   { key: "dash", label: "대시보드" },
@@ -146,7 +152,7 @@ function DashTab() {
               {stats.games.map((g) => (
                 <tr key={g.game} className="border-b border-line/60 last:border-0">
                   <td className="px-4 py-2.5">
-                    {GAMES[g.game as GameId]?.emoji} {GAMES[g.game as GameId]?.title ?? g.game}
+                    <GameMark game={g.game} className="inline-block h-6 w-9 align-middle" /> {gameTitleKo(g.game)}
                   </td>
                   <td className="num px-2 py-2.5 text-right">{formatNumber(g.plays)}</td>
                   <td className="num px-2 py-2.5 text-right text-neon">{g.avg_pts}</td>
@@ -277,10 +283,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const INPUT = "num min-h-11 w-28 rounded-xl border border-line bg-night px-3 text-right outline-none focus:border-aqua/60";
 
+function isLocked(u: Profile): boolean {
+  return !!u.locked_until && new Date(u.locked_until).getTime() > Date.now();
+}
+
 function UsersTab({ meId }: { meId: string }) {
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState<Profile[]>([]);
   const [target, setTarget] = useState<Profile | null>(null);
+  const [lockTarget, setLockTarget] = useState<Profile | null>(null);
+  const [lockMin, setLockMin] = useState(60);
+  const [lockReason, setLockReason] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (q: string) => {
@@ -297,6 +310,31 @@ function UsersTab({ meId }: { meId: string }) {
       setUsers((list) => list.map((u) => (u.id === user.id ? { ...u, role } : u)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "역할 변경에 실패했어요");
+    }
+  }
+
+  async function changeLock(user: Profile, minutes: number, reason?: string) {
+    try {
+      await setUserLock(user.id, minutes, reason);
+      const until = minutes > 0 ? new Date(Date.now() + minutes * 60_000).toISOString() : new Date().toISOString();
+      setUsers((list) =>
+        list.map((u) =>
+          u.id === user.id ? { ...u, locked_until: until, lock_reason: minutes > 0 ? reason || "관리자 잠금" : null } : u,
+        ),
+      );
+      setLockTarget(null);
+      setLockReason("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "잠금 변경에 실패했어요");
+    }
+  }
+
+  async function finishReview(user: Profile) {
+    try {
+      await clearReview(user.id);
+      setUsers((list) => list.map((u) => (u.id === user.id ? { ...u, review_required: false, review_reason: null } : u)));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "검토 완료 처리에 실패했어요");
     }
   }
 
@@ -339,10 +377,22 @@ function UsersTab({ meId }: { meId: string }) {
               <p className="truncate font-bold">
                 {u.name}
                 {!u.verified && <Chip tone="alert" className="ml-2">미인증</Chip>}
+                {isLocked(u) && <Chip tone="alert" className="ml-2">잠금</Chip>}
+                {u.review_required && <Chip tone="alert" className="ml-2">뽑기 보류</Chip>}
               </p>
               <p className="num text-xs text-mute">
                 {u.student_id} · Lv {u.level} · {u.total_points}P
               </p>
+              {u.review_required && (
+                <p className="truncate text-[11px] text-alert">
+                  {u.review_reason ?? "포인트 급상승"} — 로그 탭에서 판 기록을 보고 판단하세요
+                </p>
+              )}
+              {isLocked(u) && (
+                <p className="truncate text-[11px] text-alert">
+                  {formatDateTime(u.locked_until!)}까지 · {u.lock_reason ?? "사유 없음"}
+                </p>
+              )}
             </div>
             <label className="flex items-center gap-1 text-xs text-mute" title="아울 에너지">
               🦉
@@ -372,6 +422,26 @@ function UsersTab({ meId }: { meId: string }) {
               <option value="staff">staff</option>
               <option value="admin">admin</option>
             </select>
+            {u.review_required && (
+              <Button variant="outline" size="sm" onClick={() => finishReview(u)} aria-label={`${u.name} 검토 완료`}>
+                <ShieldCheck className="size-4" />
+              </Button>
+            )}
+            {isLocked(u) ? (
+              <Button variant="outline" size="sm" onClick={() => changeLock(u, 0)} aria-label={`${u.name} 잠금 해제`}>
+                <LockOpen className="size-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLockTarget(u)}
+                disabled={u.id === meId}
+                aria-label={`${u.name} 잠금`}
+              >
+                <Lock className="size-4" />
+              </Button>
+            )}
             <Button variant="danger" size="sm" onClick={() => setTarget(u)} disabled={u.id === meId}>
               <Trash2 className="size-4" />
             </Button>
@@ -379,6 +449,40 @@ function UsersTab({ meId }: { meId: string }) {
         ))}
         {users.length === 0 && <p className="px-4 py-10 text-center text-sm text-dim">결과가 없어요</p>}
       </Card>
+
+      <Modal open={lockTarget !== null} onClose={() => setLockTarget(null)} title="플레이를 잠글까요?">
+        <p className="text-sm leading-relaxed text-mute">
+          <span className="font-bold text-ink">
+            {lockTarget?.name} ({lockTarget?.student_id})
+          </span>
+          {" "}계정은 잠긴 동안 게임을 시작·제출할 수 없어요. 진행 중이던 판도 닫혀요. 포인트·티켓은 그대로예요.
+        </p>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {[
+            [60, "1시간"],
+            [60 * 24, "하루"],
+            [60 * 24 * 7, "7일"],
+          ].map(([m, label]) => (
+            <Button key={m} variant={lockMin === m ? "primary" : "outline"} size="sm" onClick={() => setLockMin(m as number)}>
+              {label}
+            </Button>
+          ))}
+        </div>
+        <input
+          value={lockReason}
+          onChange={(e) => setLockReason(e.target.value.slice(0, 100))}
+          placeholder="사유 (예: 점수 조작 의심)"
+          className="mt-3 min-h-12 w-full rounded-2xl border border-line bg-night px-4 text-[15px] outline-none focus:border-aqua/60"
+        />
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <Button variant="ghost" onClick={() => setLockTarget(null)}>
+            취소
+          </Button>
+          <Button variant="danger" onClick={() => lockTarget && changeLock(lockTarget, lockMin, lockReason)}>
+            잠금
+          </Button>
+        </div>
+      </Modal>
 
       <Modal open={target !== null} onClose={() => setTarget(null)} title="계정을 삭제할까요?">
         <p className="text-sm leading-relaxed text-mute">
@@ -510,7 +614,10 @@ function ConfigTab({ config }: { config: AppConfig }) {
         <div className="grid gap-3">
           <HoursCard config={config} />
           <EnergyCard config={config} />
+          <PointsCard config={config} />
           <KCard config={config} />
+          <GachaCard config={config} />
+          <BoothCard config={config} />
           <MasterCard config={config} />
         </div>
         <p className="mt-3 text-xs text-dim">
@@ -526,8 +633,16 @@ function ConfigTab({ config }: { config: AppConfig }) {
           <Row
             label="게임 K값"
             value={Object.entries(config.game_k)
-              .map(([k, v]) => `${GAMES[k as keyof typeof GAMES].title} ${v}`)
+              .filter(([k]) => isGameId(k))
+              .map(([k, v]) => `${gameTitleKo(k)} ${v}`)
               .join(" · ")}
+          />
+          <Row
+            label="포인트 식"
+            value={`${config.game_points.base}P + 분당(${Object.entries(config.game_points.per_min)
+              .filter(([k]) => isGameId(k))
+              .map(([k, v]) => `${gameTitleKo(k)} ${v}`)
+              .join(" · ")}) + 원점수 ÷ K`}
           />
           <Row label="코드 유효시간" value={`${config.redeem_code_ttl_min}분`} />
           <Row label="학번 형식" value={config.student_id_pattern} />
@@ -629,6 +744,181 @@ function EnergyCard({ config }: { config: AppConfig }) {
   );
 }
 
+function PointsCard({ config }: { config: AppConfig }) {
+  const { busy, msg, save } = useSaver();
+  const [base, setBase] = useState(config.game_points.base);
+  const [rate, setRate] = useState<Record<string, number>>({ ...config.game_points.per_min });
+
+  return (
+    <Card>
+      <div className="mb-3 flex items-center justify-between">
+        <p className="font-bold">포인트 식</p>
+        <SaveButton busy={busy} onClick={() => save("game_points", { base, per_min: rate })} />
+      </div>
+      <div className="grid gap-2">
+        <Field label="기본 포인트 (한 판)">
+          <input type="number" min={0} max={10000} value={base} onChange={(e) => setBase(Number(e.target.value))} className={INPUT} />
+        </Field>
+        {Object.values(GAMES).map((g) => (
+          <Field key={g.id} label={`${g.title} · 분당`}>
+            <input
+              type="number"
+              min={0}
+              max={10000}
+              value={rate[g.id] ?? 0}
+              onChange={(e) => setRate((prev) => ({ ...prev, [g.id]: Number(e.target.value) }))}
+              className={INPUT}
+            />
+          </Field>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-dim">
+        포인트 = 기본 + 플레이 분 × 분당 + 원점수 ÷ K (상한 없음). 어려운 게임일수록 분당을 크게 — 플레이 시간은 서버 시계로 잰다.
+      </p>
+      <Msg msg={msg} />
+    </Card>
+  );
+}
+
+/* 뽑기 확률표 — 행사 중에 상위 상품이 너무 빨리 나가면 여기서 바로 낮춘다 (§5-13).
+   재고와 붙여 보여줘야 판단이 된다: "1등 재고 0인데 5%" 같은 게 눈에 보이게. */
+function GachaCard({ config }: { config: AppConfig }) {
+  const { busy, msg, save } = useSaver();
+  const [table, setTable] = useState<GachaTable>(() =>
+    Object.fromEntries(Object.entries(config.gacha_table).map(([t, row]) => [t, [...row]])),
+  );
+  const [prizes, setPrizes] = useState<PrizeRow[]>([]);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (open && prizes.length === 0) void fetchPrizes().then(setPrizes);
+  }, [open, prizes.length]);
+
+  const tiers = Object.keys(table).sort();
+  const places = table[tiers[0]]?.length ?? 0;
+
+  function set(tier: string, i: number, raw: string) {
+    const v = Math.max(0, Math.min(100, Number(raw) || 0));
+    setTable((prev) => ({ ...prev, [tier]: prev[tier].map((x, k) => (k === i ? v : x)) }));
+  }
+
+  return (
+    <Card>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <p className="font-bold">뽑기 확률</p>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="ghost" onClick={() => setOpen((v) => !v)}>
+            {open ? "접기" : "펼치기"}
+          </Button>
+          {open && <SaveButton busy={busy} onClick={() => save("gacha_table", table)} />}
+        </div>
+      </div>
+
+      {!open ? (
+        <p className="text-xs text-dim">
+          티어별 등수 확률 (T1 1등 {table["1"]?.[0] ?? 0}% · T6 1등 {table["6"]?.[0] ?? 0}%). 펼쳐서 바꿔요.
+        </p>
+      ) : (
+        <>
+          <div className="no-scrollbar -mx-2 overflow-x-auto px-2">
+            <table className="w-full min-w-[520px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-line text-xs text-mute">
+                  <th className="py-2 pr-2 text-left font-bold">티어</th>
+                  {Array.from({ length: places }, (_, i) => {
+                    const prize = prizes.find((x) => x.place === i + 1);
+                    const out = prize ? prize.stock <= 0 : false;
+                    return (
+                      <th key={i} className="px-1 py-2 text-center font-bold">
+                        <span className="block text-base leading-none">{PLACE_EMOJI[i]}</span>
+                        <span className={cn("block", out && "text-alert line-through")}>{i + 1}등</span>
+                        {prize && (
+                          <span className={cn("num block text-[10px]", out ? "text-alert" : "text-dim")}>
+                            재고 {prize.stock}
+                          </span>
+                        )}
+                      </th>
+                    );
+                  })}
+                  <th className="px-1 py-2 text-right font-bold">꽝</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tiers.map((tier) => {
+                  const sum = table[tier].reduce((a, b) => a + b, 0);
+                  const miss = Math.round((100 - sum) * 100) / 100;
+                  return (
+                    <tr key={tier} className="border-b border-line/60 last:border-0">
+                      <td className="num py-1.5 pr-2 font-bold">T{tier}</td>
+                      {table[tier].map((v, i) => (
+                        <td key={i} className="px-1 py-1.5">
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.05}
+                            value={v}
+                            aria-label={`T${tier} ${i + 1}등 확률`}
+                            onChange={(e) => set(tier, i, e.target.value)}
+                            className="num min-h-11 w-[72px] rounded-xl border border-line bg-night px-2 text-right outline-none focus:border-aqua/60"
+                          />
+                        </td>
+                      ))}
+                      <td className={cn("num px-1 py-1.5 text-right font-bold", miss < 0 ? "text-alert" : "text-mute")}>
+                        {miss}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-xs text-dim">
+            남는 몫이 꽝이에요 — 한 줄의 합이 100%를 넘으면 저장되지 않아요. 티어는 <b>티켓을 얻은 랭크</b> 기준이고,
+            재고가 0인 등수는 추첨에서 빠져 그 확률이 꽝으로 갑니다.
+          </p>
+        </>
+      )}
+      <Msg msg={msg} />
+    </Card>
+  );
+}
+
+function BoothCard({ config }: { config: AppConfig }) {
+  const { busy, msg, save } = useSaver();
+  const [building, setBuilding] = useState(config.booth_location.building);
+  const [floor, setFloor] = useState(config.booth_location.floor);
+  const [spot, setSpot] = useState(config.booth_location.spot);
+  const [note, setNote] = useState(config.booth_location.note ?? "");
+
+  return (
+    <Card>
+      <div className="mb-3 flex items-center justify-between">
+        <p className="font-bold">부스 위치</p>
+        <SaveButton
+          busy={busy}
+          onClick={() => save("booth_location", { ...config.booth_location, building, floor, spot, note })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Field label="건물">
+          <input value={building} onChange={(e) => setBuilding(e.target.value)} className={INPUT} />
+        </Field>
+        <Field label="층">
+          <input value={floor} onChange={(e) => setFloor(e.target.value)} className={INPUT} />
+        </Field>
+        <Field label="위치">
+          <input value={spot} onChange={(e) => setSpot(e.target.value)} className={INPUT} />
+        </Field>
+        <Field label="안내 문구">
+          <input value={note} onChange={(e) => setNote(e.target.value)} className={INPUT} />
+        </Field>
+      </div>
+      <Msg msg={msg} />
+    </Card>
+  );
+}
+
 function KCard({ config }: { config: AppConfig }) {
   const { busy, msg, save } = useSaver();
   const [k, setK] = useState<Record<string, number>>({ ...config.game_k });
@@ -636,12 +926,12 @@ function KCard({ config }: { config: AppConfig }) {
   return (
     <Card>
       <div className="mb-3 flex items-center justify-between">
-        <p className="font-bold">게임 K값</p>
+        <p className="font-bold">게임 K값 (점수 보너스)</p>
         <SaveButton busy={busy} onClick={() => save("game_k", k)} />
       </div>
       <div className="grid gap-2">
         {Object.values(GAMES).map((g) => (
-          <Field key={g.id} label={`${g.emoji} ${g.title}`}>
+          <Field key={g.id} label={g.title}>
             <input
               type="number"
               min={1}
@@ -654,7 +944,7 @@ function KCard({ config }: { config: AppConfig }) {
         ))}
       </div>
       <p className="mt-2 text-xs text-dim">
-        포인트 = 30 + min(270, 원점수 ÷ K). K가 작을수록 후하게 줘요 — 한 판 상한은 300P로 고정입니다.
+        게임 점수 보너스 = 원점수 ÷ K (상한 없음). K가 작을수록 후하게 줘요 — 게임마다 원점수 크기가 달라서 따로 맞춰요.
       </p>
       <Msg msg={msg} />
     </Card>
@@ -718,6 +1008,11 @@ const AUDIT_LABEL: Record<string, string> = {
   "user.unverify": "인증 해제",
   "user.energy": "에너지 변경",
   "user.delete": "계정 삭제",
+  "user.lock": "플레이 잠금",
+  "user.unlock": "잠금 해제",
+  "user.autolock": "자동 잠금",
+  "user.review": "뽑기 보류",
+  "user.review_clear": "검토 완료",
   "config.set": "설정 변경",
   "prize.stock": "재고 변경",
 };
@@ -729,6 +1024,9 @@ function auditDetail(row: AuditRow): string {
   if (row.action === "config.set") return String(d.key ?? "");
   if (row.action === "user.delete") return `누적 ${d.total_points ?? 0}P`;
   if (row.action === "user.verify") return String(d.student_id ?? "");
+  if (row.action === "user.lock") return `${d.minutes}분 · ${d.reason ?? ""}`;
+  if (row.action === "user.autolock") return `비정상 제출 ${d.rejects}회`;
+  if (row.action === "user.review" || row.action === "user.review_clear") return String(d.reason ?? "");
   return "";
 }
 
@@ -766,14 +1064,86 @@ function AuditList() {
 function LogsTab() {
   const [unclaimed, setUnclaimed] = useState<UnclaimedDraw[]>([]);
   const [rejected, setRejected] = useState<GameSessionRow[]>([]);
+  const [review, setReview] = useState<Profile[]>([]);
+  const [top, setTop] = useState<TopSession[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUnclaimedDraws().then(setUnclaimed);
     fetchRejectedSessions().then(setRejected);
+    fetchReviewQueue().then(setReview);
+    fetchTopSessions().then(setTop);
   }, []);
+
+  async function finish(u: Profile) {
+    try {
+      await clearReview(u.id);
+      setReview((list) => list.filter((x) => x.id !== u.id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "검토 완료 처리에 실패했어요");
+    }
+  }
 
   return (
     <div className="grid gap-6">
+      <div>
+        <TermLabel>users --review</TermLabel>
+        <h3 className="mb-2 mt-1 flex items-center gap-2 font-extrabold">
+          <AlertTriangle className="size-4 text-alert" /> 뽑기 보류 (검토 대기)
+        </h3>
+        {error && <p className="mb-2 text-sm text-alert">{error}</p>}
+        <Card className="divide-y divide-line p-0">
+          {review.map((u) => (
+            <div key={u.id} className="flex items-center gap-3 px-4 py-3">
+              <RankBadge rankIdx={u.rank_idx} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="font-bold">
+                  {u.name} <span className="num text-xs text-mute">{u.student_id}</span>
+                </p>
+                <p className="num truncate text-[11px] text-alert">
+                  {u.review_reason ?? "포인트 급상승"} · 누적 {formatNumber(u.total_points)}P
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => finish(u)}>
+                <ShieldCheck className="size-4" /> 확인 완료
+              </Button>
+            </div>
+          ))}
+          {review.length === 0 && <p className="px-4 py-8 text-center text-sm text-dim">검토할 계정이 없어요</p>}
+        </Card>
+        <p className="mt-2 text-xs text-dim">
+          한 판·1시간 포인트가 기준(app_config.security.review)을 넘으면 뽑기만 막아 둬요. 아래 고득점 판의 플레이 시간·원점수를
+          보고 정상이면 확인 완료, 조작이면 유저 탭에서 잠그세요.
+        </p>
+      </div>
+
+      <div>
+        <TermLabel>sessions --top 24h</TermLabel>
+        <h3 className="mb-2 mt-1 font-extrabold">최근 24시간 고득점 판</h3>
+        <Card className="divide-y divide-line p-0">
+          {top.map((s) => (
+            <div key={s.id} className="flex items-center gap-3 px-4 py-3">
+              <GameMark game={s.game} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm">
+                  <span className="font-bold">{s.profiles?.name ?? "-"}</span>{" "}
+                  <span className="num text-mute">
+                    {formatNumber(s.points ?? 0)}P · 원점수 {formatNumber(s.raw_score ?? 0)}
+                  </span>
+                  {s.meta?.raw_adjusted === true && <Chip tone="alert" className="ml-2">점수 보정</Chip>}
+                  {typeof s.meta?.play_sec === "number" && <Chip tone="alert" className="ml-2">방치 시간 제외</Chip>}
+                </p>
+                <p className="num text-[11px] text-dim">
+                  {timeAgo(s.submitted_at ?? s.started_at)} · 경과 {Math.round(Number(s.meta?.elapsed_sec ?? 0))}초
+                  {typeof s.meta?.play_sec === "number" && ` · 인정 ${Math.round(s.meta.play_sec)}초`}
+                </p>
+              </div>
+            </div>
+          ))}
+          {top.length === 0 && <p className="px-4 py-8 text-center text-sm text-dim">기록이 없어요</p>}
+        </Card>
+      </div>
+
       <div>
         <TermLabel>draws --unclaimed</TermLabel>
         <h3 className="mb-2 mt-1 font-extrabold">미수령 당첨</h3>
@@ -813,11 +1183,12 @@ function LogsTab() {
         <Card className="divide-y divide-line p-0">
           {rejected.map((s) => (
             <div key={s.id} className="flex items-center gap-3 px-4 py-3">
-              <span className="text-xl">{GAMES[s.game].emoji}</span>
+              <GameMark game={s.game} />
               <div className="min-w-0 flex-1">
                 <p className="num text-sm">
                   원점수 {s.raw_score ?? 0} ·{" "}
                   {typeof s.meta?.reject_reason === "string" ? s.meta.reject_reason : "사유 미기록"}
+                  {s.meta?.reject_by === "security" && <Chip tone="alert" className="ml-2">보안</Chip>}
                 </p>
                 <p className="num text-[11px] text-dim">
                   {timeAgo(s.started_at)} · user {s.user_id.slice(0, 8)}
