@@ -1,6 +1,10 @@
 import { cn } from "@/lib/cn";
 import { rankInfo } from "@/lib/rank";
 
+/** public/assets/ranks/*.webp 한 칸 크기 (scripts/slice-rank-badges.py 의 CELL_W·CELL_H) */
+const ART_W = 132;
+const ART_H = 216;
+
 const SIZES = { xs: 22, sm: 32, md: 48, lg: 72, xl: 132 } as const;
 type Size = keyof typeof SIZES;
 
@@ -26,70 +30,25 @@ const SPARKS = [
 export function RankBadge({ rankIdx, size = "md", withLabel, className }: Props) {
   const r = rankInfo(rankIdx);
   const px = SIZES[size];
-  const [light, dark] = r.colors;
-
-  const frameStyle: React.CSSProperties =
-    r.effect === "rainbow" ? {} : { background: `linear-gradient(145deg, ${light} 0%, ${dark} 100%)` };
+  const [light] = r.colors;
 
   const badge = (
     <span
-      className={cn(
-        "relative inline-grid shrink-0 place-items-center",
-        r.effect === "glow" && "animate-pulse-glow",
-        r.effect === "challenger" && "animate-pulse-glow",
-        !withLabel && className,
-      )}
-      style={
-        {
-          width: px,
-          height: px * 1.08,
-          "--glow": r.effect === "glow" ? "rgb(255 255 255 / 0.8)" : "rgb(255 176 32 / 0.85)",
-          filter: r.effect ? undefined : `drop-shadow(0 2px ${Math.max(2, px / 10)}px ${dark}88)`,
-        } as React.CSSProperties
-      }
+      className={cn("relative inline-grid shrink-0 place-items-center", !withLabel && className)}
+      style={{ width: px, height: px * 1.08 }}
       role="img"
       aria-label={`${r.name} 랭크`}
       title={r.name}
     >
-      <span
-        className={cn("hex absolute inset-0", r.effect === "rainbow" && "rainbow-fill animate-hue")}
-        style={frameStyle}
+      {/* 사용자 제공 뱃지 그림 (scripts/slice-rank-badges.py). 발광 여백이 있어서 칸보다 크게 그린다 */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/assets/ranks/rank-${String(rankIdx < 0 ? 0 : Math.min(rankIdx, 16)).padStart(2, "0")}.webp`}
+        alt=""
+        draggable={false}
+        className="pointer-events-none absolute max-w-none select-none"
+        style={{ width: px * 1.2, height: px * 1.2 * (ART_H / ART_W), left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
       />
-      <span
-        className="hex absolute"
-        style={{
-          // color-mix를 못 쓰는 브라우저(구형 사파리)에서는 아래 단색 그라데이션이 남는다
-          background: `linear-gradient(170deg, ${dark} 0%, #070b18 85%)`,
-          inset: Math.max(2, px * 0.09),
-        }}
-      >
-        <span
-          className="hex absolute inset-0"
-          style={{
-            background: `linear-gradient(170deg, color-mix(in srgb, ${dark} 55%, #070b18) 0%, #070b18 85%)`,
-          }}
-        />
-      </span>
-      {/* 상단 하이라이트 */}
-      <span
-        className="hex absolute opacity-60"
-        style={{
-          inset: Math.max(2, px * 0.09),
-          background: "linear-gradient(180deg, rgb(255 255 255 / 0.22), transparent 45%)",
-        }}
-      />
-      {size !== "xs" && (
-        <span
-          className="relative font-mono font-black leading-none tracking-tight"
-          style={{
-            fontSize: px * 0.3,
-            color: r.effect === "rainbow" ? "#fff" : light,
-            textShadow: `0 0 ${px / 8}px ${light}99`,
-          }}
-        >
-          {r.short}
-        </span>
-      )}
       {r.effect === "challenger" && px >= 48 && (
         <span className="pointer-events-none absolute inset-x-0 bottom-1/4 top-0" aria-hidden>
           {SPARKS.map((s, i) => (

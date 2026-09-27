@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { estimatePoints } from "@/lib/games";
 import { maskName } from "@/lib/format";
+import { DEFAULT_CONFIG } from "@/lib/config";
 import {
   MAX_LEVEL,
   RANKS,
@@ -67,12 +68,19 @@ describe("랭크 (§5.2)", () => {
   });
 });
 
-describe("포인트 환산 (§7 공통)", () => {
-  it("한 판 30~300P", () => {
-    expect(estimatePoints(0, 4)).toBe(30);
-    expect(estimatePoints(400, 4)).toBe(130);
-    expect(estimatePoints(999999, 4)).toBe(300);
-    expect(estimatePoints(-50, 10)).toBe(30);
+describe("포인트 환산 (points v2 — public.game_points 와 같은 식)", () => {
+  const cfg = DEFAULT_CONFIG.game_points;
+  it("기본 50P + 분당 × 분 + 원점수 ÷ K, 상한 없음", () => {
+    expect(estimatePoints("flight", 0, 0, cfg, 100)).toBe(50);
+    expect(estimatePoints("flight", 400, 120, cfg, 100)).toBe(50 + 30 + 4);
+    expect(estimatePoints("owlis", 999_999, 600, cfg, 40)).toBe(50 + 80 + 24_999);
+    expect(estimatePoints("chef", -50, -5, cfg, 150)).toBe(50);
+  });
+  it("어려운 게임일수록 분당 포인트가 크다 (아울리스 < 레스토랑 < 서바이버즈 ≤ 아울러닝)", () => {
+    const r = cfg.per_min;
+    expect(r.owlis).toBeLessThan(r.chef);
+    expect(r.chef).toBeLessThan(r.survive);
+    expect(r.survive).toBeLessThanOrEqual(r.flight);
   });
 });
 

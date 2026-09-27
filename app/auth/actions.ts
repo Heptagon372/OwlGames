@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getAppConfig } from "@/lib/queries";
 import { getAdminSupabase, getServerSupabase } from "@/lib/supabase/server";
-import { isDemo, studentEmail } from "@/lib/env";
+import { studentEmail } from "@/lib/env";
 
 export type AuthState = { error?: string } | null;
 
@@ -38,8 +38,6 @@ export async function signUpAction(_prev: AuthState, form: FormData): Promise<Au
   if (!new RegExp(config.student_id_pattern).test(studentId)) return { error: t("errStudentId") };
   if (password.length < 6) return { error: t("errPassword") };
   if (password !== password2) return { error: t("errPasswordMatch") };
-
-  if (isDemo) redirect("/pending");
 
   const email = studentEmail(studentId);
   const admin = getAdminSupabase();
@@ -86,8 +84,6 @@ export async function signInAction(_prev: AuthState, form: FormData): Promise<Au
   const studentId = field(form, "student_id");
   const password = String(form.get("password") ?? "");
   if (!studentId || !password) return { error: t("errEmpty") };
-
-  if (isDemo) redirect("/lobby");
 
   const supabase = await getServerSupabase();
   if (!supabase) return { error: t("errServer") };

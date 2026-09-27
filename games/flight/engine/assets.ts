@@ -102,3 +102,140 @@ export function drawAdditive(
   ctx.drawImage(canvas, x - w / 2, y - h / 2, w, h);
   ctx.restore();
 }
+
+/* ── 아울러닝 2.0 스프라이트 (사용자 제공 리소스 시트, public/assets/owlrun) ───────────
+ * `scripts/slice-owlrun-sheet.py` 가 시트에서 잘라 배경을 뺀 그림들이다.
+ * 로딩 전에는 null → 렌더는 기존 도형 폴백으로 그린다 (에셋 없이도 게임이 돈다). */
+
+const OWLRUN = "/assets/owlrun";
+
+const SPRITE_NAMES = [
+  // 캐릭터 시트 (scripts/slice-owlrun-character.py — 2배로 키워 둔 고해상도)
+  "char/R",
+  "char/B",
+  "char/P",
+  "char/trail-R",
+  "char/trail-B",
+  "char/trail-P",
+  "char/phantom",
+  "char/freeze",
+  "char/fire",
+  "char/golden",
+  "char/fx-energy",
+  "char/fx-score",
+  "char/fx-turbo",
+  "char/hit",
+  "char/fall",
+  "char/dead",
+  "char/revive",
+  "char/dizzy",
+  "char/happy",
+  "char/victory",
+  // 리소스 시트 (scripts/slice-owlrun-sheet.py)
+  "color-R",
+  "color-B",
+  "color-P",
+  "text-perfect",
+  "text-near",
+  "text-combo",
+  "text-fever",
+  "wall-block",
+  "wall-slab",
+  "wall-moving",
+  "spikes",
+  "missile",
+  "saw",
+  "wave-zone",
+  "glitch-block",
+  "gate-fake",
+  "turbo-arrows",
+  "item-energy",
+  "item-crystal",
+  "item-rage",
+  "item-shield",
+  "item-feather",
+  "item-star",
+  "item-magnet",
+  "item-phantom",
+  "item-golden",
+  "item-owl-energy",
+  "item-size-S",
+  "item-size-L",
+  "item-box",
+  "deco-cloud",
+  "deco-moon",
+  "bg-01",
+  "bg-05",
+  "bg-10",
+  "bg-14",
+  "bg-15",
+] as const;
+
+export type SpriteName = (typeof SPRITE_NAMES)[number];
+
+/** DOM(HUD)에서 쓰는 그림 경로 */
+export function spriteUrl(name: string): string {
+  return `${OWLRUN}/${name}.webp`;
+}
+
+const sprites = new Map<SpriteName, HTMLImageElement>();
+const spriteReady = new Set<SpriteName>();
+const spritePatterns = new Map<string, CanvasPattern>();
+
+export function preloadSprites(): void {
+  if (typeof window === "undefined" || sprites.size) return;
+  for (const name of SPRITE_NAMES) {
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = () => spriteReady.add(name);
+    img.src = spriteUrl(name);
+    sprites.set(name, img);
+  }
+}
+
+/** 로딩된 스프라이트 (아직이면 null → 도형 폴백) */
+export function spr(name: SpriteName): HTMLImageElement | null {
+  return spriteReady.has(name) ? (sprites.get(name) ?? null) : null;
+}
+
+/** 스프라이트를 (cx, cy) 가운데에 높이 h 로 그린다 (가로는 비율대로). 로딩 전이면 false */
+export function drawSprite(
+  ctx: CanvasRenderingContext2D,
+  name: SpriteName,
+  cx: number,
+  cy: number,
+  h: number,
+  opts: { rot?: number; alpha?: number; flipY?: boolean; flipX?: boolean; additive?: boolean } = {},
+): boolean {
+  const img = spr(name);
+  if (!img) return false;
+  const w = (img.width / img.height) * h;
+  ctx.save();
+  ctx.translate(cx, cy);
+  if (opts.rot) ctx.rotate(opts.rot);
+  if (opts.flipY || opts.flipX) ctx.scale(opts.flipX ? -1 : 1, opts.flipY ? -1 : 1);
+  if (opts.alpha !== undefined) ctx.globalAlpha *= opts.alpha;
+  if (opts.additive) ctx.globalCompositeOperation = "lighter";
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  ctx.restore();
+  return true;
+}
+
+/** 스프라이트를 폭 tileW 로 줄여 만든 반복 패턴 (돌벽 · 글리치 벽) */
+export function spritePattern(ctx: CanvasRenderingContext2D, name: SpriteName, tileW: number): CanvasPattern | null {
+  const img = spr(name);
+  if (!img) return null;
+  const key = `${name}|${tileW}`;
+  const hit = spritePatterns.get(key);
+  if (hit) return hit;
+  const c = document.createElement("canvas");
+  c.width = Math.round(tileW);
+  c.height = Math.round((img.height / img.width) * tileW);
+  const cx = c.getContext("2d");
+  if (!cx) return null;
+  cx.drawImage(img, 0, 0, c.width, c.height);
+  const p = ctx.createPattern(c, "repeat");
+  if (!p) return null;
+  spritePatterns.set(key, p);
+  return p;
+}

@@ -166,6 +166,36 @@
   }
 }
 
+/* 🍳 아울 레스토랑 — 점수 팝업 · 게임 오버 글리치 (games/chef/ui) */
+@keyframes chef-float {
+  0% { opacity: 0; transform: translateY(8px) scale(0.9); }
+  15% { opacity: 1; transform: translateY(0) scale(1.08); }
+  75% { opacity: 1; transform: translateY(-8px) scale(1); }
+  100% { opacity: 0; transform: translateY(-18px) scale(1); }
+}
+@keyframes chef-glitch {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-4px, 2px); }
+  50% { transform: translate(5px, -2px); }
+  75% { transform: translate(-3px, -1px); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes chef-merge {
+  0% { opacity: 1; transform: scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: scale(0.15) rotate(25deg); }
+}
+@keyframes chef-dish {
+  0% { opacity: 0; transform: scale(0.3) rotate(-10deg); }
+  60% { opacity: 1; transform: scale(1.18) rotate(3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes chef-slice {
+  0% { transform: translateX(0); }
+  33% { transform: translateX(-22px); }
+  66% { transform: translateX(28px); }
+  100% { transform: translateX(0); }
+}
+
 /* ============================================================
    라이트 / 다크 (§13)
    `<html data-theme="light|dark">` 하나로 갈린다. @theme 값이 다크 기본값이고,

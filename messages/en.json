@@ -12,7 +12,6 @@
     "settings": "Settings",
     "loading": "loading...",
     "closedNow": "The booth is closed right now, so you cannot start a game.",
-    "demoNote": "DEMO · scores are not saved",
     "scoreUnit": "pts",
     "appName": "OWL GAMES",
     "appShort": "OWL GAMES",
@@ -52,11 +51,13 @@
     },
     "sound": {
       "title": "Sound",
-      "master": "Sound effects",
-      "masterHint": "Short blips on buttons and result screens",
+      "master": "Sound",
+      "masterHint": "Turns sound effects and game music on or off together",
       "on": "ON",
       "off": "OFF",
-      "volume": "Volume",
+      "volume": "Master volume",
+      "music": "Music",
+      "musicHint": "Lowers only the background music, within the master volume",
       "previewOk": "Success",
       "previewCoin": "Pickup",
       "previewLevel": "Level up"
@@ -74,13 +75,13 @@
     "haveAccount": "I already have an account",
     "closed": "We are closed right now — see you between {start} and {end}",
     "gamesLabel": "games --list",
-    "gamesTitle": "6 mini games",
+    "gamesTitle": "{count} mini games",
     "howLabel": "how-it-works",
     "howTitle": "How it works",
     "steps": {
       "play": {
         "title": "Play a game",
-        "desc": "Earn points across 6 mini games"
+        "desc": "Earn points across {count} mini games"
       },
       "rank": {
         "title": "Level and rank up",
@@ -116,14 +117,14 @@
     "ticketHintNone": "You get one every time your rank goes up",
     "gamesLabel": "games --play",
     "gamesTitle": "What do you want to play?",
-    "pointRange": "30–300P",
+    "pointRange": "{base}P + {rate}P/min",
     "closedGame": "Opens during booth hours",
     "rankLabel": "ranking --top 10",
     "rankTitle": "Live ranking",
     "empty": "No scores yet"
   },
   "gameShell": {
-    "duration": "{duration} · 30–300P per run",
+    "duration": "{duration} · {base}P base + {rate}P per minute + score bonus (no cap)",
     "start": "Start",
     "starting": "Preparing session...",
     "submitting": "SUBMITTING...",
@@ -150,13 +151,7 @@
       "phase": "Phase reached",
       "special": "Special section",
       "specialValue": "cleared {count}x",
-      "solved": "Solved",
-      "solvedValue": "{count} puzzles",
-      "optimal": "Optimal",
       "times": "{count}x",
-      "tierMax": "Best tier",
-      "hints": "Hints",
-      "avgSolve": "Avg. solve",
       "seconds": "{sec}s",
       "stage": "Stage",
       "stageValue": "STAGE {stage}",
@@ -164,84 +159,69 @@
       "survived": "Survived",
       "kills": "Kills",
       "killsWithObstacles": "{kills} (obstacles {obstacles})",
-      "graze": "GRAZE",
-      "livesLeft": "Lives left",
-      "none": "none",
       "damage": "Hits taken",
       "noDamage": "No hits ✨",
-      "bossKilled": "Boss",
-      "bossKilledValue": "defeated ✅",
       "levelReached": "Level",
       "evolutions": "Evolutions",
       "count": "{count}",
       "revives": "Revives",
-      "destroyed": "Destroyed",
-      "missed": "Missed",
-      "correct": "Correct",
-      "wrong": "Wrong",
-      "maxStreak": "Best streak"
+      "aiLevel": "AI LEVEL",
+      "attackSent": "Attack sent",
+      "cleared": "Blocks popped",
+      "avgCombo": "Avg. chain",
+      "counters": "COUNTER",
+      "ko": "AI K.O.",
+      "stageInfinite": "∞ Lv.{level}",
+      "perfect": "PERFECT",
+      "fever": "OWL FEVER",
+      "power": "COLOR POWER",
+      "events": "Events",
+      "orders": "Orders served",
+      "topDish": "Most cooked",
+      "cleanBuild": "CLEAN BUILD",
+      "fullStack": "FULL STACK"
     }
   },
   "games": {
-    "typer": {
-      "title": "Night Typer",
-      "tagline": "Type the falling commands and break the firewall",
-      "duration": "60 seconds",
-      "rules": [
-        "Type each falling command exactly, then press Enter",
-        "Every command that lands adds 20% to the firewall — 100% ends the run",
-        "Chain hits for combo ×1.2 → ×1.5 → ×2.0"
-      ]
-    },
-    "phish": {
-      "title": "Phish Hunter",
-      "tagline": "Real or phishing? Judge like a sheriff owl",
-      "duration": "90 seconds",
-      "rules": [
-        "← Swipe left = 🚨 phishing",
-        "→ Swipe right = ✅ legitimate",
-        "Streaks pay a bonus, a wrong call costs 5 seconds",
-        "Each card has a timer — later stages get shorter"
-      ]
-    },
     "flight": {
       "title": "Owl Running",
-      "tagline": "Match the colour, pick your size, save your wingbeats",
-      "duration": "up to 180 seconds",
+      "tagline": "Match colors, dodge hazards, unleash powers — how far can you fly?",
+      "duration": "Up to 180s · 15 stages + ∞",
       "rules": [
-        "Hold to climb, release to glide (energy drains only while flapping)",
-        "Pass colour gates with the matching colour and shape — a miss costs energy, not your run",
-        "Grab 🪶 energy, 🟢🔵 size and 🛡️🌈 buffs to fly further"
-      ]
-    },
-    "logic": {
-      "title": "Owl Logic",
-      "tagline": "Drop in gates and repair the locked auth circuit",
-      "duration": "from 70 seconds (solving adds more)",
-      "rules": [
-        "Tap a part, then tap an empty slot — the circuit runs instantly",
-        "Match the whole truth table and the puzzle clears itself",
-        "Solve with the fewest parts for an optimisation bonus; 5 in a row is OVERDRIVE"
-      ]
-    },
-    "space": {
-      "title": "Owl Space",
-      "tagline": "One hit ends it, a graze scores it",
-      "duration": "up to 180 seconds",
-      "rules": [
-        "Drag to dodge — firing is automatic (portrait)",
-        "Grazing enemy bullets scores points and charges your chip",
-        "3 lives. When it gets hairy, 💣 clears the screen"
+        "Hold to rise · release to glide — pass gates in the same color for PERFECT",
+        "Lasers, missiles, gravity flips… every stage brings a new crisis (only walls are fatal)",
+        "NEAR MISS & PERFECT fill 🔥 FEVER; 10 in a row unlocks COLOR POWER (Q)"
       ]
     },
     "survive": {
       "title": "Owl Survivors",
-      "tagline": "Stay alive and take down the boss",
-      "duration": "up to 180 seconds",
+      "tagline": "Survive the endless battlefield",
+      "duration": "Endless",
       "rules": [
         "Just move — every attack is automatic (landscape)",
-        "Pick 1 of 3 skill cards on every level up",
-        "Beat the boss to unlock the next stage"
+        "A new shape joins each stage; beat the boss to advance",
+        "Defeat the Pentadecagon at stage 15 to go endless"
+      ]
+    },
+    "owlis": {
+      "title": "OWLIS",
+      "tagline": "The better you play, the stronger the AI gets",
+      "duration": "Endless (until you lose)",
+      "rules": [
+        "Rotate and stack two-cell owl blocks — 4 of one color touching pop",
+        "Blocks that fall and connect again make a chain (COMBO) — longer chains send junk to the AI",
+        "The AI reads your skill and evolves LEVEL 1 → 5 → 5+. Fill your field and it's over"
+      ]
+    },
+    "retired": "Retired game",
+    "chef": {
+      "title": "Owl Restaurant",
+      "tagline": "Cook the code, dodge the bugs!",
+      "duration": "25 stages + infinite",
+      "rules": [
+        "Stack each ordered coding dish in recipe order and serve it",
+        "Run the board, pan, pot, oven and mixer at once to keep every table happy",
+        "Never serve a table with a 🐛 bug on it. If any customer runs out of patience, the game ends"
       ]
     }
   },
@@ -369,8 +349,8 @@
     "watching": "You will be sent to the lobby automatically once approved",
     "boothLabel": "booth --location"
   },
-  "demo": {
-    "banner": "DEMO MODE · Supabase is not configured — running on fake data, nothing is saved (no booth hours)"
+  "setup": {
+    "banner": "Supabase is not configured — add the connection settings to .env.local to enable sign-in, games and records"
   },
   "browser": {
     "notice": "Your browser is a little old, so some things may look broken. The latest Chrome or Safari works best.",
@@ -398,5 +378,698 @@
   },
   "modal": {
     "close": "Close"
+  },
+  "hud": {
+    "common": {
+      "pause": "Paused",
+      "pauseNote": "{sec}s of pause left",
+      "resume": "Resume",
+      "rotateLandscape": "Please rotate to landscape",
+      "pauseLeft": "{sec}s pause left"
+    },
+    "flight": {
+      "raw": "{text}",
+      "canvasAria": "Owl Running game screen",
+      "startTitle": "Hold to fly up",
+      "startHint": "Release to glide · match gate colors with the color button",
+      "startKeys": "PC: Space fly · 1/2/3 color · Q skill · Esc pause",
+      "deathWall": "💥 Crashed",
+      "deathEnergy": "🪫 Out of energy",
+      "rotateNote": "Owl Running is played in landscape",
+      "next": "Next",
+      "colorAria": "Change color (now {color})",
+      "color": {
+        "R": "Red",
+        "B": "Blue",
+        "P": "Purple"
+      },
+      "skillAria": "Use COLOR POWER ({skill})",
+      "skillName": {
+        "breaker": "BREAKER",
+        "freeze": "FREEZE",
+        "phantom": "PHANTOM"
+      },
+      "stageTitle": "{tag} · {name}",
+      "stageName": {
+        "flight": "Flight Training",
+        "color": "Colors",
+        "energy": "Energy",
+        "size": "Size Shift",
+        "laser": "Lasers",
+        "moving": "Moving Walls",
+        "wave": "Waves",
+        "power": "Color Power",
+        "storm": "Item Storm",
+        "missile": "Homing Missiles",
+        "turbo": "Turbo",
+        "glitch": "Lying Colors",
+        "barrage": "Laser Barrage",
+        "chaos": "CHAOS",
+        "final": "OWL FINAL RUN",
+        "infinite": "Endless Flight"
+      },
+      "stageHint": {
+        "flight": "Hold to rise · release to fall",
+        "color": "Pass gates in the same color for PERFECT!",
+        "energy": "Flapping costs energy — press, release, glide!",
+        "size": "Small fits tight gaps, big smashes walls",
+        "laser": "⚠ Move away when the red warning line appears",
+        "moving": "Walls move — watch out for fake gaps!",
+        "wave": "The screen ripples and gravity flips",
+        "power": "10 PERFECTs in a row → COLOR POWER (Q / skill button)",
+        "storm": "Items pour in — get greedy",
+        "missile": "Dodge up or down when LOCK ON freezes",
+        "turbo": "Faster, but score ×2",
+        "glitch": "When GLITCH flashes, the true color appears",
+        "barrage": "Lasers fall in numbered order",
+        "chaos": "Gravity, colors and the screen all go wild",
+        "final": "The last 300 m is OVERDRIVE!",
+        "infinite": "The longer you last, the faster it gets"
+      },
+      "infiniteIn": "STAGE 15 COMPLETE — ∞ INFINITE MODE",
+      "infiniteSub": "Now it's all about the high score",
+      "infiniteLevel": "∞ Lv.{level}",
+      "infiniteLevelSub": "Faster · more often · shorter warnings",
+      "overdrive": "🔥 OVERDRIVE",
+      "overdriveSub": "Speed ×1.3 · score ×2 · energy drains by itself",
+      "smash": "💥 SMASH!",
+      "plusScore": "+{n} pts",
+      "empty": "🪫 Out of energy",
+      "emptySub": "Grab a feather within 3 seconds to recover",
+      "revive": "🪶 Saved!",
+      "owlEnergy": "🦉 Owl Energy found!",
+      "owlEnergySub": "You can play one more round",
+      "colorBurst": "🌈 PERFECT COLOR CHAIN",
+      "colorBurstSub": "COLOR BURST — all gates auto-pass for a moment",
+      "powerReady": "⚡ COLOR POWER charged!",
+      "powerReadySub": "Q / skill button — 🔴 BREAKER · 🔵 FREEZE · 🟣 PHANTOM",
+      "skill": {
+        "breaker": "💥 BREAKER",
+        "freeze": "❄️ FREEZE",
+        "phantom": "👻 PHANTOM"
+      },
+      "skillSub": {
+        "breaker": "Smashes every obstacle ahead",
+        "freeze": "Time slows down",
+        "phantom": "Pass through everything for a moment"
+      },
+      "fever": "🦉🔥 OWL FEVER 🔥🦉",
+      "feverSub": "Score ×3 · energy saver · item magnet",
+      "legend": {
+        "rage": "★ LEGENDARY — 🔥 RAGE",
+        "phantom": "★ LEGENDARY — 💜 PHANTOM",
+        "crown": "★ LEGENDARY — 👑 CROWN"
+      },
+      "event": {
+        "laser": "🔴 LASER WARNING",
+        "featherRain": "🪶 FEATHER RAIN",
+        "storm": "🌪 STORM",
+        "phantomWorld": "🟣 PHANTOM WORLD",
+        "turbo": "⚡ TURBO MODE",
+        "colorChaos": "🎨 COLOR CHAOS",
+        "glitch": "📺 SCREEN GLITCH",
+        "golden": "🟡 GOLDEN OWL"
+      },
+      "eventSub": {
+        "laser": "Only the gap is safe — 3 · 2 · 1",
+        "featherRain": "Chain catches for +10 → +20 → +30 → +50",
+        "storm": "The wind pushes the owl around",
+        "phantomWorld": "5s invincible · item score ×3",
+        "turbo": "Speed ×1.5 · distance & item score ×2",
+        "colorChaos": "Your color shifts by itself — fix it",
+        "glitch": "Only the picture breaks · hits are unchanged",
+        "golden": "A golden owl in a tight gap, +500 — go for it?"
+      },
+      "barrage": "⚠ LASER BARRAGE",
+      "barrageSub": "They fall in order 1 → 2 → 3 → 4",
+      "gravityFlip": "↑ GRAVITY FLIP",
+      "gravityFlipSub": "You fall upward — press to push down!",
+      "wave": "🌊 WAVE",
+      "waveSub": "The waves shake the owl",
+      "choiceHint": "1 · 2 · 3 or tap — auto-pick in {sec}s",
+      "choice": {
+        "energy": "ENERGY +50",
+        "score": "SCORE ×2",
+        "shield": "SHIELD ×2",
+        "magnet": "MAGNET",
+        "fever": "FEVER +60%",
+        "power": "COLOR POWER",
+        "rainbow": "RAINBOW"
+      },
+      "choiceSub": {
+        "energy": "Refill energy now",
+        "score": "Double score for 12s",
+        "shield": "Blocks 2 crashes",
+        "magnet": "Pull items for 15s",
+        "fever": "Charge the fever gauge",
+        "power": "Skill ready right away",
+        "rainbow": "Pass every color for 8s"
+      }
+    },
+    "survive": {
+      "raw": "{text}",
+      "boss": {
+        "hexa": "Hexagon",
+        "nona": "Nonagon",
+        "trideca": "Tridecagon",
+        "chrono": "Pentadecagon"
+      },
+      "bossTitle": {
+        "hexa": "Laser",
+        "nona": "Devourer",
+        "trideca": "Tag",
+        "chrono": "Master of Time"
+      },
+      "bossRuleText": {
+        "hexa": "Dodge vertex lasers and lethal bombardments",
+        "nona": "It eats monsters to grow — hit it to delay the burst",
+        "trideca": "Stay inside the colosseum and fight from afar",
+        "chrono": "The longer it lasts, the worse it gets — beat the clock"
+      },
+      "mob": {
+        "tri": "Triangle",
+        "square": "Square",
+        "circle": "Circle",
+        "penta": "Pentagon · Charger",
+        "hepta": "Heptagon · Slow shots",
+        "octa": "Octagon · Tank",
+        "deca": "Decagon · Speedster",
+        "hendeca": "Hendecagon · Summoner",
+        "dodeca": "Dodecagon · Heavy hitter",
+        "tetradeca": "Tetradecagon · Regenerator"
+      },
+      "obstacle": {
+        "rack": "Server rack",
+        "box": "Supply box",
+        "extinguisher": "Extinguisher",
+        "cable": "Cable pile"
+      },
+      "stageIn": "STAGE {stage} start",
+      "stageBanner": "STAGE {stage}",
+      "bossIncoming": "👑 {boss} approaching",
+      "newMob": "New monster — {mob}",
+      "allOut": "All-out — every shape is coming",
+      "endless": "Endless stage — they keep getting stronger",
+      "bossIn": "{boss} appears",
+      "bossName": "👑 {boss} — {title}",
+      "bossRule": "{rule}",
+      "bossDown": "{boss} defeated!",
+      "finalDown": "⏱️ Pentadecagon defeated — endless mode begins!",
+      "levelUp": "Lv.{level}  pick a skill",
+      "crit": "Critical {dmg}",
+      "hurt": "{dmg} damage   HP {hp}/{max}",
+      "revive": "HP 0 — respawn protocol ({sec}s invulnerable)",
+      "failover": "Failover cluster — screen-wide blast",
+      "down": "HP 0 — system breached",
+      "lethal": "Lethal hit!",
+      "stealthUsed": "Stealth cache — one hit blocked",
+      "stealthReady": "Stealth cache charged",
+      "dodged": "Packet loss — attack dodged",
+      "evolved": "⭐ {name} evolved",
+      "evolution": "Evolution",
+      "skillUp": "{emoji} {name} Lv{lv}",
+      "skillNew": "{emoji} {name} acquired",
+      "vaccine": "Vaccine — HP +{hp}",
+      "logBomb": "Log bomb — {dmg} damage to all",
+      "obstacleBreak": "{kind} destroyed → ❤️ +{hp}",
+      "overBoss": "Taken down by {boss}",
+      "overMobs": "Surrounded by shapes",
+      "overTime": "Time is up — the final judgement",
+      "overCap": "Maximum play time reached",
+      "timeUp": "Maximum play time — run over",
+      "nonaBurst": "Nonagon — devour burst!",
+      "nonaArmor": "Nonagon — invulnerable",
+      "nonaArmorSub": "Only hits from the yellow vertex get through",
+      "nonaBuff": "Nonagon — {n} monsters empowered",
+      "triDash": "Tridecagon — charge {n}",
+      "doom": "Get out of the colosseum!",
+      "doomSub": "The boss is splitting — only outside is safe",
+      "blackhole": "Black hole — find the green safe pad",
+      "judgement": "The Final Judgement",
+      "judgementSub": "When the hand reaches twelve…",
+      "timeResume": "Time flows again!",
+      "reverse": "Time reversal",
+      "reverseSub": "The battlefield rewinds (your growth stays)",
+      "reverseLog": "Time reversal — {n} monsters · {o} obstacles restored",
+      "bombHalf": "Time bomb exploded — HP halved!",
+      "bombs": "Time bombs — destroy them or lose half your HP",
+      "rewind": "Rewind",
+      "rewindSub": "The boss HP goes back in time",
+      "timeStop": "Time stop",
+      "timeStopSub": "Tick…",
+      "clock": "Clock of Time",
+      "clockSub": "Only hits from 12 and 6 o’clock land",
+      "clones": "Clones of Time",
+      "clonesSub": "Only one is real — clones explode after 30s",
+      "ui": {
+        "title": "Owl Survivors",
+        "tagline": "Survive the endless battlefield",
+        "start": "Start game",
+        "theme": "Display",
+        "themeDark": "🌙 Dark (neon)",
+        "themeLight": "☀️ Light",
+        "best": "Best: STAGE {stage}",
+        "controls": "PC: WASD · Mobile: virtual joystick — attacks are automatic",
+        "bosses": "Bosses — 5 Hexagon · 8 Nonagon · 12 Tridecagon · 15 Pentadecagon",
+        "stage": "STAGE {stage}",
+        "kill": "KILL {n}",
+        "level": "Lv.{level}",
+        "next": "Next stage {sec}s",
+        "bossFight": "Defeat the boss to advance",
+        "limit": "⏳ {time}",
+        "rage": "Rage",
+        "fuse": "💣 {sec}s",
+        "endless": "♾️ Endless",
+        "hint": "Just move — attacks are automatic",
+        "rotate": "Please rotate to landscape",
+        "rotateSub": "Owl Survivors is landscape-only (the game is paused)",
+        "over": "☠️ Game over",
+        "reached": "Reached STAGE {stage}",
+        "paused": "Choosing a level-up card — game paused",
+        "canvas": "Owl Survivors game screen",
+        "go": "GO!"
+      },
+      "guide": {
+        "open": "Guide",
+        "title": "Game guide",
+        "close": "Back to start",
+        "tabs": {
+          "skills": "🗡️ Skills",
+          "mobs": "🔺 Monsters",
+          "bosses": "👑 Bosses"
+        },
+        "rules": {
+          "title": "Skill rules",
+          "slots": "Slots: {active} active · {passive} passive",
+          "level": "Each level-up, pick 1 of {choices} cards — picking a skill you own raises it by 1 (Lv{max} is MAX)",
+          "evo": "Active at Lv{active} (MAX) + its paired passive at Lv{passive}+ → a ⭐ evolution card appears in slot 1 on the next level-up",
+          "reroll": "Rerolls: {reroll} · Skips: {skip} (skipping grants {xp}% XP instantly)"
+        },
+        "synergy": {
+          "title": "Element combos",
+          "slowElectric": "❄️ Slowed enemy + ⚡ electric damage → ×2 damage",
+          "burnExplosion": "🔥 Burning enemy + 💥 explosion → the burn spreads to nearby enemies",
+          "pullAoe": "🕳️ Enemy being pulled + area attack → ×1.5 damage",
+          "markPierce": "🎯 Marked enemy + piercing attack → guaranteed critical hit"
+        },
+        "active": "🗡️ {n} actives",
+        "activeSub": "Attack skills that fire automatically — each level adds +25% damage and -8% cooldown",
+        "passive": "🧠 {n} passives",
+        "passiveSub": "Stat boosts — the listed effect is per level. ⭐ marks evolution ingredients",
+        "evolution": "⭐ {n} evolutions",
+        "evolutionSub": "Powered-up forms unlocked by a MAX active + its paired passive",
+        "cd": "CD {sec}s",
+        "always": "Always on",
+        "onKill": "Every {n} kills",
+        "starter": "Starter",
+        "evoHint": "⭐ Evolves → {evo} (pair: {req})",
+        "feeds": "Evolution ingredient: {list}",
+        "recipe": "{base} MAX + {req} Lv{lv}",
+        "mobsIntro": "Each stage unlocks one new shape, and earlier shapes keep mixing in. Stages without a boss end after {sec}s, and every stage gives monsters +{hp}% HP and +{atk}% attack.",
+        "flow": "Stage flow",
+        "flowNote": "Stage 14 is an all-out assault with every shape and no boss ({allOut}s). Beat the Pentadecagon at stage 15 to enter endless mode — it returns every {every} stages after that.",
+        "stageAt": "From STAGE {stage}",
+        "special": "Special",
+        "maxAlive": "Max {n} at once",
+        "hp": "HP",
+        "speed": "SPD",
+        "dmg": "ATK",
+        "mob": {
+          "tri": "The most basic mob. Your starter skill kills it in one hit.",
+          "square": "Twice as tough as a triangle, but slow.",
+          "circle": "A fast chaser. HP between a triangle and a square.",
+          "penta": "Draws a warning line for {windup}s, then charges (CD {cd}s). The charge smashes obstacles and deals {dmg} damage on contact.",
+          "hepta": "Fires slowing shots in four directions every {cd}s. A hit slows you to ×{mult} for {sec}s.",
+          "octa": "A tank twice as tough as a square. Slow but hard to kill.",
+          "deca": "Twice as fast as a circle. Very low HP — kill it before it reaches you.",
+          "hendeca": "Keeps its distance and summons {n} triangles, squares or circles every {cd}s. Take it out first.",
+          "dodeca": "Slow and weak, but every hit hurts a lot. Never take it head-on.",
+          "tetradeca": "The toughest and slowest. Regenerates {pct}% of its max HP every second (green ring)."
+        },
+        "bossesIntro": "Boss stages end only when the boss is defeated. Lethal attacks are always telegraphed by warning circles or lines first — and the ❤️‍🩹 revive passive works even against instant kills (except the Final Judgement). Defeating a boss pulls in all XP on screen.",
+        "bossStage": "STAGE {stage}",
+        "chronoStage": "STAGE {stage} · then every {every} stages (+{hp}% HP)",
+        "bossHp": "HP {hp}",
+        "pattern": {
+          "hexa": {
+            "laser": {
+              "name": "Vertex lasers",
+              "text": "Fires lasers outward from all 6 vertices after a {warn}s warning line. Below half HP it fires a second, offset set."
+            },
+            "bomb": {
+              "name": "Lethal bombardment",
+              "text": "{bombs} red warning circles (one always under you) explode after {bombWarn}s. A hit is an instant kill! Below half HP there are more."
+            }
+          },
+          "nona": {
+            "eat": {
+              "name": "Devour",
+              "text": "Pulls in nearby monsters and eats them to grow (max HP up to ×{cap}). When the devour gauge fills it bursts with {bullets} bullets. Hitting it drains the gauge."
+            },
+            "armor": {
+              "name": "Armor · weak point",
+              "text": "Invulnerable below {armor}% HP. Only attacks from the yellow vertex get through. The weak point moves every {move}s, so circle the boss."
+            },
+            "buff": {
+              "name": "Empower",
+              "text": "Every {buffCd}s, nearby monsters get ×{buffHp} HP and ×{buffDmg} attack (purple outline)."
+            },
+            "shot": {
+              "name": "Scaling shots",
+              "text": "A {spread}-way spread every {shotCd}s. The more HP the boss has, the bigger and stronger the bullets."
+            }
+          },
+          "trideca": {
+            "arena": {
+              "name": "Colosseum",
+              "text": "On arrival it builds a colosseum and wipes out every other monster. Standing outside the edge deals damage that keeps growing."
+            },
+            "dash": {
+              "name": "Triple charge",
+              "text": "Every {dashCd}s it charges: straight → horizontal + vertical → horizontal + vertical + diagonals. Each path is shown {dashWarn}s before the charge."
+            },
+            "laser": {
+              "name": "4-way lasers",
+              "text": "Every {laserCd}s, four lasers drop in behind narrowing warning lines. They leave 🔴 instant-kill tiles and 🔵 slowing tiles for {tile}s."
+            },
+            "doom": {
+              "name": "Collapse",
+              "text": "{doomCount} times below {doom}% HP, the boss splits apart and you must leave the colosseum within {doomWarn}s to survive."
+            },
+            "near": {
+              "name": "Close-range penalty",
+              "text": "The longer you stay within {nearR}px of the boss, the slower you get (down to ×{nearMin}). Fight from range."
+            },
+            "hole": {
+              "name": "Black hole",
+              "text": "After a {holeWarn}s warning, it pulls you in every {holeEvery}s for {holeLife}s. Stand on a green safe tile to hold on."
+            },
+            "slow": {
+              "name": "Tagger",
+              "text": "Extremely fast, but every hit slows it down. Keep hitting it to pin it in place."
+            }
+          },
+          "chrono": {
+            "time": {
+              "name": "Time limit",
+              "text": "Defeat it within {limit} min (+{step} min each time it returns). The longer the fight, the more HP, attack, speed and pattern frequency it gains."
+            },
+            "rewind": {
+              "name": "Rewind",
+              "text": "Once, below {rewind}% HP, it rewinds to its HP from {back}s ago."
+            },
+            "homing": {
+              "name": "Time seekers",
+              "text": "{homingN} shots every {homingCd}s. They speed up as they get closer and explode after {homingLife}s."
+            },
+            "rain": {
+              "name": "Time barrage",
+              "text": "Warning circles fall, including under you. Over time the warnings get shorter and the circles more numerous."
+            },
+            "bombs": {
+              "name": "Time bombs",
+              "text": "Every {bombEvery}s, {bombN} bombs orbit the boss. Fail to destroy them within {fuse}s and you lose half your current HP."
+            },
+            "clones": {
+              "name": "Time clones",
+              "text": "{cloneN} clones appear. They are weak but hit extremely hard. They self-destruct after {cloneLife}s, and the real one swaps places too."
+            },
+            "rage": {
+              "name": "Time rage",
+              "text": "A gauge rises over time and makes newly spawned monsters stronger. Collecting XP lowers it."
+            },
+            "clock": {
+              "name": "Clock of time",
+              "text": "Below {clock}% HP, attacks only land from the 12 and 6 o’clock directions ({clockOn}s on / {clockOff}s off)."
+            },
+            "stop": {
+              "name": "Time stop",
+              "text": "Every {stopCd}s, the boss, monsters and bullets freeze for {stopSec}s (you can still move). When time resumes: a barrage around you, faster bullets and charging monsters!"
+            },
+            "reverse": {
+              "name": "Time reversal",
+              "text": "At {reverse}% HP, recently killed monsters, broken obstacles and barrages come back. Your level and skills stay."
+            },
+            "judgement": {
+              "name": "Final Judgement",
+              "text": "When the time limit runs out, the screen turns black and white, and after {judge}s the second hand reaches 12: instant death. Revives cannot stop it."
+            }
+          }
+        }
+      }
+    },
+    "owlis": {
+      "raw": "{text}",
+      "score": "SCORE",
+      "aiLevel": "AI LEVEL",
+      "time": "TIME",
+      "next": "NEXT",
+      "hold": "HOLD",
+      "attack": "ATTACK",
+      "feverGauge": "FEVER",
+      "fever": "OWL FEVER!",
+      "feverOn": "OWL FEVER!",
+      "you": "PLAYER",
+      "ai": "AI",
+      "comboPop": "{n} COMBO",
+      "rebootField": "REBOOT…",
+      "canvas": "OWLIS game screen — your field on the left, the AI's on the right",
+      "ready": "READY",
+      "gameOver": "GAME OVER",
+      "timeUpBig": "TIME UP",
+      "counter": "COUNTER!",
+      "counterSub": "Struck back with a {n}-chain",
+      "emergency": "EMERGENCY CLEAR!",
+      "combo": "{n} COMBO!",
+      "feverSub": "Score & attack ×1.5",
+      "ko": "K.O.!",
+      "koSub": "The AI field is full — it restarts",
+      "reboot": "AI REBOOT",
+      "evolved": "AI EVOLVED",
+      "levelNow": "LEVEL {lv}",
+      "hardcore": "WARNING — HARDCORE AI",
+      "hardcoreSub": "ACTIVATED",
+      "learning": "THE OWL IS LEARNING…",
+      "survival": "Survived {min} min!",
+      "plus": "+{n}",
+      "timeUp": "TIME UP",
+      "controls": {
+        "hold": "Hold",
+        "rotL": "Rotate left",
+        "left": "Left",
+        "soft": "Soft drop",
+        "right": "Right",
+        "rotR": "Rotate right",
+        "hard": "Hard drop"
+      },
+      "menu": {
+        "tagline": "An endless puzzle duel — the AI grows as you do",
+        "play": "PLAY",
+        "record": "RECORD",
+        "how": "HOW TO PLAY",
+        "best": "Best score",
+        "longest": "Longest run",
+        "maxCombo": "Best chain",
+        "maxLevel": "Top AI LEVEL",
+        "games": "Games",
+        "rules": [
+          "Move and rotate two-cell blocks. 4+ of one color touching up/down/left/right pop",
+          "Blocks above fall into the gap — if they connect again, that's a chain (COMBO). Longer chains score and attack more",
+          "Your attack first cancels junk headed your way (red marks above your field); the rest flies to the AI",
+          "Gray junk blocks break when a color group pops next to them",
+          "The AI watches your chains, attacks and close calls, and evolves LEVEL 1 → 5 → 5+. Stronger AI = bigger score multiplier",
+          "Fill up to the ✕ in the middle and it's GAME OVER. Fill the AI's field for a K.O. bonus!"
+        ],
+        "controlsTitle": "Controls",
+        "controlsTouch": "📱 Drag = move · Tap = rotate (left half ↺ / right half ↻) · Drag down = soft drop · Flick down = hard drop · Flick up = hold (buttons below work too)",
+        "controlsKeys": "⌨️ ← → move · ↓ soft drop · ↑/X rotate · Z rotate back · Space hard drop · C/Shift hold",
+        "hint": "On PC, press Enter to start"
+      }
+    },
+    "chef": {
+      "score": "SCORE",
+      "stage": "STAGE {n}/{max}",
+      "infLevel": "∞ LV {n}",
+      "ordersLeft": "Orders {n}/{max}",
+      "combo": "{n} COMBO",
+      "tickets": "ORDERS",
+      "ticketPick": "Tap a table or plate to pick an order",
+      "ticketNone": "Empty table",
+      "tableAria": "Table {n} — {dish}",
+      "tableEmpty": "Empty table",
+      "bugTag": "BUG!",
+      "plateAria": "Plate {n}",
+      "plateInTool": "Cooking in {tool}",
+      "plateWrong": "⚠ Wrong order — undo",
+      "serve": "Serve",
+      "plateEmpty": "Add ingredients",
+      "plateSelect": "Tap to select",
+      "finStep": "{tool}: {verb}",
+      "wrongLine": "⚠ Line {n} differs from the recipe — fix it with undo (↩)",
+      "slotAria": "{tool} slot {n}",
+      "undo": "Undo",
+      "trash": "Clear",
+      "stageClearSub": "STAGE {n} CLEAR",
+      "infSub": "It gets busier every 30 seconds. How long can you last?",
+      "newTool": "NEW TOOL — {name}",
+      "newDish": "NEW MENU — {name}",
+      "infUp": "Faster, pickier customers",
+      "closingSub": "The restaurant is closing — great work!",
+      "rejectBug": "Served a table with a bug",
+      "rejectCompile": "Does not match the recipe",
+      "need": "Next ingredient: {item}",
+      "systemSub": "No serving at any table for a moment!",
+      "bugTable": "🐛 A bug is heading to table {n} — serve another order first!",
+      "bugTool": "🐛 A bug is heading to the {tool} — it will be blocked",
+      "blocked": {
+        "full": "That tool is full",
+        "bug": "🐛 Blocked by a bug",
+        "busy": "Still cooking",
+        "noPlate": "Pick an order (plate) first",
+        "raw": "Prep it first — tap the ingredient to send it to a tool",
+        "wrong": "Wrong order — fix it with undo (↩)",
+        "notDone": "The recipe is not finished yet",
+        "cantUndo": "Cooked steps cannot be undone — clear (🗑)",
+        "locked": "Not available yet",
+        "inTool": "That plate is cooking",
+        "wrongTool": "That ingredient does not go in this tool — check the 🔪🍳 marks on the tile",
+        "otherTable": "Serve a dish only to the table that ordered it"
+      },
+      "tools": {
+        "board": "Board",
+        "pan": "Pan",
+        "pot": "Pot",
+        "oven": "Oven",
+        "mixer": "Mixer"
+      },
+      "verbs": {
+        "fry": "fry",
+        "grill": "grill",
+        "boil": "boil",
+        "noodle": "boil noodles",
+        "stir": "stir-fry",
+        "bake": "bake",
+        "freeze": "freeze",
+        "toss": "toss",
+        "mix": "mix",
+        "roll": "roll",
+        "fold": "fold"
+      },
+      "items": {
+        "bun": "Bread",
+        "sausage": "Sausage",
+        "patty": "Patty",
+        "cheese": "Cheese",
+        "lettuce": "Lettuce",
+        "sauce": "Sauce",
+        "potato": "Potato",
+        "spice": "Spice",
+        "tomato": "Tomato",
+        "onion": "Onion",
+        "ham": "Ham",
+        "noodle": "Noodles",
+        "egg": "Egg",
+        "chicken": "Chicken",
+        "batter": "Batter",
+        "cream": "Cream",
+        "berry": "Berry",
+        "syrup": "Syrup",
+        "meat": "Meat",
+        "rice": "Rice",
+        "seaweed": "Seaweed",
+        "fish": "Fish"
+      },
+      "labels": {
+        "ketchup": "Ketchup",
+        "dressing": "Dressing",
+        "salt": "Salt",
+        "bread": "Toast bread",
+        "soup": "Soup base",
+        "seasoning": "Seasoning",
+        "hot": "Hot sauce",
+        "decor": "Garnish",
+        "dough": "Dough",
+        "tomatoSauce": "Tomato sauce",
+        "topping": "Topping",
+        "cloud": "Cloud cream",
+        "tortilla": "Tortilla",
+        "beef": "Beef",
+        "bacon": "Bacon",
+        "veggie": "Veggies",
+        "coat": "Batter coat",
+        "vinegar": "Vinegar",
+        "soy": "Soy sauce",
+        "curry": "Curry",
+        "broth": "Broth",
+        "meatSauce": "Meat sauce",
+        "cheeseSauce": "Cheese sauce",
+        "salsa": "Salsa"
+      },
+      "recipes": {
+        "hotdog": "Variable Hotdog",
+        "burger": "Debug Burger",
+        "fries": "Code Fries",
+        "salad": "Array Salad",
+        "toast": "Compile Toast",
+        "sandwich": "Class Sandwich",
+        "ramen": "Loop Ramen",
+        "wings": "API Hot Wings",
+        "pancake": "Stack Pancakes",
+        "cake": "Queue Cake",
+        "steak": "Pointer Steak",
+        "pizza": "Data Pizza",
+        "spaghetti": "Server Spaghetti",
+        "icecream": "Cloud Ice Cream",
+        "taco": "Framework Taco",
+        "donburi": "SQL Steak Bowl",
+        "gitpasta": "Git Pasta",
+        "omelet": "Thread Omelet",
+        "gimbap": "JSON Gimbap",
+        "chicken": "Computer Chicken",
+        "sushi": "Algorithm Sushi",
+        "curry": "Linux Curry",
+        "hotpot": "Network Hotpot",
+        "lasagna": "Backend Lasagna",
+        "fullstack": "Full-Stack Course"
+      },
+      "menu": {
+        "slogan": "COOK THE CODE · AVOID THE BUG",
+        "tagline": "Cook 25 coding dishes against the clock, dodge the bugs and chase a high score",
+        "play": "PLAY",
+        "record": "RECORD",
+        "how": "HOW TO PLAY",
+        "best": "Best score",
+        "bestStage": "Best stage",
+        "maxCombo": "Max combo",
+        "games": "Games",
+        "rules": [
+          "When a customer sits down, an order appears. Pick the plate under the table and stack ingredients in code-ticket order",
+          "Ingredients marked 🔪🍳 go to a tool when tapped. When done (✓), tap the tool to put it on the selected plate",
+          "Tap a plate showing ▶ again to put it into a tool (finish step) or serve it",
+          "Wrong order? Fix it with undo (↩) or clear (🗑). Drag a wrong item out of a tool onto 🗑 to throw it away. Serving a wrong dish is a CompileError!",
+          "Never serve a table with a 🐛 bug — the dish is wasted and your combo breaks. Bugs leave soon",
+          "Clearing orders raises the STAGE — one new menu per stage, plus more tools and customers. Serve the Full-Stack Course at stage 25 to open ∞ infinite mode",
+          "If any customer runs out of patience, it is GAME OVER"
+        ],
+        "controlsTitle": "Controls",
+        "controlsTouch": "📱 Tap = one step · drag an ingredient or a finished item onto any plate · drag a plate onto a tool or its table",
+        "controlsKeys": "⌨️ 1·2·3 plates · Space next action (serve/finish) · Q W E R T tools · letter keys on ingredient tiles · Backspace undo · Delete clear · Esc pause",
+        "hint": "On PC, press Enter to start",
+        "home": "Lobby",
+        "settings": "Settings"
+      },
+      "waitCourse": "Serve the Full-Stack Course for ∞",
+      "trashHint": "Clear the selected plate · drop a tool item here to throw it away",
+      "pause": {
+        "title": "PAUSED",
+        "note": "Time is frozen. Press Esc again or use the button below",
+        "resume": "Resume"
+      }
+    }
+  },
+  "music": {
+    "volume": "Music volume",
+    "mute": "Mute music",
+    "unmute": "Unmute music"
   }
 }

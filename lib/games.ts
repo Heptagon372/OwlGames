@@ -1,4 +1,5 @@
-import type { GameId } from "./types";
+import type { GamePoints } from "./config";
+import type { GameId, RetiredGameId } from "./types";
 
 export type GameMeta = {
   id: GameId;
@@ -6,7 +7,7 @@ export type GameMeta = {
   emoji: string;
   tagline: string;
   rules: string[];
-  /** 제한 시간(초). flight·survive는 최대 생존 시간 */
+  /** 제한 시간(초). flight·survive·owlis는 최대 생존 시간 */
   duration: number;
   /** 화면에 그대로 쓰는 시간 표기 (게임마다 "최대"·"부터"가 달라서 문구로 들고 있는다) */
   durationLabel: string;
@@ -16,76 +17,15 @@ export type GameMeta = {
 };
 
 export const GAMES: Record<GameId, GameMeta> = {
-  typer: {
-    id: "typer",
-    title: "나이트 타이퍼",
-    emoji: "⌨️",
-    tagline: "떨어지는 명령어를 쳐서 방화벽을 뚫어라",
-    rules: [
-      "떨어지는 명령어를 정확히 입력하고 Enter",
-      "바닥에 닿으면 방화벽 게이지 +20%, 100%면 종료",
-      "연속 성공 시 콤보 ×1.2 → ×1.5 → ×2.0",
-    ],
-    duration: 60,
-    durationLabel: "60초",
-    scoreUnit: "점",
-    accent: "amber",
-  },
-  phish: {
-    id: "phish",
-    title: "피싱 헌터",
-    emoji: "🎣",
-    tagline: "진짜일까 피싱일까? 보안관 부엉이의 판별",
-    rules: [
-      "← 왼쪽 스와이프 = 🚨 피싱",
-      "→ 오른쪽 스와이프 = ✅ 정상",
-      "연속 정답 보너스, 오답은 −5초",
-      "카드마다 제한시간 — 단계가 오를수록 짧아져요",
-    ],
-    duration: 90,
-    durationLabel: "90초",
-    scoreUnit: "점",
-    accent: "rose",
-  },
   flight: {
     id: "flight",
     title: "아울러닝",
     emoji: "🦉",
-    tagline: "색을 맞추고, 몸집을 고르고, 날갯짓을 아끼며 더 멀리",
+    tagline: "색을 맞추고, 장애물을 피하고, 능력을 발동시켜 어디까지?",
     rules: [
-      "꾹 누르면 상승 · 떼면 활공 (에너지는 날갯짓할 때만 줄어요)",
-      "색 게이트는 같은 색·도형으로 통과 — 틀려도 죽지 않고 에너지만 깎여요",
-      "🪶 에너지 · 🟢🔵 크기 · 🛡️🌈 버프를 챙기며 더 멀리",
-    ],
-    duration: 180,
-    durationLabel: "최대 180초",
-    scoreUnit: "점",
-    accent: "cyan",
-  },
-  logic: {
-    id: "logic",
-    title: "아울 로직",
-    emoji: "🔌",
-    tagline: "게이트를 끼워 잠긴 인증 회로를 복구하라",
-    rules: [
-      "부품을 탭 → 빈 슬롯을 탭하면 회로가 바로 돌아가요",
-      "목표 진리표가 전부 맞으면 자동으로 클리어",
-      "최소 부품으로 풀면 최적화 보너스, 5연속이면 OVERDRIVE",
-    ],
-    duration: 70,
-    durationLabel: "70초부터 (풀면 늘어나요)",
-    scoreUnit: "점",
-    accent: "cyan",
-  },
-  space: {
-    id: "space",
-    title: "아울스페이스",
-    emoji: "🚀",
-    tagline: "맞으면 끝, 스치면 점수",
-    rules: [
-      "드래그로 회피 — 발사는 자동 (세로 화면)",
-      "적 탄을 스치면 GRAZE 점수 + 칩이 쌓여요",
-      "생명 3개. 위험하면 💣 봄으로 전탄 소거",
+      "꾹 누르면 상승 · 떼면 활공 — 색 게이트는 같은 색으로 PERFECT",
+      "레이저·미사일·중력 반전… 단계마다 새 위기가 와요 (벽만 즉사)",
+      "NEAR MISS·PERFECT로 🔥 FEVER, 10연속이면 COLOR POWER (Q)",
     ],
     duration: 180,
     durationLabel: "최대 180초",
@@ -96,26 +36,84 @@ export const GAMES: Record<GameId, GameMeta> = {
     id: "survive",
     title: "아울 서바이버즈",
     emoji: "🛡️",
-    tagline: "살아남아 보스를 잡아라",
+    tagline: "끝없는 전장에서 살아남아라",
     rules: [
       "이동만 하세요 — 공격은 전부 자동 (가로 화면)",
-      "레벨업마다 스킬 카드 3장 중 1장 선택",
-      "보스를 잡아야 다음 스테이지가 열려요",
+      "단계마다 새 도형이 나오고, 보스를 잡아야 넘어가요",
+      "15단계 십오각형을 잡으면 무한 진행",
     ],
-    duration: 180,
-    durationLabel: "최대 180초",
+    duration: 2400,
+    durationLabel: "무한 생존",
     scoreUnit: "점",
     accent: "rose",
+  },
+  owlis: {
+    id: "owlis",
+    title: "아울리스",
+    emoji: "🧩",
+    tagline: "네가 잘할수록, 상대 AI도 강해진다",
+    rules: [
+      "두 칸짜리 아울 블록을 돌려 쌓고, 같은 색 4개가 붙으면 터져요",
+      "터진 뒤 떨어진 블록이 또 붙으면 연쇄(COMBO) — 연쇄가 길수록 AI에게 방해 블록을 보내요",
+      "AI는 내 실력을 보고 LEVEL 1 → 5 → 5+ 로 진화해요. 내 필드가 차면 끝",
+    ],
+    duration: 1800,
+    durationLabel: "무한 (패배할 때까지)",
+    scoreUnit: "점",
+    accent: "cyan",
+  },
+  chef: {
+    id: "chef",
+    title: "아울 레스토랑",
+    emoji: "🍳",
+    tagline: "코드를 요리하고, 버그를 피해라!",
+    rules: [
+      "손님이 주문한 코딩 음식을 레시피 순서대로 쌓아 제출해요",
+      "도마·팬·냄비·오븐·믹서를 동시에 돌려 여러 테이블을 챙겨요",
+      "🐛 버그가 앉은 테이블엔 내면 안 돼요. 손님 한 명이라도 기다리다 지치면 끝",
+    ],
+    duration: 1200,
+    durationLabel: "25단계 + 무한",
+    scoreUnit: "점",
+    accent: "amber",
   },
 };
 
 export const GAME_IDS = Object.keys(GAMES) as GameId[];
 
 export function isGameId(v: string): v is GameId {
-  return v in GAMES;
+  return Object.prototype.hasOwnProperty.call(GAMES, v);
 }
 
-/** §7 공통: points = 30 + min(270, floor(raw / K)) — 표시·데모용. 실제 지급은 서버 */
-export function estimatePoints(raw: number, k: number): number {
-  return 30 + Math.min(270, Math.floor(Math.max(0, raw) / k));
+/**
+ * 내린 게임 (행사 중 교체). DB 에는 예전 세션·통계가 남아 있으니 **기록을 그릴 때만** 쓴다.
+ * 로비·랭킹 탭·게임 라우트에는 나오지 않는다 (`GAMES` 에 없으므로).
+ */
+export const RETIRED_GAMES: Record<RetiredGameId, { emoji: string; title: string }> = {
+  typer: { emoji: "⌨️", title: "나이트 타이퍼" },
+  logic: { emoji: "🔌", title: "아울 로직" },
+  phish: { emoji: "🎣", title: "피싱 헌터" },
+  space: { emoji: "🚀", title: "아울스페이스" },
+};
+
+/** 세션 행의 game 값 → 이모지 (내린 게임도 안전하게) */
+export function gameEmoji(id: string): string {
+  if (isGameId(id)) return GAMES[id].emoji;
+  return RETIRED_GAMES[id as RetiredGameId]?.emoji ?? "🎮";
+}
+
+/** 세션 행의 game 값 → 한국어 이름 (관리자 화면용 — 플레이어 화면은 messages 의 games.* 를 쓴다) */
+export function gameTitleKo(id: string): string {
+  if (isGameId(id)) return GAMES[id].title;
+  return RETIRED_GAMES[id as RetiredGameId]?.title ?? id;
+}
+
+/**
+ * 포인트 = 기본 + floor(플레이 초 / 60 × 분당[게임]) + floor(원점수 / K[게임]) — 상한 없음.
+ * DB `public.game_points` 와 같은 식 (표시용 — 실제 지급은 서버, 시간은 서버 시계).
+ */
+export function estimatePoints(game: GameId, raw: number, sec: number, cfg: GamePoints, k: number): number {
+  const rate = cfg.per_min[game] ?? 0;
+  const byRaw = k > 0 ? Math.floor(Math.max(0, raw) / k) : 0;
+  return Math.floor(cfg.base) + Math.floor((Math.max(0, sec) / 60) * rate) + byRaw;
 }

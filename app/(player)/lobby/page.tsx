@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { GameLogo } from "@/components/GameLogo";
+import { LobbyVideo } from "@/components/LobbyVideo";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRight, Sparkles, Ticket as TicketIcon, TriangleAlert } from "lucide-react";
@@ -12,7 +14,7 @@ import { Card, Chip, SectionTitle, TermLabel } from "@/components/ui/Card";
 import { ButtonLink } from "@/components/ui/Button";
 import { formatNumber } from "@/lib/format";
 import { GAMES } from "@/lib/games";
-import { getIsOpen, getLeaderboard, getMyPosition, getMyProfile, getOwlEnergy, getMyTickets } from "@/lib/queries";
+import { getIsOpen, getLeaderboard, getMyPosition, getMyProfile, getOwlEnergy, getMyTickets, getAppConfig } from "@/lib/queries";
 import { rankInfo, rankLevelRange } from "@/lib/rank";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,13 +37,14 @@ export default async function LobbyPage({
   const profile = await getMyProfile();
   if (!profile) redirect("/auth/login");
 
-  const [{ closed }, open, tickets, top, myPos, energy, t, tc, tg, te, tr] = await Promise.all([
+  const [{ closed }, open, tickets, top, myPos, energy, config, t, tc, tg, te, tr] = await Promise.all([
     searchParams,
     getIsOpen(),
     getMyTickets(),
     getLeaderboard(10),
     getMyPosition(profile.id),
     getOwlEnergy(),
+    getAppConfig(),
     getTranslations("lobby"),
     getTranslations("common"),
     getTranslations("games"),
@@ -64,6 +67,9 @@ export default async function LobbyPage({
           {tc("closedNow")}
         </div>
       )}
+
+      {/* 홍보 영상 */}
+      <LobbyVideo className="mb-4" />
 
       {/* 내 랭크 — 유리판 위로 랭크 색이 번진다 */}
       <Card neon className="relative overflow-hidden">
@@ -123,19 +129,14 @@ export default async function LobbyPage({
               <div
                 className={`pointer-events-none absolute -right-10 -top-12 size-40 rounded-full blur-3xl ${BLOOM[g.accent]}`}
               />
-              <div className="relative flex items-start gap-3.5">
-                <div className="grid size-14 shrink-0 place-items-center rounded-tile border border-white/25 bg-white/10 text-3xl shadow-[inset_0_1px_0_rgb(255_255_255/0.3)] backdrop-blur-sm">
-                  {g.emoji}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="display text-lg">{tg(`${g.id}.title`)}</p>
-                  <p className="mt-0.5 text-[13px] leading-snug text-mute">{tg(`${g.id}.tagline`)}</p>
-                </div>
+              <div className="relative">
+                <GameLogo game={g.id} alt={tg(`${g.id}.title`)} className="mx-auto h-32 w-full" />
+                <p className="mt-2 text-center text-[13px] leading-snug text-mute">{tg(`${g.id}.tagline`)}</p>
               </div>
 
               <div className="relative mt-3 flex flex-wrap items-center gap-1.5">
                 <Chip className="num text-[10px]">{tg(`${g.id}.duration`)}</Chip>
-                <Chip className="num text-[10px]">{t("pointRange")}</Chip>
+                <Chip className="num text-[10px]">{t("pointRange", { base: config.game_points.base, rate: config.game_points.per_min[g.id] ?? 0 })}</Chip>
                 <Chip tone="amber" className="num text-[10px]">
                   🦉 {energy.cost}
                 </Chip>

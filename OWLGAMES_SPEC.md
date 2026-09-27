@@ -149,7 +149,7 @@ flowchart TD
 ### 공통
 - 시작 시 `start_game_session(game)` RPC → `session_id` 발급 (운영시간·인증·동시 세션 체크)
 - 종료 시 `submit_game_session(session_id, raw_score, meta)` RPC → 서버가 포인트 계산·지급·레벨/랭크/티켓 갱신 후 결과 반환
-- 포인트 환산: `points = 30 + min(270, floor(raw_score / K_game))` → **1판 30~300P**
+- 포인트 환산: ~~`points = 30 + min(270, floor(raw_score / K_game))` → 1판 30~300P~~ → **DECISIONS §5-26 로 교체**: `50 + floor(초/60 × 분당[게임]) + floor(raw / K)`, 상한 없음
 - 결과 모달: 원점수, 획득 포인트, 경험치 바 애니메이션, 레벨업/랭크업 풀스크린 연출, 티켓 획득 알림
 - 로비에서 [다시하기] 원탭
 

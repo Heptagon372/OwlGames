@@ -3,14 +3,15 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Logo } from "@/components/brand/Logo";
 import { OwlMark } from "@/components/brand/OwlMark";
-import { DemoBanner } from "@/components/DemoBanner";
+import { GameLogo } from "@/components/GameLogo";
+import { SetupBanner } from "@/components/SetupBanner";
 import { OpenStatus } from "@/components/OpenStatus";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RankBadge } from "@/components/RankBadge";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, Chip, TermLabel } from "@/components/ui/Card";
 import { PLACE_EMOJI } from "@/lib/config";
-import { GAMES } from "@/lib/games";
+import { GAME_IDS, GAMES } from "@/lib/games";
 import { getAppConfig, getIsOpen, getMyProfile, getPrizes } from "@/lib/queries";
 import { RANKS } from "@/lib/rank";
 
@@ -33,7 +34,7 @@ export default async function LandingPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pb-16">
-      <DemoBanner />
+      <SetupBanner />
       <header className="flex items-center justify-between py-4">
         <Logo size="sm" />
         <div className="flex items-center gap-1">
@@ -86,20 +87,15 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* 게임 5종 */}
+      {/* 게임 */}
       <section className="mt-10">
         <TermLabel>{t("gamesLabel")}</TermLabel>
-        <h2 className="display mt-1 mb-4 text-[26px]">{t("gamesTitle")}</h2>
-        <div className="grid gap-3">
+        <h2 className="display mt-1 mb-4 text-[26px]">{t("gamesTitle", { count: GAME_IDS.length })}</h2>
+        <div className="grid grid-cols-2 gap-3">
           {Object.values(GAMES).map((g) => (
-            <Card key={g.id} neon className="flex items-center gap-4">
-              <div className="grid size-14 shrink-0 place-items-center rounded-tile border border-white/25 bg-white/10 text-3xl backdrop-blur-sm">
-                {g.emoji}
-              </div>
-              <div className="min-w-0">
-                <p className="font-extrabold">{tg(`${g.id}.title`)}</p>
-                <p className="truncate text-sm text-mute">{tg(`${g.id}.tagline`)}</p>
-              </div>
+            <Card key={g.id} neon className="flex flex-col items-center gap-2 p-3">
+              <GameLogo game={g.id} alt={tg(`${g.id}.title`)} className="h-24 w-full" />
+              <p className="line-clamp-2 text-center text-xs text-mute">{tg(`${g.id}.tagline`)}</p>
             </Card>
           ))}
         </div>
@@ -118,7 +114,7 @@ export default async function LandingPage() {
                   <s.icon className="size-4 text-neon" />
                   <p className="font-bold">{t(`steps.${s.key}.title`)}</p>
                 </div>
-                <p className="mt-2 text-sm text-mute">{t(`steps.${s.key}.desc`)}</p>
+                <p className="mt-2 text-sm text-mute">{t(`steps.${s.key}.desc`, { count: GAME_IDS.length })}</p>
               </Card>
             </li>
           ))}

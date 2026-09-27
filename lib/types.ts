@@ -1,7 +1,12 @@
 // DB 행 / RPC 응답 타입 (supabase/migrations 와 1:1)
 
 export type UserRole = "user" | "staff" | "admin";
-export type GameId = "typer" | "flight" | "phish" | "logic" | "survive" | "space";
+export type GameId = "flight" | "survive" | "owlis" | "chef";
+/**
+ * 내린 게임 (나이트 타이퍼·아울 로직·피싱 헌터·아울스페이스). DB enum 에는 값이 남아 있어서 **예전 세션 행**의 `game` 에 나올 수 있다 —
+ * 화면에서는 `lib/games.ts` 의 `gameEmoji`/`isGameId` 로 걸러서 그린다.
+ */
+export type RetiredGameId = "typer" | "logic" | "phish" | "space";
 
 export type Profile = {
   id: string;
@@ -16,6 +21,9 @@ export type Profile = {
   owl_energy?: number;
   created_at: string;
 };
+
+/** 승인 대기 목록 (부스·관리자) */
+export type PendingUser = Pick<Profile, "id" | "name" | "student_id" | "created_at">;
 
 export type LeaderboardRow = {
   user_id: string;
@@ -139,6 +147,8 @@ export type BoardStats = {
   challengers: number;
   draws: number;
 };
+
+export const EMPTY_BOARD_STATS: BoardStats = { participants: 0, plays: 0, challengers: 0, draws: 0 };
 
 // ---- RPC 응답 ----
 

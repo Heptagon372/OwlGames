@@ -65,13 +65,14 @@ begin
   assert (v_k ->> 'logic')::numeric = 20,   format('game_k.logic 는 20: %s', v_k);
   assert (v_k ->> 'survive')::numeric = 20, format('game_k.survive 는 20: %s', v_k);
   assert (v_k ->> 'typer')::numeric = 4,    'typer K 가 바뀌면 안 됨';
-  assert (v_k ->> 'flight')::numeric = 20,  'flight K 가 바뀌면 안 됨';
+  assert (v_k ->> 'flight')::numeric = 100, 'flight K 는 100 (20261003 아울러닝 2.0)';
   assert (v_k ->> 'phish')::numeric = 10,   'phish K 가 바뀌면 안 됨';
 
   assert (v_lim -> 'logic' ->> 'min_sec')::numeric = 10,   format('logic min_sec: %s', v_lim);
   assert (v_lim -> 'logic' ->> 'max_sec')::numeric = 185,  format('logic max_sec: %s', v_lim);
   assert (v_lim -> 'survive' ->> 'min_sec')::numeric = 20, format('survive min_sec: %s', v_lim);
-  assert (v_lim -> 'survive' ->> 'max_sec')::numeric = 200,format('survive max_sec: %s', v_lim);
+  -- survive 는 v3(20261001)에서 한 런이 길어져 2400초가 됐다
+  assert (v_lim -> 'survive' ->> 'max_sec')::numeric = 2400,format('survive max_sec: %s', v_lim);
   assert (v_lim -> 'typer' ->> 'max_sec')::numeric = 65,   'typer 제한이 바뀌면 안 됨';
   assert (v_lim -> 'flight' ->> 'max_sec')::numeric = 185, 'flight 제한이 바뀌면 안 됨';
   assert (v_lim -> 'phish' ->> 'max_sec')::numeric = 95,   'phish 제한이 바뀌면 안 됨';
@@ -293,11 +294,12 @@ begin
   assert (v_r ->> 'owl_energy_gained')::int = 0, format('[logic tier3] 임계값 미달인데 지급됨: %s', v_r);
   assert (v_r ->> 'owl_energy')::int = 6,        format('[logic tier3] 에너지는 그대로 6 (실제 %s)', v_r ->> 'owl_energy');
 
-  raise notice '✅ 9. 아울 에너지 인게임 드랍 — logic(tier_max≥4) 지급, 미달 시 미지급 (survive 는 survive_v2.sql)';
+  raise notice '✅ 9. 아울 에너지 인게임 드랍 — logic(tier_max≥4) 지급, 미달 시 미지급 (survive 는 survive_v3.sql)';
 end $$;
 
 
--- ===== 10. typer / flight / phish 는 이 마이그레이션의 영향을 받지 않는다 ==
+-- ===== 10. typer / flight 는 이 마이그레이션의 영향을 받지 않는다 ==
+--   (피싱 헌터는 20261002_owlis 에서 종료 — 그 세션은 이제 rejected 다. supabase/tests/owlis.sql 참고)
 do $$
 declare
   c_uid     constant uuid  := '0aa1a117-0000-4000-8000-000000000010';
@@ -336,21 +338,7 @@ begin
   assert (v_r ->> 'points')::int = 230,     format('flight 포인트 %s (기대 230)', v_r ->> 'points');
   assert (v_r ->> 'unlocked_stage')::int = 0, format('flight 도 unlocked_stage 키를 가져야 함: %s', v_r);
 
-  update public.game_sessions set submitted_at = now() - interval '1 hour'
-   where user_id = c_uid and status = 'submitted';
-
-  -- phish
-  insert into public.game_sessions (user_id, game, started_at)
-  values (c_uid, 'phish', now() - interval '60 seconds')
-  returning id into v_sid;
-  v_r := public.submit_game_session(v_sid, 1500, '{"correct":12,"streak_max":7}'::jsonb);
-  assert v_r ->> 'status' = 'ok', format('phish 가 거부됨: %s', v_r);
-  assert (v_r ->> 'raw_score')::int = 1500, format('phish raw_score 가 바뀜: %s', v_r ->> 'raw_score');
-  assert (v_r ->> 'points')::int = 30 + least(270, floor(1500::numeric / 10))::int,
-         format('phish 포인트 %s (기대 180)', v_r ->> 'points');
-  assert (v_r ->> 'unlocked_stage')::int = 0, format('phish 도 unlocked_stage 키를 가져야 함: %s', v_r);
-
-  raise notice '✅ 10. typer / flight / phish 무영향 확인 (기존 재계산 로직 유지 + unlocked_stage 키 포함)';
+  raise notice '✅ 10. typer / flight 무영향 확인 (기존 재계산 로직 유지 + unlocked_stage 키 포함)';
 end $$;
 
 do $$

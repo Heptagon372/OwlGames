@@ -1,17 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import { mergeConfig, type AppConfig, isOpenNow } from "./config";
-import {
-  demoEnergyStatus,
-  DEMO_DRAWS,
-  DEMO_LEADERBOARD,
-  DEMO_PRIZES,
-  DEMO_PROFILE,
-  DEMO_SESSIONS,
-  DEMO_TICKETS,
-  demoGameBests,
-} from "./demo";
+import { mergeConfig, type AppConfig, isOpenNow, emptyEnergy } from "./config";
 import { getServerSupabase } from "./supabase/server";
 import type {
   DrawRow,
@@ -26,12 +16,12 @@ import type {
   TicketRow,
 } from "./types";
 
-// 서버 컴포넌트용 조회 함수. 데모 모드면 가짜 데이터를 돌려준다.
+// 서버 컴포넌트용 조회 함수. Supabase 가 없거나 조회에 실패하면 빈 값(가짜 데이터 아님)을 돌려준다.
 // cache()로 한 요청 안의 중복 조회를 합친다.
 
 export const getMyProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await getServerSupabase();
-  if (!supabase) return DEMO_PROFILE;
+  if (!supabase) return null;
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -49,9 +39,7 @@ export const getAppConfig = cache(async (): Promise<AppConfig> => {
 
 export const getIsOpen = cache(async (): Promise<boolean> => {
   const supabase = await getServerSupabase();
-  // 데모 모드(Supabase 미설정)에서는 언제든 플레이할 수 있게 둔다 —
-  // 새벽에 열어보면 전부 잠겨 있어서 "고장난 줄" 알기 때문
-  if (!supabase) return true;
+  if (!supabase) return isOpenNow(await getAppConfig());
   const { data, error } = await supabase.rpc("is_open");
   if (error) return isOpenNow(await getAppConfig());
   return Boolean(data);
@@ -59,7 +47,7 @@ export const getIsOpen = cache(async (): Promise<boolean> => {
 
 export async function getLeaderboard(limit = 50): Promise<LeaderboardRow[]> {
   const supabase = await getServerSupabase();
-  if (!supabase) return DEMO_LEADERBOARD.slice(0, limit);
+  if (!supabase) return [];
   const { data } = await supabase.from("leaderboard").select("*").order("position").limit(limit);
   return (data as LeaderboardRow[] | null) ?? [];
 }
@@ -67,14 +55,14 @@ export async function getLeaderboard(limit = 50): Promise<LeaderboardRow[]> {
 /** 내 순위 (TOP N 밖일 때 표시용) */
 export async function getMyPosition(userId: string): Promise<LeaderboardRow | null> {
   const supabase = await getServerSupabase();
-  if (!supabase) return DEMO_LEADERBOARD.find((r) => r.user_id === userId) ?? null;
+  if (!supabase) return null;
   const { data } = await supabase.from("leaderboard").select("*").eq("user_id", userId).maybeSingle();
   return (data as LeaderboardRow | null) ?? null;
 }
 
 export async function getGameBests(game: GameId, limit = 50): Promise<GameBestRow[]> {
   const supabase = await getServerSupabase();
-  if (!supabase) return demoGameBests(game).slice(0, limit);
+  if (!supabase) return [];
   const { data } = await supabase
     .from("game_bests")
     .select("*")
@@ -86,7 +74,7 @@ export async function getGameBests(game: GameId, limit = 50): Promise<GameBestRo
 
 export async function getMySessions(limit = 30): Promise<GameSessionRow[]> {
   const supabase = await getServerSupabase();
-  if (!supabase) return DEMO_SESSIONS;
+  if (!supabase) return [];
   const profile = await getMyProfile();
   if (!profile) return [];
   // staff는 RLS상 전체 세션이 보이므로 본인 것만 명시적으로 거른다
@@ -102,7 +90,7 @@ export async function getMySessions(limit = 30): Promise<GameSessionRow[]> {
 
 export async function getMyTickets(): Promise<TicketRow[]> {
   const supabase = await getServerSupabase();
-  if (!supabase) return DEMO_TICKETS;
+  if (!supabase) return [];
   const profile = await getMyProfile();
   if (!profile) return [];
   const { data } = await supabase
@@ -134,7 +122,7 @@ export type MyDraw = DrawRow & { prize_name: string | null };
 
 export async function getMyDraws(): Promise<MyDraw[]> {
   const supabase = await getServerSupabase();
-  if (!supabase) return DEMO_DRAWS;
+  if (!supabase) return [];
   const profile = await getMyProfile();
   if (!profile) return [];
   const [{ data: draws }, prizes] = await Promise.all([
@@ -151,15 +139,15 @@ export async function getMyDraws(): Promise<MyDraw[]> {
 /** 아울 에너지 상태 (§포인트 남용 방지) */
 export const getOwlEnergy = cache(async (): Promise<OwlEnergy> => {
   const supabase = await getServerSupabase();
-  if (!supabase) return demoEnergyStatus();
+  if (!supabase) return emptyEnergy((await getAppConfig()).owl_energy);
   const { data, error } = await supabase.rpc("owl_energy_status");
-  if (error || !data) return demoEnergyStatus();
+  if (error || !data) return emptyEnergy((await getAppConfig()).owl_energy);
   return data as OwlEnergy;
 });
 
 export const getPrizes = cache(async (): Promise<PrizeRow[]> => {
   const supabase = await getServerSupabase();
-  if (!supabase) return DEMO_PRIZES;
+  if (!supabase) return [];
   const { data } = await supabase.from("prizes").select("*").order("place");
   return (data as PrizeRow[] | null) ?? [];
 });

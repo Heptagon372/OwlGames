@@ -143,7 +143,7 @@ begin
 
   -- 3.1 cap(10) 상태에서 시작 → 1 소모. 소모 전 값이 cap 이상이었으므로 시계는 now() 로.
   update public.profiles set owl_energy = 10, owl_energy_at = now() - interval '3 minutes' where id = c_uid;
-  v_id := public.start_game_session('typer');
+  v_id := public.start_game_session('logic');
   assert v_id is not null, '세션 id 가 반환돼야 함';
   select * into v_row from public.profiles where id = c_uid;
   assert v_row.owl_energy = 9, format('시작 후 에너지 9 (실제 %s)', v_row.owl_energy);
@@ -154,7 +154,7 @@ begin
 
   -- 3.2 cap 미만 상태에서 시작 → 시계는 건드리지 않는다 (진행 중인 회복 게이지 유지)
   update public.profiles set owl_energy = 5, owl_energy_at = now() - interval '3 minutes' where id = c_uid;
-  v_id := public.start_game_session('typer');
+  v_id := public.start_game_session('logic');
   select * into v_row from public.profiles where id = c_uid;
   assert v_row.owl_energy = 4, format('시작 후 에너지 4 (실제 %s)', v_row.owl_energy);
   assert extract(epoch from (now() - v_row.owl_energy_at)) between 175 and 185,
@@ -165,7 +165,7 @@ begin
   -- 3.3 에너지 0 → 정확한 한국어 메시지로 거부, 에너지·세션 모두 변화 없음
   update public.profiles set owl_energy = 0, owl_energy_at = now() where id = c_uid;
   begin
-    perform public.start_game_session('typer');
+    perform public.start_game_session('logic');
     assert false, '에너지 0 인데 시작이 성공함';
   exception when others then
     assert sqlerrm = '아울 에너지가 부족해요. 10분마다 1개씩 충전돼요',

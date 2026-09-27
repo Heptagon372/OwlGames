@@ -1,5 +1,6 @@
 // 🦉 아울 서바이버즈 v2 — 레벨업 카드 (기획서 §6 · §7 추첨 규칙)
 
+import { msg, rawMsg } from "@/games/core/i18n";
 import { CFG } from "../config";
 import {
   ACTIVE_IDS,
@@ -10,7 +11,7 @@ import {
   PASSIVES,
   RESCUE_PASSIVES,
 } from "../data/skills";
-import { pushLog, recalcStats, type World } from "./world";
+import { CUE, emote, pushLog, recalcStats, type World } from "./world";
 import type { ActiveId, Card, EvoId, PassiveId, SkillId } from "../types";
 
 /** 지금 진화할 수 있는 조합 (§6.1) — 액티브 MAX + 짝 패시브 Lv3 */
@@ -145,10 +146,12 @@ export function applyCard(w: World, card: Card): void {
     w.evolutions.push(id);
     w.run.evolutions += 1;
     w.freeze = CFG.feedback.evoFreezeSec;
+    w.cues |= CUE.evo;
     w.flash = Math.max(w.flash, 0.2);
-    pushLog(w, "EVO", `⭐ ${def.name} 진화 완료`);
-    w.banner = { text: `⭐ ${def.name}`, sub: "진화", until: w.t + 2 };
+    pushLog(w, "EVO", msg("evolved", { name: def.name }));
+    w.banner = { m: rawMsg(`⭐ ${def.name}`), sub: msg("evolution"), until: w.t + 2 };
     recalcStats(w);
+    emote(w, 1, 1.6);
     return;
   }
 
@@ -157,7 +160,13 @@ export function applyCard(w: World, card: Card): void {
     const slot = w.actives.find((s) => s.id === id);
     if (slot) slot.lv = Math.min(CFG.evolution.maxSkillLv, slot.lv + 1);
     else w.actives.push({ id, lv: 1, evo: null, cd: 0 });
-    pushLog(w, "INFO", `${ACTIVES[id].emoji} ${ACTIVES[id].name} ${slot ? `Lv${slot.lv}` : "획득"}`);
+    pushLog(
+      w,
+      "INFO",
+      slot
+        ? msg("skillUp", { emoji: ACTIVES[id].emoji, name: ACTIVES[id].name, lv: slot.lv })
+        : msg("skillNew", { emoji: ACTIVES[id].emoji, name: ACTIVES[id].name }),
+    );
     return;
   }
 
@@ -166,7 +175,13 @@ export function applyCard(w: World, card: Card): void {
   if (slot) slot.lv = Math.min(CFG.evolution.maxSkillLv, slot.lv + 1);
   else w.passives.push({ id, lv: 1 });
   recalcStats(w);
-  pushLog(w, "INFO", `${PASSIVES[id].emoji} ${PASSIVES[id].name} ${slot ? `Lv${slot.lv}` : "획득"}`);
+  pushLog(
+    w,
+    "INFO",
+    slot
+      ? msg("skillUp", { emoji: PASSIVES[id].emoji, name: PASSIVES[id].name, lv: slot.lv })
+      : msg("skillNew", { emoji: PASSIVES[id].emoji, name: PASSIVES[id].name }),
+  );
 }
 
 /** 결과 화면·서버 meta 에 쓰는 빌드 요약 (§11.3) */

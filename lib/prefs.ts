@@ -31,9 +31,11 @@ export function currentScale(): Scale {
   return isScale(v) ? v : DEFAULT_SCALE;
 }
 
-/** 소리 */
-export type SoundPrefs = { on: boolean; volume: number };
-export const DEFAULT_SOUND: SoundPrefs = { on: true, volume: 0.6 };
+/** 소리 — volume 은 전체, music 은 그 안에서 배경음악만 (전체 × 배경음악) */
+export type SoundPrefs = { on: boolean; volume: number; music: number };
+export const DEFAULT_SOUND: SoundPrefs = { on: true, volume: 0.6, music: 0.5 };
+
+const unit = (v: unknown, fallback: number) => (typeof v === "number" ? Math.min(1, Math.max(0, v)) : fallback);
 
 export function readSound(): SoundPrefs {
   if (typeof localStorage === "undefined") return DEFAULT_SOUND;
@@ -43,7 +45,8 @@ export function readSound(): SoundPrefs {
     const v = JSON.parse(raw) as Partial<SoundPrefs>;
     return {
       on: typeof v.on === "boolean" ? v.on : DEFAULT_SOUND.on,
-      volume: typeof v.volume === "number" ? Math.min(1, Math.max(0, v.volume)) : DEFAULT_SOUND.volume,
+      volume: unit(v.volume, DEFAULT_SOUND.volume),
+      music: unit(v.music, DEFAULT_SOUND.music),
     };
   } catch {
     return DEFAULT_SOUND;

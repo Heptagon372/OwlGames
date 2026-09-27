@@ -1,12 +1,25 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { SUPABASE_ANON_KEY, SUPABASE_URL, isDemo } from "@/lib/env";
+import { SUPABASE_ANON_KEY, SUPABASE_URL, isConfigured } from "@/lib/env";
 
 // §4 라우트 접근 규칙: role · verified · 운영시간
 const PLAYER_PREFIXES = ["/lobby", "/game", "/rank", "/ticket", "/me"];
 
 export async function middleware(request: NextRequest) {
-  if (isDemo) return NextResponse.next({ request });
+  if (!isConfigured) {
+    // Supabase 미설정: 볼 데이터가 없으니 로그인이 필요한 화면은 로그인(설정 안내 배너)으로 보낸다
+    const path = request.nextUrl.pathname;
+    const needsLogin =
+      PLAYER_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`)) ||
+      path === "/pending" ||
+      path.startsWith("/booth") ||
+      path.startsWith("/admin");
+    if (!needsLogin) return NextResponse.next({ request });
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/login";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {

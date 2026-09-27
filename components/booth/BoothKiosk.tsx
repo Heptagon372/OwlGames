@@ -65,7 +65,7 @@ export function BoothKiosk() {
     setError(null);
     const startedAt = Date.now();
     try {
-      const res = await boothDraw(lookup.code, lookup.tier);
+      const res = await boothDraw(lookup.code);
       // 연출은 최소 3초 (§8.2)
       const wait = Math.max(0, 3000 - (Date.now() - startedAt));
       setTimeout(() => {
@@ -173,12 +173,6 @@ export function BoothKiosk() {
                     </p>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center justify-between rounded-tile border border-line bg-night px-4 py-3">
-                  <span className="text-sm text-mute">남은 뽑기</span>
-                  <span className="num text-2xl font-black text-neon">{lookup.remaining}회</span>
-                </div>
-                <p className="mt-3 text-center text-xs text-dim">👀 학생증과 이름·학번을 대조해주세요</p>
-                {error && <p className="mt-3 text-center font-bold text-alert">{error}</p>}
               </Card>
             )}
           </div>

@@ -1,10 +1,23 @@
-// 🦉 아울 서바이버즈 v2 — 스테이지 1~15 + 무한 스테이지 (기획서 §4·§5)
+// 🦉 아울 서바이버즈 v3 — 몬스터 15단계 (기획서 §2·§4·§5)
+//
+// 몬스터는 도형이다. 단계마다 새 도형이 하나씩 풀리고, 앞 단계 도형은 계속 섞여 나온다.
+// 이름은 여기에 두지 않는다 — 화면 문구는 `messages/*.json` 의 `hud.survive.enemy` 가 id 로 찾는다.
 
-import { CFG } from "../config";
+import { bossOf } from "../config";
 
-export type EnemyKind =
-  | "bug" | "worm" | "spark" | "frost" | "wire" | "trojan" | "botnet" | "ransom"
-  | "spyware" | "mimic" | "rootkit" | "miner" | "exploit" | "warp" | "elite";
+export type MobKind =
+  | "tri" | "square" | "circle" | "penta" | "hepta"
+  | "octa" | "deca" | "hendeca" | "dodeca" | "tetradeca";
+
+/** 보스 4종 — 5·8·12·15단계 (15는 16단계부터 4단계마다 다시 온다) */
+export type BossKind = "hexa" | "nona" | "trideca" | "chrono";
+
+/** 보스가 부리는 소환물 (⏱️ 시한폭탄 · 👥 시간의 분신) */
+export type ExtraKind = "bomb" | "clone";
+
+export type EnemyKind = MobKind | BossKind | ExtraKind;
+
+export type Trait = "none" | "charge" | "shoot4" | "summon" | "regen";
 
 export type EnemySpec = {
   hp: number;
@@ -12,140 +25,102 @@ export type EnemySpec = {
   r: number;
   dmg: number;
   xp: number;
-  /** 다각형 변 수 (§10.3 — 등급이 올라갈수록 변이 많아진다) */
+  /** 변 수 — 0 이면 원 */
   sides: number;
-  /** 특수 행동 */
-  trait?: "zigzag" | "split" | "slow" | "heal" | "blink" | "stealth" | "shoot";
+  trait: Trait;
+  /** 특수 몬스터 표시 (카드 테두리·HUD) */
+  special: boolean;
+  /** 동시에 살아 있을 수 있는 수 (특수 몬스터가 화면을 덮지 않게) */
+  max: number;
 };
 
-/** 적 스펙 — HP·XP 는 기획서 기준, 속도·반경·접촉 피해는 "느림/보통/빠름" 서술을 수치화한 값 */
+/**
+ * 몬스터 스펙. 기획서의 상대 관계를 수치로 옮겼다.
+ *  - 삼각형은 시작 스킬(깃털 표창 11) 한 방에 죽는다
+ *  - 사각형 = 삼각형 ×2 체력, 팔각형 = 사각형 ×2 체력
+ *  - 십각형 = 원형 ×2 속도
+ *  - 십이각형 = 느리고 약하지만 한 대가 아프다
+ *  - 십사각형 = 체력이 가장 높고 가장 느리다
+ */
+export const MOB_SPEC: Record<MobKind, EnemySpec> = {
+  tri:       { hp: 10,  speed: 60,  r: 9,  dmg: 5,  xp: 1,  sides: 3,  trait: "none",   special: false, max: 999 },
+  square:    { hp: 20,  speed: 46,  r: 11, dmg: 6,  xp: 2,  sides: 4,  trait: "none",   special: false, max: 999 },
+  circle:    { hp: 15,  speed: 110, r: 9,  dmg: 5,  xp: 2,  sides: 0,  trait: "none",   special: false, max: 999 },
+  penta:     { hp: 45,  speed: 55,  r: 14, dmg: 8,  xp: 5,  sides: 5,  trait: "charge", special: true,  max: 6 },
+  hepta:     { hp: 40,  speed: 50,  r: 14, dmg: 6,  xp: 5,  sides: 7,  trait: "shoot4", special: true,  max: 6 },
+  octa:      { hp: 40,  speed: 38,  r: 16, dmg: 9,  xp: 4,  sides: 8,  trait: "none",   special: false, max: 999 },
+  deca:      { hp: 8,   speed: 220, r: 9,  dmg: 6,  xp: 2,  sides: 10, trait: "none",   special: false, max: 999 },
+  hendeca:   { hp: 70,  speed: 30,  r: 18, dmg: 5,  xp: 10, sides: 11, trait: "summon", special: true,  max: 2 },
+  dodeca:    { hp: 22,  speed: 34,  r: 15, dmg: 30, xp: 5,  sides: 12, trait: "none",   special: false, max: 999 },
+  tetradeca: { hp: 260, speed: 22,  r: 22, dmg: 10, xp: 16, sides: 14, trait: "regen",  special: true,  max: 3 },
+};
+
+/** 보스·소환물은 등장할 때 수치를 따로 넣는다 (config 의 보스 블록). 여기엔 모양만 */
+const SHAPE_ONLY = { hp: 1, speed: 0, r: 20, dmg: 0, xp: 0, trait: "none", special: true, max: 999 } as const;
+
 export const ENEMY_SPEC: Record<EnemyKind, EnemySpec> = {
-  bug:     { hp: 10,  speed: 52,  r: 9,  dmg: 4,  xp: 1, sides: 3 },
-  worm:    { hp: 8,   speed: 104, r: 8,  dmg: 3,  xp: 2, sides: 4, trait: "zigzag" },
-  spark:   { hp: 14,  speed: 88,  r: 9,  dmg: 6,  xp: 2, sides: 4 },
-  frost:   { hp: 26,  speed: 62,  r: 12, dmg: 6,  xp: 3, sides: 5, trait: "slow" },
-  wire:    { hp: 20,  speed: 96,  r: 10, dmg: 5,  xp: 3, sides: 4, trait: "zigzag" },
-  trojan:  { hp: 45,  speed: 46,  r: 15, dmg: 8,  xp: 3, sides: 5, trait: "split" },
-  botnet:  { hp: 6,   speed: 74,  r: 7,  dmg: 3,  xp: 1, sides: 3 },
-  ransom:  { hp: 90,  speed: 44,  r: 18, dmg: 10, xp: 5, sides: 6, trait: "slow" },
-  spyware: { hp: 34,  speed: 70,  r: 12, dmg: 7,  xp: 4, sides: 5, trait: "shoot" },
-  mimic:   { hp: 60,  speed: 40,  r: 16, dmg: 12, xp: 6, sides: 5, trait: "stealth" },
-  rootkit: { hp: 70,  speed: 80,  r: 14, dmg: 9,  xp: 6, sides: 6, trait: "blink" },
-  miner:   { hp: 80,  speed: 50,  r: 15, dmg: 8,  xp: 6, sides: 6, trait: "heal" },
-  exploit: { hp: 55,  speed: 92,  r: 13, dmg: 10, xp: 5, sides: 5, trait: "shoot" },
-  warp:    { hp: 48,  speed: 86,  r: 12, dmg: 9,  xp: 5, sides: 5, trait: "blink" },
-  elite:   { hp: 400, speed: 78,  r: 26, dmg: 16, xp: 25, sides: 6 },
+  ...MOB_SPEC,
+  hexa: { ...SHAPE_ONLY, sides: 6 },
+  nona: { ...SHAPE_ONLY, sides: 9 },
+  trideca: { ...SHAPE_ONLY, sides: 13 },
+  chrono: { ...SHAPE_ONLY, sides: 15 },
+  bomb: { ...SHAPE_ONLY, sides: 0 },
+  clone: { ...SHAPE_ONLY, sides: 15 },
 };
 
+/** 풀 인덱스(Uint8)와 종류를 오가는 순서표 */
 export const ENEMY_KINDS = Object.keys(ENEMY_SPEC) as EnemyKind[];
-
-/** 보스·중간보스 패턴 (engine/boss.ts 가 구현한다) */
-export type PatternId =
-  | "summon" | "radial" | "field" | "charge" | "sweep"
-  | "rain" | "clones" | "stealth" | "drain" | "blackhole" | "whip" | "random";
-
-export type BossDef = {
-  emoji: string;
-  name: string;
-  hp: number;
-  /** 페이즈가 올라갈수록 patterns[0..n] 이 같이 돈다 */
-  patterns: PatternId[];
-};
+export const MOB_KINDS = Object.keys(MOB_SPEC) as MobKind[];
 
 export type StageDef = {
   id: number;
-  name: string;
-  enemies: EnemyKind[];
-  midboss: { name: string; pattern: PatternId };
-  boss: BossDef;
+  /** 이 단계에서 새로 풀리는 몬스터 */
+  mob: MobKind | null;
+  boss: BossKind | null;
+  /** 14단계 — 보스 없이 모든 몬스터가 몰려오는 총력전 */
+  allOut?: boolean;
 };
 
+/** 기획서 §2 표 (14·15단계는 DECISIONS §5-14: 십오각형을 15단계 최종 보스로) */
 export const STAGES: StageDef[] = [
-  { id: 1,  name: "서버실 B1",      enemies: ["bug", "worm"],
-    midboss: { name: "버그 알파", pattern: "charge" },
-    boss: { emoji: "🐛", name: "버그 퀸", hp: 1500, patterns: ["summon", "field"] } },
-  { id: 2,  name: "전력 분전실",    enemies: ["bug", "worm", "spark"],
-    midboss: { name: "스파크 코어", pattern: "radial" },
-    boss: { emoji: "⚡", name: "과부하 코어", hp: 1750, patterns: ["radial", "field"] } },
-  { id: 3,  name: "냉각탑",         enemies: ["worm", "spark", "frost"],
-    midboss: { name: "아이스 웜", pattern: "field" },
-    boss: { emoji: "❄️", name: "프로즌 데몬", hp: 2000, patterns: ["field", "rain"] } },
-  { id: 4,  name: "배선 미로",      enemies: ["spark", "frost", "wire"],
-    midboss: { name: "케이블 헤드", pattern: "whip" },
-    boss: { emoji: "🕸️", name: "케이블 나가", hp: 2200, patterns: ["whip", "field", "summon"] } },
-  { id: 5,  name: "데이터 아카이브", enemies: ["wire", "bug", "trojan"],
-    midboss: { name: "목마 유닛", pattern: "summon" },
-    boss: { emoji: "🐴", name: "트로이 킹", hp: 2400, patterns: ["summon", "clones"] } },
-  { id: 6,  name: "통신 중계실",    enemies: ["trojan", "botnet", "worm"],
-    midboss: { name: "노드 마스터", pattern: "rain" },
-    boss: { emoji: "📡", name: "봇넷 마스터", hp: 2600, patterns: ["summon", "sweep", "rain"] } },
-  { id: 7,  name: "폐기물 처리장",  enemies: ["botnet", "ransom", "wire"],
-    midboss: { name: "락 유닛", pattern: "field" },
-    boss: { emoji: "🔒", name: "랜섬 락", hp: 2900, patterns: ["field", "drain", "charge"] } },
-  { id: 8,  name: "보안 관제실",    enemies: ["ransom", "spyware", "spark"],
-    midboss: { name: "아이 드론", pattern: "sweep" },
-    boss: { emoji: "👁️", name: "스파이웨어 아이", hp: 3100, patterns: ["sweep", "radial", "field"] } },
-  { id: 9,  name: "백업 볼트",      enemies: ["spyware", "mimic", "trojan"],
-    midboss: { name: "미믹 상자", pattern: "charge" },
-    boss: { emoji: "🧿", name: "미믹 로드", hp: 3300, patterns: ["clones", "charge", "summon"] } },
-  { id: 10, name: "루트 코어",      enemies: ["mimic", "rootkit", "botnet"],
-    midboss: { name: "섀도 유닛", pattern: "stealth" },
-    boss: { emoji: "🌑", name: "루트킷", hp: 3600, patterns: ["stealth", "charge", "radial"] } },
-  { id: 11, name: "채굴장",         enemies: ["rootkit", "miner", "bug"],
-    midboss: { name: "해시 유닛", pattern: "drain" },
-    boss: { emoji: "💰", name: "크립토 마이너", hp: 3800, patterns: ["drain", "field", "summon"] } },
-  { id: 12, name: "제로데이 랩",    enemies: ["miner", "exploit", "spark"],
-    midboss: { name: "페이로드", pattern: "random" },
-    boss: { emoji: "💥", name: "제로데이", hp: 4000, patterns: ["random", "random", "random"] } },
-  { id: 13, name: "웜홀 게이트",    enemies: ["exploit", "warp", "worm"],
-    midboss: { name: "게이트 유닛", pattern: "blackhole" },
-    boss: { emoji: "🕳️", name: "웜홀", hp: 4300, patterns: ["blackhole", "charge", "rain"] } },
-  { id: 14, name: "APT 요새",       enemies: ["warp", "elite", "ransom"],
-    midboss: { name: "정찰 대장", pattern: "sweep" },
-    boss: { emoji: "🎯", name: "APT 핸들러", hp: 4600, patterns: ["sweep", "summon", "charge"] } },
-  { id: 15, name: "루트 오버로드",  enemies: ["elite", "rootkit", "exploit", "mimic"],
-    midboss: { name: "가디언", pattern: "radial" },
-    boss: { emoji: "👹", name: "루트 오버로드", hp: 5200, patterns: ["sweep", "charge", "field"] } },
+  { id: 1, mob: "tri", boss: null },
+  { id: 2, mob: "square", boss: null },
+  { id: 3, mob: "circle", boss: null },
+  { id: 4, mob: "penta", boss: null },
+  { id: 5, mob: null, boss: "hexa" },
+  { id: 6, mob: "hepta", boss: null },
+  { id: 7, mob: "octa", boss: null },
+  { id: 8, mob: null, boss: "nona" },
+  { id: 9, mob: "deca", boss: null },
+  { id: 10, mob: "hendeca", boss: null },
+  { id: 11, mob: "dodeca", boss: null },
+  { id: 12, mob: null, boss: "trideca" },
+  { id: 13, mob: "tetradeca", boss: null },
+  { id: 14, mob: null, boss: null, allOut: true },
+  { id: 15, mob: null, boss: "chrono" },
 ];
 
-/** 무한 구간 특수 규칙 (§5) */
-export type EndlessRule = "dark" | "halfheal" | "fast" | "elite";
-export const ENDLESS_RULES: { id: EndlessRule; label: string; emoji: string }[] = [
-  { id: "dark", label: "시야 제한", emoji: "🌑" },
-  { id: "halfheal", label: "회복 반감", emoji: "🩸" },
-  { id: "fast", label: "적 이동속도 +30%", emoji: "💨" },
-  { id: "elite", label: "엘리트 2배", emoji: "🎯" },
-];
+export type StageInfo = {
+  id: number;
+  mob: MobKind | null;
+  boss: BossKind | null;
+  allOut: boolean;
+  endless: boolean;
+  /** 이 단계에 나올 수 있는 몬스터 (마지막이 가장 최근에 풀린 것) */
+  pool: MobKind[];
+};
 
-export type StageInfo = StageDef & { endless: boolean; rule: EndlessRule | null };
-
-/** 스테이지 번호 → 구성. 16 이상은 15개를 돌려 쓰되 보스·규칙이 달라진다 (§5) */
+/** 단계 번호 → 구성. 16 이상은 모든 몬스터 + 4단계마다 십오각형 (§12) */
 export function stageInfo(stage: number): StageInfo {
   const s = Math.max(1, Math.floor(stage));
-  if (s <= CFG.stage.count) {
-    return { ...STAGES[s - 1], endless: false, rule: null };
+  if (s <= STAGES.length) {
+    const def = STAGES[s - 1];
+    const pool: MobKind[] = [];
+    for (let k = 0; k < s; k++) {
+      const m = STAGES[k].mob;
+      if (m) pool.push(m);
+    }
+    return { id: s, mob: def.mob, boss: def.boss, allOut: !!def.allOut, endless: false, pool };
   }
-
-  const base = STAGES[(s - 1) % CFG.stage.count];
-  const rule =
-    s % CFG.stage.endlessRuleEvery === 0
-      ? ENDLESS_RULES[Math.floor(s / CFG.stage.endlessRuleEvery) % ENDLESS_RULES.length].id
-      : null;
-
-  // 5스테이지마다 "강화판" — 패턴이 2개 더 붙는다
-  const boosted = s % CFG.stage.endlessBossEvery === 0;
-  const extra: PatternId[] = boosted ? ["summon", "radial"] : [];
-
-  return {
-    ...base,
-    id: s,
-    name: `${base.name} +${s - CFG.stage.count}`,
-    endless: true,
-    rule,
-    boss: {
-      ...base.boss,
-      name: boosted ? `${base.boss.name} MK-${Math.floor(s / CFG.stage.endlessBossEvery)}` : base.boss.name,
-      patterns: [...base.boss.patterns, ...extra],
-    },
-  };
+  return { id: s, mob: null, boss: bossOf(s), allOut: false, endless: true, pool: [...MOB_KINDS] };
 }

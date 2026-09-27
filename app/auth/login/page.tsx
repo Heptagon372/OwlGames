@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { LoginForm } from "./LoginForm";
 import { Logo } from "@/components/brand/Logo";
-import { DemoBanner } from "@/components/DemoBanner";
+import { SetupBanner } from "@/components/SetupBanner";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth");
@@ -14,7 +14,7 @@ export default async function LoginPage() {
   const t = await getTranslations("auth");
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-16">
-      <DemoBanner />
+      <SetupBanner />
       <header className="py-5">
         <Logo size="sm" />
       </header>

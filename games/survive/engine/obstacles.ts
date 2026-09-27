@@ -1,22 +1,33 @@
-// 🦉 아울 서바이버즈 v2 — 장애물 (기획서 §8)
-// 밀도 상한이 이 시스템의 핵심이다. 9%를 넘기면 이동이 답답해져 오토배틀의 쾌감이 죽는다.
+// 🦉 아울 서바이버즈 v3 — 장애물 (기획서 §3)
+//
+// 맵이 무한이라 한 번에 깔 수 없다. 대신 **전역 격자의 칸마다** 장애물이 있을지·무엇일지를
+// 시드로 결정해 두고, 카메라 주변 칸만 풀에 올린다(멀어지면 회수). 같은 칸은 언제 와도 같다.
+//
+// 통로 140px 보장: 칸 간격 = 가장 큰 장애물 + 140px 이라, 이웃한 두 장애물은 x 나 y 중
+// 한 축이 반드시 140px 이상 떨어진다 (홀수 행은 반 칸 밀어 격자 티를 없앤다).
+// 밀도 6~9%: 칸 점유 확률 × 종류별 평균 면적 ÷ 칸 면적 ≈ 7%.
 
+import { msg, ref } from "@/games/core/i18n";
 import { CFG } from "../config";
-import { burst, damageEnemy, pushLog, spawnOrb, TAG, type World } from "./world";
+import { burst, damageEnemy, PC, pushLog, spawnOrb, TAG, type World } from "./world";
 
 export const OBSTACLE_KINDS = [
-  { name: "서버랙", hp: 30, w: 90, h: 60 },
-  { name: "자재 박스", hp: 15, w: 48, h: 48 },
-  { name: "소화기", hp: 10, w: 30, h: 30 },
-  { name: "배선 더미", hp: 20, w: 70, h: 45 },
+  { id: "rack", hp: 30, w: 90, h: 60 },
+  { id: "box", hp: 15, w: 48, h: 48 },
+  { id: "extinguisher", hp: 10, w: 30, h: 30 },
+  { id: "cable", hp: 20, w: 70, h: 45 },
 ] as const;
+
+const MAX_W = Math.max(...OBSTACLE_KINDS.map((k) => k.w));
+const MAX_H = Math.max(...OBSTACLE_KINDS.map((k) => k.h));
+export const COL_STEP = MAX_W + CFG.obstacle.minCorridorPx;
+export const ROW_STEP = MAX_H + CFG.obstacle.minCorridorPx;
 
 /**
  * 두 장애물 사이로 지나갈 수 있는가.
- * 축 하나만 140px 이상 떨어져 있으면 그 방향으로 지나갈 수 있다 —
- * 대각선 거리로 재면(예전 방식) 실제로는 뚫려 있는데도 배치를 거부해서 밀도가 안 나온다.
+ * 축 하나만 140px 이상 떨어져 있으면 그 방향으로 지나갈 수 있다.
  */
-function passable(
+export function passable(
   ax: number, ay: number, aw: number, ah: number,
   bx: number, by: number, bw: number, bh: number,
   need: number,
@@ -26,104 +37,162 @@ function passable(
   return Math.max(gapX, gapY) >= need;
 }
 
-/** 지금 배치된 장애물이 맵 면적의 몇 %인가 */
-export { passable };
+/* ── 결정적 배치 ────────────────────────────────────────────── */
 
-export function obstacleDensity(w: World): number {
-  const o = w.obstacles;
+function hash(seed: number, cx: number, cy: number, salt: number): number {
+  let h = (seed ^ Math.imul(cx, 73856093) ^ Math.imul(cy, 19349663) ^ Math.imul(salt, 83492791)) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  h = (h ^ (h >>> 16)) >>> 0;
+  return h / 4294967296;
+}
+
+/** 칸 중심 (홀수 행은 반 칸의 절반만큼 민다) */
+export function cellCenter(cx: number, cy: number): { x: number; y: number } {
+  const shift = cy & 1 ? COL_STEP * 0.25 : 0;
+  return { x: cx * COL_STEP + COL_STEP / 2 + shift, y: cy * ROW_STEP + ROW_STEP / 2 };
+}
+
+/** 칸 (cx,cy) 에 놓일 장애물 종류. 없으면 -1 */
+export function obstacleAt(seed: number, cx: number, cy: number): number {
+  const c = cellCenter(cx, cy);
+  // 시작 지점(원점) 주변은 비워 둔다
+  if (Math.hypot(c.x, c.y) < CFG.obstacle.spawnClearRadius + MAX_W / 2) return -1;
+  if (hash(seed, cx, cy, 1) >= CFG.obstacle.occupancy) return -1;
+  const weights = CFG.obstacle.kindWeights;
+  let r = hash(seed, cx, cy, 2) * weights.reduce((a, b) => a + b, 0);
+  for (let k = 0; k < weights.length; k++) {
+    r -= weights[k];
+    if (r < 0) return k;
+  }
+  return weights.length - 1;
+}
+
+/** 영역 안 장애물 밀도 (테스트·튜닝용 — 풀이 아니라 생성 규칙으로 잰다) */
+export function densityIn(seed: number, x0: number, y0: number, x1: number, y1: number): number {
   let covered = 0;
-  for (let i = 0; i < o.cap; i++) if (o.alive[i]) covered += o.w[i] * o.h[i];
-  return covered / (CFG.arena.w * CFG.arena.h);
+  const cy0 = Math.floor(y0 / ROW_STEP);
+  const cy1 = Math.floor(y1 / ROW_STEP);
+  const cx0 = Math.floor(x0 / COL_STEP) - 1;
+  const cx1 = Math.floor(x1 / COL_STEP);
+  for (let cy = cy0; cy <= cy1; cy++) {
+    for (let cx = cx0; cx <= cx1; cx++) {
+      const k = obstacleAt(seed, cx, cy);
+      if (k < 0) continue;
+      const c = cellCenter(cx, cy);
+      if (c.x < x0 || c.x >= x1 || c.y < y0 || c.y >= y1) continue;
+      covered += OBSTACLE_KINDS[k].w * OBSTACLE_KINDS[k].h;
+    }
+  }
+  return covered / ((x1 - x0) * (y1 - y0));
+}
+
+function isBroken(w: World, cx: number, cy: number): boolean {
+  const b = w.broken;
+  for (let i = 0; i < b.n; i++) if (b.cx[i] === cx && b.cy[i] === cy) return true;
+  return false;
+}
+
+function markBroken(w: World, cx: number, cy: number): void {
+  const b = w.broken;
+  b.cx[b.head] = cx;
+  b.cy[b.head] = cy;
+  b.head = (b.head + 1) % b.cx.length;
+  b.n = Math.min(b.cx.length, b.n + 1);
+}
+
+function isLoaded(w: World, cx: number, cy: number): boolean {
+  const o = w.obstacles;
+  for (let i = 0; i < o.cap; i++) if (o.alive[i] && o.cx[i] === cx && o.cy[i] === cy) return true;
+  return false;
+}
+
+function place(w: World, cx: number, cy: number, kind: number): boolean {
+  const o = w.obstacles;
+  let i = -1;
+  for (let k = 0; k < o.cap; k++) if (!o.alive[k]) { i = k; break; }
+  if (i < 0) return false;
+  const spec = OBSTACLE_KINDS[kind];
+  const c = cellCenter(cx, cy);
+  o.alive[i] = 1;
+  o.x[i] = c.x; o.y[i] = c.y;
+  o.w[i] = spec.w; o.h[i] = spec.h;
+  o.hp[i] = spec.hp; o.maxHp[i] = spec.hp;
+  o.kind[i] = kind;
+  o.flash[i] = 0;
+  o.cx[i] = cx; o.cy[i] = cy;
+  return true;
 }
 
 /**
- * 스테이지 시작 시 한 번만 배치한다 (§8 "스테이지당 최초 배치만").
- * 규칙: 밀도 6~9% · 통로 폭 ≥140px · 플레이어 스폰 반경 200px 안에는 두지 않는다.
- *
- * 무작위로 뿌리면 서로 막아서 밀도가 3%를 못 넘는다(한 번 그렇게 만들어 봤다).
- * 그래서 **행 간격·열 간격이 이미 통로 폭을 보장하는 격자**에 놓고, 홀수 행만 반 칸 밀어
- * 격자 티를 없앤다. 어떤 두 장애물도 x 나 y 중 한 축이 140px 이상 떨어진다.
+ * 카메라 주변 칸을 채우고, 멀어진 장애물은 풀에서 뺀다.
+ * 카메라가 칸 하나를 넘어갈 때만 돈다 (매 프레임 전수 검사 금지).
  */
-export function placeObstacles(w: World): void {
-  const cfg = CFG.obstacle;
-  const area = CFG.arena.w * CFG.arena.h;
-  // 상한(9%)까지 꽉 채우려면 큰 장애물만 깔아야 해서 모양이 단조로워진다 → 6~7% 를 노린다
-  const target = area * (cfg.densityMin + w.rand() * 0.01);
+export function streamObstacles(w: World, force = false): void {
+  const ccx = Math.floor(w.cam.x / COL_STEP);
+  const ccy = Math.floor(w.cam.y / ROW_STEP);
+  if (!force && ccx === w.streamCx && ccy === w.streamCy) return;
+  w.streamCx = ccx;
+  w.streamCy = ccy;
+
+  const m = CFG.obstacle.streamMargin;
+  const x0 = w.cam.x - CFG.view.w / 2 - m;
+  const x1 = w.cam.x + CFG.view.w / 2 + m;
+  const y0 = w.cam.y - CFG.view.h / 2 - m;
+  const y1 = w.cam.y + CFG.view.h / 2 + m;
+
+  // 회수 (조금 더 멀리서 — 경계에서 깜빡이지 않게)
   const o = w.obstacles;
-
-  const maxW = Math.max(...OBSTACLE_KINDS.map((k) => k.w));
-  const maxH = Math.max(...OBSTACLE_KINDS.map((k) => k.h));
-  const colStep = maxW + cfg.minCorridorPx;
-  const rowStep = maxH + cfg.minCorridorPx;
-  const cols = Math.floor((CFG.arena.w - 40) / colStep);
-  const rows = Math.floor((CFG.arena.h - 40) / rowStep);
-
-  const cells: { x: number; y: number }[] = [];
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const x = 20 + colStep * (c + 0.5) + (r % 2 ? colStep * 0.25 : 0);
-      const y = 20 + rowStep * (r + 0.5);
-      if (x + maxW / 2 > CFG.arena.w - 10) continue;
-      cells.push({ x, y });
-    }
-  }
-  // 섞는다 (Fisher-Yates)
-  for (let i = cells.length - 1; i > 0; i--) {
-    const j = Math.floor(w.rand() * (i + 1));
-    [cells[i], cells[j]] = [cells[j], cells[i]];
+  const pad = COL_STEP;
+  for (let i = 0; i < o.cap; i++) {
+    if (!o.alive[i]) continue;
+    if (o.x[i] < x0 - pad || o.x[i] > x1 + pad || o.y[i] < y0 - pad || o.y[i] > y1 + pad) o.alive[i] = 0;
   }
 
-  let covered = 0;
-  let placed = 0;
-
-  for (let ci = 0; ci < cells.length && placed < o.cap; ci++) {
-    if (covered >= target) break;
-    const cell = cells[ci];
-    if (Math.hypot(cell.x - w.player.x, cell.y - w.player.y) < cfg.spawnClearRadius) continue;
-
-    // 남은 칸으로 목표 면적을 채우려면 이 칸이 얼마나 커야 하는가.
-    // "가장 가까운 크기"를 고르면 계속 작은 걸 골라 목표에 못 닿는다 →
-    // **필요 면적 이상인 것 중 가장 작은 것**을 고른다 (없으면 가장 큰 것).
-    const remaining = Math.max(1, cells.length - ci);
-    const need = (target - covered) / remaining;
-    let kind = 0;
-    let bestArea = -1;
-    for (let k = 0; k < OBSTACLE_KINDS.length; k++) {
-      const a = OBSTACLE_KINDS[k].w * OBSTACLE_KINDS[k].h;
-      if (a > bestArea) { bestArea = a; kind = k; }
+  // 채우기
+  for (let cy = Math.floor(y0 / ROW_STEP); cy <= Math.floor(y1 / ROW_STEP); cy++) {
+    for (let cx = Math.floor(x0 / COL_STEP) - 1; cx <= Math.floor(x1 / COL_STEP); cx++) {
+      const kind = obstacleAt(w.seed, cx, cy);
+      if (kind < 0 || isBroken(w, cx, cy) || isLoaded(w, cx, cy)) continue;
+      if (!place(w, cx, cy, kind)) return;
     }
-    let fit = Infinity;
-    for (let k = 0; k < OBSTACLE_KINDS.length; k++) {
-      const a = OBSTACLE_KINDS[k].w * OBSTACLE_KINDS[k].h;
-      if (a >= need && a < fit) { fit = a; kind = k; }
-    }
-    const spec = OBSTACLE_KINDS[kind];
-    if ((covered + spec.w * spec.h) / area > cfg.densityMax) continue;
-
-    o.alive[placed] = 1;
-    o.x[placed] = cell.x; o.y[placed] = cell.y;
-    o.w[placed] = spec.w; o.h[placed] = spec.h;
-    o.hp[placed] = spec.hp; o.maxHp[placed] = spec.hp;
-    o.kind[placed] = kind;
-    o.flash[placed] = 0;
-    covered += spec.w * spec.h;
-    placed++;
   }
 }
 
-/** 보스 등장 시 40% 정리 — 패턴이 가려지지 않게 (§8) */
-export function clearForBoss(w: World): void {
+/** 지금 풀에 올라와 있는 장애물 수 */
+export function loadedObstacles(w: World): number {
+  let n = 0;
+  for (let i = 0; i < w.obstacles.cap; i++) if (w.obstacles.alive[i]) n++;
+  return n;
+}
+
+/**
+ * 보스가 싸울 자리를 치운다 (§8 "보스 패턴 가림 방지").
+ * 반경 안 장애물을 ratio 확률로 없애고, 부서진 칸으로 기억해 다시 깔리지 않게 한다.
+ */
+export function clearArea(w: World, x: number, y: number, r: number, ratio = 1): void {
   const o = w.obstacles;
-  const live: number[] = [];
-  for (let i = 0; i < o.cap; i++) if (o.alive[i]) live.push(i);
-  const remove = Math.floor(live.length * CFG.obstacle.bossClearRatio);
-  for (let k = 0; k < remove; k++) {
-    const i = live[Math.floor(w.rand() * live.length)];
-    if (o.alive[i]) {
-      o.alive[i] = 0;
-      burst(w, o.x[i], o.y[i], 6, 2, 90);
-    }
+  for (let i = 0; i < o.cap; i++) {
+    if (!o.alive[i]) continue;
+    if (Math.hypot(o.x[i] - x, o.y[i] - y) > r) continue;
+    if (ratio < 1 && w.rand() >= ratio) continue;
+    o.alive[i] = 0;
+    markBroken(w, o.cx[i], o.cy[i]);
+    burst(w, o.x[i], o.y[i], 6, 2, 90);
   }
+}
+
+/** ⏪ 시간 역주행 — 최근에 부서진 칸 n 개를 되살린다 */
+export function restoreObstacles(w: World, n: number): number {
+  const b = w.broken;
+  let restored = 0;
+  while (restored < n && b.n > 0) {
+    b.head = (b.head - 1 + b.cx.length) % b.cx.length;
+    b.n -= 1;
+    restored++;
+  }
+  streamObstacles(w, true);
+  return restored;
 }
 
 /** 장애물 피해. 파괴되면 XP 조각과 가끔 체력을 떨군다 */
@@ -135,6 +204,7 @@ export function damageObstacle(w: World, i: number, amount: number): boolean {
   if (o.hp[i] > 0) return false;
 
   o.alive[i] = 0;
+  markBroken(w, o.cx[i], o.cy[i]);
   w.run.obstacles += 1;
   const x = o.x[i];
   const y = o.y[i];
@@ -147,7 +217,7 @@ export function damageObstacle(w: World, i: number, amount: number): boolean {
 
   if (w.rand() < CFG.obstacle.hpDropRate) {
     spawnOrb(w, x, y, CFG.obstacle.hpDropAmount, 1);
-    pushLog(w, "DROP", `${OBSTACLE_KINDS[o.kind[i]].name} 파괴 → ❤️ +${CFG.obstacle.hpDropAmount}`);
+    pushLog(w, "DROP", msg("obstacleBreak", { kind: ref(`obstacle.${OBSTACLE_KINDS[o.kind[i]].id}`), hp: CFG.obstacle.hpDropAmount }));
   }
 
   // 🧯 소화기는 터진다
@@ -158,9 +228,24 @@ export function damageObstacle(w: World, i: number, amount: number): boolean {
         damageEnemy(w, j, 40, TAG.explosion | TAG.aoe, false);
       }
     }
-    burst(w, x, y, 14, 0, 260);
+    burst(w, x, y, 14, PC.mine, 260);
   }
   return true;
+}
+
+/** 몬스터 돌진이 장애물을 부순다 (오각형·보스) — 경험치는 플레이어 몫이 아니라 떨구지 않는다 */
+export function smashObstacles(w: World, x: number, y: number, r: number): void {
+  const o = w.obstacles;
+  for (let i = 0; i < o.cap; i++) {
+    if (!o.alive[i]) continue;
+    if (Math.abs(x - o.x[i]) < o.w[i] / 2 + r && Math.abs(y - o.y[i]) < o.h[i] / 2 + r) {
+      o.alive[i] = 0;
+      markBroken(w, o.cx[i], o.cy[i]);
+      burst(w, o.x[i], o.y[i], 10, 2, 180);
+      w.shake = Math.max(w.shake, 0.12);
+      w.shakePx = Math.max(w.shakePx, 4);
+    }
+  }
 }
 
 /** 원(플레이어·적)을 장애물 밖으로 밀어낸다. 이동 후에 호출한다 */

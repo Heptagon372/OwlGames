@@ -18,7 +18,8 @@ import {
   type UnclaimedDraw,
 } from "@/lib/client-queries";
 import { formatDateTime, timeAgo } from "@/lib/format";
-import { GAMES } from "@/lib/games";
+import { GameMark } from "@/components/GameLogo";
+import { GAMES, gameTitleKo, isGameId } from "@/lib/games";
 import {
   deleteUser,
   fetchAdminStats,
@@ -29,7 +30,7 @@ import {
   setUserRole,
 } from "@/lib/rpc";
 import { formatNumber } from "@/lib/format";
-import type { AdminStats, AuditRow, GameId, GameSessionRow, PrizeRow, Profile, UserRole } from "@/lib/types";
+import type { AdminStats, AuditRow, GameSessionRow, PrizeRow, Profile, UserRole } from "@/lib/types";
 
 const TABS = [
   { key: "dash", label: "대시보드" },
@@ -146,7 +147,7 @@ function DashTab() {
               {stats.games.map((g) => (
                 <tr key={g.game} className="border-b border-line/60 last:border-0">
                   <td className="px-4 py-2.5">
-                    {GAMES[g.game as GameId]?.emoji} {GAMES[g.game as GameId]?.title ?? g.game}
+                    <GameMark game={g.game} className="inline-block h-6 w-9 align-middle" /> {gameTitleKo(g.game)}
                   </td>
                   <td className="num px-2 py-2.5 text-right">{formatNumber(g.plays)}</td>
                   <td className="num px-2 py-2.5 text-right text-neon">{g.avg_pts}</td>
@@ -510,7 +511,9 @@ function ConfigTab({ config }: { config: AppConfig }) {
         <div className="grid gap-3">
           <HoursCard config={config} />
           <EnergyCard config={config} />
+          <PointsCard config={config} />
           <KCard config={config} />
+          <BoothCard config={config} />
           <MasterCard config={config} />
         </div>
         <p className="mt-3 text-xs text-dim">
@@ -526,8 +529,16 @@ function ConfigTab({ config }: { config: AppConfig }) {
           <Row
             label="게임 K값"
             value={Object.entries(config.game_k)
-              .map(([k, v]) => `${GAMES[k as keyof typeof GAMES].title} ${v}`)
+              .filter(([k]) => isGameId(k))
+              .map(([k, v]) => `${gameTitleKo(k)} ${v}`)
               .join(" · ")}
+          />
+          <Row
+            label="포인트 식"
+            value={`${config.game_points.base}P + 분당(${Object.entries(config.game_points.per_min)
+              .filter(([k]) => isGameId(k))
+              .map(([k, v]) => `${gameTitleKo(k)} ${v}`)
+              .join(" · ")}) + 원점수 ÷ K`}
           />
           <Row label="코드 유효시간" value={`${config.redeem_code_ttl_min}분`} />
           <Row label="학번 형식" value={config.student_id_pattern} />
@@ -629,6 +640,77 @@ function EnergyCard({ config }: { config: AppConfig }) {
   );
 }
 
+function PointsCard({ config }: { config: AppConfig }) {
+  const { busy, msg, save } = useSaver();
+  const [base, setBase] = useState(config.game_points.base);
+  const [rate, setRate] = useState<Record<string, number>>({ ...config.game_points.per_min });
+
+  return (
+    <Card>
+      <div className="mb-3 flex items-center justify-between">
+        <p className="font-bold">포인트 식</p>
+        <SaveButton busy={busy} onClick={() => save("game_points", { base, per_min: rate })} />
+      </div>
+      <div className="grid gap-2">
+        <Field label="기본 포인트 (한 판)">
+          <input type="number" min={0} max={10000} value={base} onChange={(e) => setBase(Number(e.target.value))} className={INPUT} />
+        </Field>
+        {Object.values(GAMES).map((g) => (
+          <Field key={g.id} label={`${g.title} · 분당`}>
+            <input
+              type="number"
+              min={0}
+              max={10000}
+              value={rate[g.id] ?? 0}
+              onChange={(e) => setRate((prev) => ({ ...prev, [g.id]: Number(e.target.value) }))}
+              className={INPUT}
+            />
+          </Field>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-dim">
+        포인트 = 기본 + 플레이 분 × 분당 + 원점수 ÷ K (상한 없음). 어려운 게임일수록 분당을 크게 — 플레이 시간은 서버 시계로 잰다.
+      </p>
+      <Msg msg={msg} />
+    </Card>
+  );
+}
+
+function BoothCard({ config }: { config: AppConfig }) {
+  const { busy, msg, save } = useSaver();
+  const [building, setBuilding] = useState(config.booth_location.building);
+  const [floor, setFloor] = useState(config.booth_location.floor);
+  const [spot, setSpot] = useState(config.booth_location.spot);
+  const [note, setNote] = useState(config.booth_location.note ?? "");
+
+  return (
+    <Card>
+      <div className="mb-3 flex items-center justify-between">
+        <p className="font-bold">부스 위치</p>
+        <SaveButton
+          busy={busy}
+          onClick={() => save("booth_location", { ...config.booth_location, building, floor, spot, note })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Field label="건물">
+          <input value={building} onChange={(e) => setBuilding(e.target.value)} className={INPUT} />
+        </Field>
+        <Field label="층">
+          <input value={floor} onChange={(e) => setFloor(e.target.value)} className={INPUT} />
+        </Field>
+        <Field label="위치">
+          <input value={spot} onChange={(e) => setSpot(e.target.value)} className={INPUT} />
+        </Field>
+        <Field label="안내 문구">
+          <input value={note} onChange={(e) => setNote(e.target.value)} className={INPUT} />
+        </Field>
+      </div>
+      <Msg msg={msg} />
+    </Card>
+  );
+}
+
 function KCard({ config }: { config: AppConfig }) {
   const { busy, msg, save } = useSaver();
   const [k, setK] = useState<Record<string, number>>({ ...config.game_k });
@@ -636,12 +718,12 @@ function KCard({ config }: { config: AppConfig }) {
   return (
     <Card>
       <div className="mb-3 flex items-center justify-between">
-        <p className="font-bold">게임 K값</p>
+        <p className="font-bold">게임 K값 (점수 보너스)</p>
         <SaveButton busy={busy} onClick={() => save("game_k", k)} />
       </div>
       <div className="grid gap-2">
         {Object.values(GAMES).map((g) => (
-          <Field key={g.id} label={`${g.emoji} ${g.title}`}>
+          <Field key={g.id} label={g.title}>
             <input
               type="number"
               min={1}
@@ -654,7 +736,7 @@ function KCard({ config }: { config: AppConfig }) {
         ))}
       </div>
       <p className="mt-2 text-xs text-dim">
-        포인트 = 30 + min(270, 원점수 ÷ K). K가 작을수록 후하게 줘요 — 한 판 상한은 300P로 고정입니다.
+        게임 점수 보너스 = 원점수 ÷ K (상한 없음). K가 작을수록 후하게 줘요 — 게임마다 원점수 크기가 달라서 따로 맞춰요.
       </p>
       <Msg msg={msg} />
     </Card>
@@ -813,7 +895,7 @@ function LogsTab() {
         <Card className="divide-y divide-line p-0">
           {rejected.map((s) => (
             <div key={s.id} className="flex items-center gap-3 px-4 py-3">
-              <span className="text-xl">{GAMES[s.game].emoji}</span>
+              <GameMark game={s.game} />
               <div className="min-w-0 flex-1">
                 <p className="num text-sm">
                   원점수 {s.raw_score ?? 0} ·{" "}
