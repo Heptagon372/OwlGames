@@ -103,6 +103,11 @@ export async function setAutoApprove(on: boolean): Promise<number> {
   return Number((await call<number>("admin_set_auto_approve", { p_on: on })) ?? 0);
 }
 
+/** 로비 카운트다운 (admin) — endsAt 은 ISO 시각 */
+export async function setCountdown(enabled: boolean, endsAt: string): Promise<void> {
+  await call<null>("admin_set_countdown", { p_enabled: enabled, p_ends_at: endsAt });
+}
+
 export async function deleteUser(userId: string): Promise<void> {
   await call<null>("admin_delete_user", { p_user_id: userId });
 }
@@ -126,6 +131,17 @@ export async function setUserLock(userId: string, minutes: number, reason?: stri
     p_minutes: Math.max(0, Math.floor(minutes)),
     p_reason: reason ?? null,
   });
+}
+
+/** 뽑기 티켓 지급 (admin). tier 1~6 — 서버가 그 티어의 가장 낮은 랭크로 적는다. 받은 사람의 남은 티켓 수를 돌려준다 */
+export async function grantTickets(userId: string, count: number, tier: number, reason: string): Promise<number> {
+  const res = await call<{ unused: number }>("admin_grant_tickets", {
+    p_user_id: userId,
+    p_count: Math.floor(count),
+    p_tier: Math.floor(tier),
+    p_reason: reason,
+  });
+  return Number(res?.unused ?? 0);
 }
 
 /** 포인트 급상승 검토 완료 → 다시 뽑을 수 있다 (admin) */

@@ -43,7 +43,10 @@ export type Sfx =
   | "ding"
   | "serve"
   | "bug"
-  | "glitch";
+  | "glitch"
+  // 🎰 부스 슬롯머신
+  | "reel"
+  | "lever";
 
 type Note = { f: number; t: number; d: number; type?: OscillatorType; gain?: number };
 
@@ -75,6 +78,12 @@ const PATTERNS: Record<Sfx, Note[]> = {
   ],
   // ⏱️ 아울 서바이버즈 — 시간 정지 "틱…" / 보스 경고 / 폭발
   tick: [{ f: 1760, t: 0, d: 0.03, type: "square", gain: 0.3 }],
+  // 🎰 부스 슬롯머신 — 릴 칸이 지날 때마다 "띠리"(음높이를 번갈아 준다) / 레버 "철컥"
+  reel: [{ f: 1568, t: 0, d: 0.028, type: "square", gain: 0.2 }],
+  lever: [
+    { f: 330, t: 0, d: 0.05, type: "square", gain: 0.3 },
+    { f: 147, t: 0.04, d: 0.14, type: "triangle", gain: 0.45 },
+  ],
   alarm: [
     { f: 440, t: 0, d: 0.14, type: "sawtooth", gain: 0.35 },
     { f: 330, t: 0.16, d: 0.2, type: "sawtooth", gain: 0.35 },

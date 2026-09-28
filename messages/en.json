@@ -1,5 +1,7 @@
 {
   "common": {
+    "difficulty": {"1":"Very easy","2":"Easy","3":"Normal","4":"Hard","5":"Very hard","label":"Difficulty"},
+    "prizeArtNote": "※ Actual prizes may differ from the images.",
     "play": "Play",
     "retry": "Play again",
     "close": "Close",
@@ -94,7 +96,8 @@
           "pick1": "Pick card 1",
           "pick2": "Pick card 2",
           "pick3": "Pick card 3",
-          "reroll": "Reroll cards"
+          "reroll": "Reroll cards",
+          "pause": "Pause"
         },
         "owlis": {
           "left": "Move left",
@@ -141,11 +144,11 @@
       },
       "rank": {
         "title": "Level and rank up",
-        "desc": "17 ranks, from Wood to Challenger"
+        "desc": "30 ranks, from Wood to Challenger"
       },
       "ticket": {
         "title": "Earn a gacha ticket",
-        "desc": "One ticket for every rank up"
+        "desc": "One ticket for every rank up — and more after Challenger"
       },
       "booth": {
         "title": "Visit the S.OWL booth",
@@ -153,8 +156,8 @@
       }
     },
     "offlineOnly": "The gacha runs at the booth only. Get a ticket code and come see us 🦉",
-    "ranksLabel": "ranks --all 17",
-    "ranksTitle": "17 ranks",
+    "ranksLabel": "ranks --all 30",
+    "ranksTitle": "30 ranks",
     "prizesLabel": "prizes --stock",
     "prizesTitle": "Booth prizes",
     "place": "No. {place}",
@@ -163,8 +166,22 @@
     "footer": "S.OWL club booth · open {start}–{end} (KST)",
     "settingsAria": "Settings"
   },
+  "countdown": {
+    "label": "OWL GAMES · ends in",
+    "title": "Time left in OWL GAMES",
+    "days": "days",
+    "hours": "hrs",
+    "minutes": "min",
+    "seconds": "sec",
+    "until": "Until {date}",
+    "doneLabel": "OWL GAMES · finished",
+    "doneTitle": "Thanks for playing!",
+    "doneBody": "You can keep playing the games. We'll announce the gacha details later."
+  },
   "lobby": {
     "tierRange": "{range} · tier T{tier}",
+    "nextRank": "{left}P to {name}",
+    "nextBonus": "{left}P to Challenger +{n} ticket",
     "total": "Total",
     "ticketHave": "{count, plural, one {# gacha ticket ready} other {# gacha tickets ready}}",
     "ticketNone": "No gacha tickets yet",
@@ -294,11 +311,24 @@
     "9": "Ruby",
     "10": "Sapphire",
     "11": "Obsidian",
-    "12": "Master",
-    "13": "Grandmaster",
-    "14": "Transcendent",
-    "15": "Mythic",
-    "16": "Challenger"
+    "12": "Adamantium",
+    "13": "Mithril",
+    "14": "Master",
+    "15": "Grandmaster",
+    "16": "Elite",
+    "17": "Transcendent",
+    "18": "Undying",
+    "19": "Immortal",
+    "20": "Eternity",
+    "21": "Legend",
+    "22": "Divine",
+    "23": "Mythic",
+    "24": "Genesis",
+    "25": "Constellation",
+    "26": "Ascendant",
+    "27": "Zenith",
+    "28": "Apex",
+    "29": "Challenger"
   },
   "theme": {
     "dark": "Dark",
@@ -373,6 +403,7 @@
     "oddsLabel": "gacha --odds",
     "oddsTitle": "Odds",
     "oddsNote": "Odds follow <b>the rank at which you earned each ticket</b>. Every ticket keeps its own tier, so saving them up does not change your odds. Oldest tickets are drawn first.",
+    "bonusNote": "After Challenger, keep earning points for bonus tickets (Challenger +1, +2 …). Each gap is 1.25× longer than the last.",
     "nextTier": "Next ticket",
     "reviewNote": "Your points rose sharply, so the staff are taking a quick look. You can draw at the booth once they are done. Your points and tickets are safe.",
     "boothLabel": "booth --location",
@@ -419,7 +450,7 @@
     "tier": "Tier",
     "place": "No. {place}",
     "mine": "your tier",
-    "note": "Each row is the chance for a single draw. A sold-out prize is removed from the draw and its share becomes a miss.",
+    "note": "Each row is the chance for a single draw. A sold-out prize is removed from the draw and its share becomes a miss — the miss column already includes it. Lower prizes always have higher odds.",
     "miss": "Miss"
   },
   "issuer": {
@@ -445,7 +476,12 @@
       "pauseNote": "{sec}s of pause left",
       "resume": "Resume",
       "rotateLandscape": "Please rotate to landscape",
-      "pauseLeft": "{sec}s pause left"
+      "pauseLeft": "{sec}s pause left",
+      "pauseOut": "Pause time (1 min) used up — the game keeps running",
+      "fullscreenOn": "Fullscreen",
+      "fullscreenOff": "Exit fullscreen",
+      "toLobby": "Back to lobby",
+      "toLobbyNote": "Leaving now discards this run"
     },
     "flight": {
       "raw": "{text}",
@@ -584,6 +620,11 @@
         "fever": "Charge the fever gauge",
         "power": "Skill ready right away",
         "rainbow": "Pass every color for 8s"
+      },
+      "coach": {
+        "hold": "Hold to take off!",
+        "release": "Hold to rise · release to glide",
+        "color": "Tap to match the gate color"
       }
     },
     "survive": {
@@ -877,6 +918,9 @@
             }
           }
         }
+      },
+      "coach": {
+        "move": "Drag to move · attacks are automatic"
       }
     },
     "owlis": {
@@ -944,7 +988,12 @@
         "controlsKeys": "⌨️ {left} {right} move · {soft} soft drop · {rotR} rotate · {rotL} rotate back · {hard} hard drop · {hold} hold · {pause} pause",
         "hint": "On PC, press Enter to start"
       },
-      "chainPop": "{n} CHAIN!"
+      "chainPop": "{n} CHAIN!",
+      "coach": {
+        "drag": "Drag left or right to move",
+        "rotate": "Tap = rotate",
+        "drop": "Flick down to drop"
+      }
     },
     "chef": {
       "score": "SCORE",
@@ -1125,7 +1174,13 @@
       },
       "plateSelected": "ON",
       "pantryDirect": "Straight to plate",
-      "pantryPrep": "Prep first — tap to send to a tool"
+      "pantryPrep": "Prep first — tap to send to a tool",
+      "coach": {
+        "item": "Tap the glowing ingredient",
+        "tool": "Tap the finished tool",
+        "plate": "Tap the plate once more",
+        "undo": "Oops — tap Undo"
+      }
     }
   },
   "music": {

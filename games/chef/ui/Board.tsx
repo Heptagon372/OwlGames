@@ -37,10 +37,13 @@ export type KeyHints = {
   trash: string;
 };
 
-/** 다음에 누를 곳 표시 — 튜토리얼 단계에서는 반짝이고, 그 뒤에도 테두리로 늘 알려 준다 */
+/** 튜토리얼 단계에서 조작 안내 손가락이 찾아가는 표시 (index.tsx 의 CoachHand) */
+export const COACH_TARGET = "coach-target";
+
+/** 다음에 누를 곳 표시 — 튜토리얼 단계에서는 반짝이고(+ 손가락), 그 뒤에도 테두리로 늘 알려 준다 */
 function guideCls(on: boolean, g: Game): string {
   if (!on) return "";
-  return g.stage <= CFG.run.tutorialUntil ? "ring-2 ring-aqua animate-pulse-glow" : "ring-2 ring-aqua";
+  return g.stage <= CFG.run.tutorialUntil ? `ring-2 ring-aqua animate-pulse-glow ${COACH_TARGET}` : "ring-2 ring-aqua";
 }
 
 export type DragSrc = { kind: "item"; item: ItemId } | { kind: "slot"; tool: ToolId; slot: number } | { kind: "plate"; i: number };
@@ -693,7 +696,7 @@ export function EditButtons({ g, h, keys, hint }: { g: Game; h: BoardHandlers; k
 
 /* ── HUD ────────────────────────────────────────────────────── */
 
-export function Hud({ g, score }: { g: Game; score: number }) {
+export function Hud({ g, score, action }: { g: Game; score: number; /** 오른쪽 끝 버튼 (⏸) */ action?: React.ReactNode }) {
   const t = useTranslations("hud.chef");
   const inf = g.stage >= INF_STAGE;
   const plan = planOf(g.stage);
@@ -737,6 +740,7 @@ export function Hud({ g, score }: { g: Game; score: number }) {
           {String(Math.floor(sec / 60)).padStart(2, "0")}:{String(sec % 60).padStart(2, "0")}
         </p>
       </div>
+      {action}
     </div>
   );
 }

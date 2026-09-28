@@ -1,6 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import { cn } from "@/lib/cn";
-import { PLACE_EMOJI, type GachaTable } from "@/lib/config";
+import { PrizeArt } from "@/components/PrizeArt";
+import type { GachaTable } from "@/lib/config";
+import { effectiveRow, tierKeys } from "@/lib/gacha";
 import type { PrizeRow } from "@/lib/types";
 
 /** 티어별 뽑기 확률표 (§6). 내 티어 강조 */
@@ -16,7 +18,8 @@ export async function GachaOdds({
   className?: string;
 }) {
   const t = await getTranslations("odds");
-  const tiers = Object.keys(table).sort();
+  const tc = await getTranslations("common");
+  const tiers = tierKeys(table);
   const names = new Map(prizes.map((p) => [p.place, p.name]));
   const soldOut = new Set(prizes.filter((p) => p.stock <= 0).map((p) => p.place));
   // 등수 개수는 확률표가 정한다 — 6등급으로 늘었을 때 머리글만 5칸으로 남는 일이 없게
@@ -30,14 +33,14 @@ export async function GachaOdds({
             <th className="py-2 pr-2 text-left font-bold">{t("tier")}</th>
             {places.map((place) => (
               <th key={place} className="px-1 py-2 text-right font-bold">
-                <span className="block text-base leading-none">{PLACE_EMOJI[place - 1]}</span>
+                <PrizeArt place={place} className="ml-auto block size-10" />
                 <span className={cn("block", soldOut.has(place) && "text-alert line-through")}>
                   {names.get(place) ?? t("place", { place })}
                 </span>
               </th>
             ))}
             <th className="px-1 py-2 text-right font-bold">
-              <span className="block text-base leading-none">🫥</span>
+              <PrizeArt place={null} className="ml-auto size-10 text-2xl" />
               <span className="block">{t("miss")}</span>
             </th>
           </tr>
@@ -46,9 +49,8 @@ export async function GachaOdds({
           {tiers.map((tier) => {
             const mine = currentTier === Number(tier);
             const row = table[tier];
-            const sum = row.reduce((a, b) => a + b, 0);
-            // 꽝은 남는 몫이다 (서버 gacha_pick 과 같은 규칙) — 0.05 같은 값 때문에 소수점 둘째 자리까지 반올림
-            const miss = Math.round((100 - sum) * 100) / 100;
+            // 꽝은 남는 몫 + 재고 0 인 등수의 몫 (서버 gacha_pick 과 같은 규칙)
+            const { miss } = effectiveRow(row, soldOut);
             return (
               <tr
                 key={tier}
@@ -75,6 +77,7 @@ export async function GachaOdds({
       <p className="mt-3 text-xs text-dim">
         {t("note")}
       </p>
+      <p className="mt-1 text-xs text-dim">{tc("prizeArtNote")}</p>
     </div>
   );
 }

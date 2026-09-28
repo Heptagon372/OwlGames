@@ -274,3 +274,22 @@ describe("뽑기 (20261009_security_v2)", () => {
     }
   });
 });
+
+describe("관리자 티켓 지급 (20261015_admin_tickets)", () => {
+  const SQL = readFileSync(join(DIR, "20261015000000_admin_tickets.sql"), "utf8");
+  const body = SQL.match(/function public\.admin_grant_tickets\(([\s\S]*?)\$\$;/)![1];
+
+  it("랭크 티켓은 여전히 랭크당 1장 — 제약 이름은 그대로, 랭크 티켓은 grant_seq 0", () => {
+    expect(SQL).toMatch(/grant_seq\s+bigint not null default 0/);
+    expect(SQL).toMatch(/add constraint tickets_one_per_rank unique \(user_id, earned_rank_idx, grant_seq\)/);
+    expect(body).toContain("nextval('public.tickets_grant_seq')");
+  });
+
+  it("관리자만, 본인 제외, 장수·사유를 검사하고 로그를 남긴다", () => {
+    expect(body).toContain("public.is_admin()");
+    expect(body).toContain("p_user_id = v_admin");
+    expect(body).toMatch(/p_count > 10/);
+    expect(body).toContain("audit_write('ticket.grant'");
+    expect(SQL).toMatch(/revoke execute on function public\.admin_grant_tickets\(uuid, int, int, text\) from public, anon, authenticated;/);
+  });
+});

@@ -19,9 +19,14 @@ import { playSfx, type Sfx } from "@/lib/sound";
 import { actionOf, primaryLabel, useKeymap, useKeymapState } from "@/lib/keybinds";
 import { sceneOf, setBgm } from "./audio";
 import { createDprGovernor } from "../core/quality";
+import { PauseMenu, usePause } from "../core/pause";
+import { CoachHand, useCoachSteps, useTargetPoint } from "../core/coach";
 import type { GameComponentProps } from "../core/types";
 
 const END_DELAY = 1.1; // 사망 원인을 1초 이상 보여준 뒤 결과로 (기획서 §12)
+
+/** 첫 조작 안내 — 시작하고 나서 [꾹 누르기 · 떼기] → [색 버튼 탭] 을 한 번씩 보여 준다 (ms) */
+const COACH_MS = [3400, 3200] as const;
 
 /** 스크롤 속도(px/s) → 체감 속도 km/h (1m = 24px) */
 function speedKmh(g: Game): number {
@@ -125,24 +130,18 @@ export function FlightGame({ onEnd }: GameComponentProps) {
   const endedRef = useRef(false);
 
   const [hud, setHud] = useState<HudState | null>(null);
-  const [paused, setPaused] = useState(false);
-  const [pauseLeft, setPauseLeft] = useState<number>(CFG.pause.totalSec);
   const [portrait, setPortrait] = useState(false);
   const [started, setStarted] = useState(false);
 
-  const pauseLeftRef = useRef<number>(CFG.pause.totalSec);
-  const pausedRef = useRef(false);
   const portraitRef = useRef(false);
   const loopRef = useRef<{ setPaused: (p: boolean) => void } | null>(null);
-  const togglePauseRef = useRef<() => void>(() => {});
-
-  togglePauseRef.current = () => {
-    if (pauseLeftRef.current <= 0 && !pausedRef.current) return;
-    const next = !pausedRef.current;
-    pausedRef.current = next;
-    setPaused(next);
-    loopRef.current?.setPaused(next);
-  };
+  // 일시정지 — 공통 메뉴(games/core/pause.tsx), 한 판에 1분까지. 세로 안내 동안은 시간을 깎지 않는다
+  const pause = usePause(
+    (frozen) => loopRef.current?.setPaused(frozen || portraitRef.current),
+    () => portraitRef.current,
+  );
+  const pausedRef = pause.frozenRef;
+  const { toggle: togglePause, autoPause } = pause;
 
   // ── 게임 루프 ───────────────────────────────────────────
   useEffect(() => {
@@ -229,11 +228,7 @@ export function FlightGame({ onEnd }: GameComponentProps) {
 
     // 탭이 가려지면 자동 일시정지 (§14)
     const onVisibility = () => {
-      if (document.hidden) {
-        pausedRef.current = true;
-        setPaused(true);
-        loop.setPaused(true);
-      }
+      if (document.hidden && g.status !== "dead") autoPause();
     };
     document.addEventListener("visibilitychange", onVisibility);
 
@@ -247,18 +242,6 @@ export function FlightGame({ onEnd }: GameComponentProps) {
     orientation();
     window.addEventListener("resize", orientation);
     window.addEventListener("orientationchange", orientation);
-
-    // 일시정지 예산 (총 15초)
-    const pauseTimer = setInterval(() => {
-      if (!pausedRef.current || portraitRef.current) return;
-      pauseLeftRef.current = Math.max(0, pauseLeftRef.current - 0.25);
-      setPauseLeft(pauseLeftRef.current);
-      if (pauseLeftRef.current <= 0) {
-        pausedRef.current = false;
-        setPaused(false);
-        loop.setPaused(false);
-      }
-    }, 250);
 
     // ── 키보드 ────────────────────────────────────────────
     // 키는 설정(/settings → 키 설정)에서 바꾼다 — lib/keybinds.ts 의 DEFAULT_KEYS.flight
@@ -279,7 +262,7 @@ export function FlightGame({ onEnd }: GameComponentProps) {
         if (g.choice) pickRef.current = n;
         else colorRef.current = (["R", "B", "P"] as const)[n];
       } else if (action === "skill") skillRef.current = true;
-      else if (action === "pause") togglePauseRef.current();
+      else if (action === "pause" && g.status !== "dead") togglePause();
     };
     const up = (e: KeyboardEvent) => {
       if (actionOf(keysRef.current, e.code) === "flap") flapRef.current = false;
@@ -291,7 +274,6 @@ export function FlightGame({ onEnd }: GameComponentProps) {
       endedRef.current = true;
       loop.stop();
       clearInterval(hudTimer);
-      clearInterval(pauseTimer);
       setBgm("off");
       window.removeEventListener("resize", fit);
       window.visualViewport?.removeEventListener("resize", fit);
@@ -302,7 +284,7 @@ export function FlightGame({ onEnd }: GameComponentProps) {
       document.removeEventListener("visibilitychange", onVisibility);
       loopRef.current = null;
     };
-  }, [onEnd, keysRef]);
+  }, [onEnd, keysRef, autoPause, pausedRef, togglePause]);
 
   // 길게 누르기(컨텍스트 메뉴) 방지
   useEffect(() => {
@@ -325,6 +307,11 @@ export function FlightGame({ onEnd }: GameComponentProps) {
 
   const cause = gameRef.current?.deathCause ?? null;
 
+  // 첫 조작 안내 손가락 — 멈춘 동안·세로 안내·보상 선택 중에는 시간이 흐르지 않는다
+  const coachLive = started && !pause.open && !portrait && hud?.status !== "dead" && !hud?.choice;
+  const coach = useCoachSteps(COACH_MS, coachLive);
+  const colorAt = useTargetPoint(wrapRef, '[data-coach="color"]', coach.step === 1);
+
   return (
     <div
       ref={wrapRef}
@@ -340,7 +327,6 @@ export function FlightGame({ onEnd }: GameComponentProps) {
         <Hud
           hud={hud}
           keyMap={keyMap}
-          pauseLeft={pauseLeft}
           onCycleColor={() => {
             cycleRef.current = true;
           }}
@@ -350,7 +336,7 @@ export function FlightGame({ onEnd }: GameComponentProps) {
           onPick={(i) => {
             pickRef.current = i;
           }}
-          onPause={() => togglePauseRef.current()}
+          pause={pause}
         />
       )}
 
@@ -407,6 +393,13 @@ export function FlightGame({ onEnd }: GameComponentProps) {
         </div>
       )}
 
+      {/* 첫 조작 안내 (반투명 · 입력을 가로채지 않는다) */}
+      {!portrait && !started && <CoachHand at={{ x: "78%", y: "58%" }} gesture="hold" label={t("coach.hold")} />}
+      {coachLive && coach.step === 0 && <CoachHand at={{ x: "72%", y: "52%" }} gesture="hold" label={t("coach.release")} />}
+      {coachLive && coach.step === 1 && colorAt && (
+        <CoachHand at={colorAt} gesture="tap" label={t("coach.color")} labelAt="above" labelAlign="end" />
+      )}
+
       {/* 사망 원인 (§0 원칙 3) */}
       {hud?.status === "dead" && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center bg-night/55">
@@ -417,21 +410,7 @@ export function FlightGame({ onEnd }: GameComponentProps) {
       )}
 
       {/* 일시정지 */}
-      {paused && !portrait && (
-        <div className="absolute inset-0 grid place-items-center bg-night/80">
-          <div className="text-center">
-            <p className="text-2xl font-black">{tc("pause")}</p>
-            <p className="num mt-1 text-sm text-mute">{tc("pauseNote", { sec: Math.ceil(pauseLeft) })}</p>
-            <button
-              type="button"
-              onClick={() => togglePauseRef.current()}
-              className="mt-4 min-h-12 rounded-2xl bg-neon px-6 font-bold text-night"
-            >
-              {tc("resume")}
-            </button>
-          </div>
-        </div>
-      )}
+      {!portrait && <PauseMenu ctl={pause} />}
 
       {/* 세로 화면 안내 */}
       {portrait && (

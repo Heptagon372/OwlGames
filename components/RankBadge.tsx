@@ -1,9 +1,9 @@
 import { cn } from "@/lib/cn";
 import { rankInfo } from "@/lib/rank";
 
-/** public/assets/ranks/*.webp 한 칸 크기 (scripts/slice-rank-badges.py 의 CELL_W·CELL_H) */
-const ART_W = 132;
-const ART_H = 216;
+/** public/assets/ranks/*.webp 한 칸(정사각) 크기 = scripts/slice-rank-badges.py 의 CELL.
+ *  뱃지 몸통은 칸의 약 70% — 칸을 ART_SCALE 배로 그려야 몸통이 px 크기가 된다 */
+const ART_SCALE = 1.45;
 
 const SIZES = { xs: 22, sm: 32, md: 48, lg: 72, xl: 132 } as const;
 type Size = keyof typeof SIZES;
@@ -26,7 +26,7 @@ const SPARKS = [
   { left: "40%", delay: "1.9s", dx: "8px" },
 ];
 
-/** 17종 랭크 뱃지 (§13) — 육각형 프레임 + 그라데이션, 상위 랭크는 발광·무지개·파티클 */
+/** 30종 랭크 뱃지 (사용자 그림 — DECISIONS §5-47). 챌린저는 파티클, 이름 글자는 발광·무지개 */
 export function RankBadge({ rankIdx, size = "md", withLabel, className }: Props) {
   const r = rankInfo(rankIdx);
   const px = SIZES[size];
@@ -43,11 +43,11 @@ export function RankBadge({ rankIdx, size = "md", withLabel, className }: Props)
       {/* 사용자 제공 뱃지 그림 (scripts/slice-rank-badges.py). 발광 여백이 있어서 칸보다 크게 그린다 */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`/assets/ranks/rank-${String(rankIdx < 0 ? 0 : Math.min(rankIdx, 16)).padStart(2, "0")}.webp`}
+        src={`/assets/ranks/rank-${String(r.idx).padStart(2, "0")}.webp`}
         alt=""
         draggable={false}
         className="pointer-events-none absolute max-w-none select-none"
-        style={{ width: px * 1.2, height: px * 1.2 * (ART_H / ART_W), left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
+        style={{ width: px * ART_SCALE, height: px * ART_SCALE, left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
       />
       {r.effect === "challenger" && px >= 48 && (
         <span className="pointer-events-none absolute inset-x-0 bottom-1/4 top-0" aria-hidden>

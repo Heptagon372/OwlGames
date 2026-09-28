@@ -220,7 +220,6 @@ export const CFG = {
   /** 아이템 등급 올리기 (JSON 청크의 ⭐·🪶 일부를 희귀·전설로) */
   upgrade: { fromStage: 5, rare: 0.14, legendaryFromStage: 9, legendary: 0.08 },
 
-  pause: { totalSec: 15 },
   death: { slowSec: 0.4 },
   platform: { K: 100, basePoints: 30, maxBonus: 270, maxSessionSec: 540 },
   /** 서버 검증 — 순간 최고 속도(터보·오버드라이브)가 24m/s 를 넘으므로 평균 상한을 올렸다 */

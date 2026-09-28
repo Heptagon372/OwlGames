@@ -32,6 +32,7 @@ export const DEFAULT_KEYS = {
     pick2: ["Digit2", "Numpad2"],
     pick3: ["Digit3", "Numpad3"],
     reroll: ["KeyR"],
+    pause: ["KeyP", "Escape"],
   },
   owlis: {
     left: ["ArrowLeft"],

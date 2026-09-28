@@ -56,7 +56,7 @@ export function fmtTime(sec: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-export function Hud({ hud, theme }: { hud: HudState; theme: Theme }) {
+export function Hud({ hud, theme, action }: { hud: HudState; theme: Theme; /** 상단바 오른쪽 끝 버튼 (⏸) */ action?: React.ReactNode }) {
   const t = useTranslations("hud.survive");
   const hpRatio = Math.max(0, hud.hp / hud.maxHp);
   const xpRatio = Math.max(0, Math.min(1, hud.xp / hud.xpNext));
@@ -96,6 +96,7 @@ export function Hud({ hud, theme }: { hud: HudState; theme: Theme }) {
           <span className="num text-[11px]" style={{ color: theme.dim }}>
             {t("ui.kill", { n: hud.kills })}
           </span>
+          {action}
         </div>
       </div>
 

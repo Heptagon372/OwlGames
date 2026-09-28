@@ -8,7 +8,7 @@ import { RankBadge } from "@/components/RankBadge";
 import { SignOutButton } from "@/components/SignOutButton";
 import { Card, Chip, TermLabel } from "@/components/ui/Card";
 import { ButtonLink } from "@/components/ui/Button";
-import { PLACE_EMOJI } from "@/lib/config";
+import { PrizeArt } from "@/components/PrizeArt";
 import { formatDateTime, formatNumber } from "@/lib/format";
 import { isGameId } from "@/lib/games";
 import { getMyDraws, getMyProfile, getOwlEnergy, getMySessions } from "@/lib/queries";
@@ -87,7 +87,7 @@ export default async function MePage() {
         <Card className="divide-y divide-line p-0">
           {draws.map((d) => (
             <div key={d.id} className="flex items-center gap-3 px-4 py-3">
-              <span className="text-2xl">{d.place ? PLACE_EMOJI[d.place - 1] : "🫥"}</span>
+              <PrizeArt place={d.place} className="size-11 text-2xl" />
               <div className="min-w-0 flex-1">
                 <p className="font-bold">
                   {d.place ? t("drawPlace", { place: d.place, prize: d.prize_name ?? "" }) : t("drawMiss")}
