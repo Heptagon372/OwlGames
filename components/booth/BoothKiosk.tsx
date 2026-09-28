@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BatteryCharging, QrCode, RotateCcw, ScanLine, UserCheck } from "lucide-react";
-import { GachaMachine, type GachaState } from "@/components/GachaMachine";
+import { SlotMachine } from "@/components/SlotMachine";
 import { EnergyGrantPanel } from "./EnergyGrantPanel";
 import { QrScanner } from "./QrScanner";
 import { PendingList } from "@/components/staff/PendingList";
@@ -10,7 +10,6 @@ import { RankBadge } from "@/components/RankBadge";
 import { Button } from "@/components/ui/Button";
 import { Card, Chip, TermLabel } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
-import { PLACE_EMOJI } from "@/lib/config";
 import { formatCountdown } from "@/lib/format";
 import { playSfx } from "@/lib/sound";
 import { boothDraw, boothLookupCode, boothMarkClaimed } from "@/lib/rpc";
@@ -34,7 +33,8 @@ export function BoothKiosk() {
   const [code, setCode] = useState("");
   const [lookup, setLookup] = useState<BoothLookup | null>(null);
   const [result, setResult] = useState<BoothDrawResult | null>(null);
-  const [gacha, setGacha] = useState<GachaState>("idle");
+  const [spinning, setSpinning] = useState(false);
+  const [stopAt, setStopAt] = useState<{ place: number | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [claimed, setClaimed] = useState(false);
@@ -45,7 +45,8 @@ export function BoothKiosk() {
     setCode("");
     setLookup(null);
     setResult(null);
-    setGacha("idle");
+    setSpinning(false);
+    setStopAt(null);
     setError(null);
     setClaimed(false);
   };
@@ -67,40 +68,44 @@ export function BoothKiosk() {
     }
   }
 
+  const canDraw = step === "user" && !!lookup && lookup.remaining > 0 && !blockReason(lookup);
+
+  /** 레버를 내렸다 — 릴이 도는 동안 서버가 추첨하고, 결과가 오면 그 칸에 멈춘다 (확률은 서버 확률표 그대로) */
   async function draw() {
-    if (!lookup) return;
+    if (!lookup || !canDraw) return;
     setStep("drawing");
-    setGacha("spinning");
+    setResult(null);
+    setClaimed(false);
+    setStopAt(null);
+    setSpinning(true);
     setError(null);
-    playSfx("start");
-    // 집게가 훑는 동안 기계음 (연출이 끝나면 멈춘다)
-    const hum = setInterval(() => playSfx("tick", 0.8), 620);
     const startedAt = Date.now();
     try {
       const res = await boothDraw(lookup.code);
-      // 집게 연출 한 바퀴(훑기 2.6초 + 내려가 쥐기)가 끝나야 결과를 꺼낸다 (§8.2 — 최소 3초)
-      const wait = Math.max(0, 3600 - (Date.now() - startedAt));
+      // 최소 1.5초는 전속력으로 돌고 감속(2~4초)에 들어간다 — 전체 연출은 §8.2 의 최소 3초를 넘는다
+      const wait = Math.max(0, 1500 - (Date.now() - startedAt));
       setTimeout(() => {
-        clearInterval(hum);
-        playSfx("lock");
         setResult(res);
         setLookup((l) => (l ? { ...l, remaining: res.remaining, tier: res.next_tier ?? l.tier } : l));
-        setGacha("reveal");
-        // 집게가 올라와 캡슐을 배출구에 떨어뜨리는 시간
-        setTimeout(() => {
-          setStep("result");
-          if (res.place == null) playSfx("fail");
-          else if (res.place <= 2) playSfx("legend");
-          else if (res.place <= 4) playSfx("rank");
-          else playSfx("coin");
-        }, 2100);
+        setStopAt({ place: res.place });
       }, wait);
     } catch (e) {
-      clearInterval(hum);
       setError(e instanceof Error ? e.message : "추첨에 실패했어요");
-      setGacha("idle");
+      setSpinning(false);
       setStep("user");
     }
+  }
+
+  /** 릴이 결과 칸에 멈췄다 */
+  function landed() {
+    setSpinning(false);
+    setStopAt(null);
+    setStep("result");
+    const place = result?.place ?? stopAt?.place ?? null;
+    if (place == null) playSfx("fail");
+    else if (place <= 2) playSfx("legend");
+    else if (place <= 4) playSfx("rank");
+    else playSfx("coin");
   }
 
   async function markClaimed() {
@@ -213,17 +218,18 @@ export function BoothKiosk() {
           {/* 우: 뽑기 */}
           <div>
             <Card className="flex flex-col items-center">
-              <GachaMachine state={gacha} className="w-full max-w-[240px]" />
+              <SlotMachine
+                spinning={spinning}
+                stopAt={stopAt}
+                canPull={canDraw}
+                onPull={draw}
+                onLanded={landed}
+                className="w-full max-w-[380px]"
+              />
 
               {step === "user" && (
-                <Button
-                  size="lg"
-                  block
-                  className="mt-5"
-                  onClick={draw}
-                  disabled={!lookup || lookup.remaining <= 0 || !!blockReason(lookup)}
-                >
-                  🎰 뽑기 {lookup && lookup.remaining > 0 ? `(${lookup.remaining}회 남음)` : ""}
+                <Button size="lg" block className="mt-5" onClick={draw} disabled={!canDraw}>
+                  🎰 레버 내리기 {lookup && lookup.remaining > 0 ? `(${lookup.remaining}회 남음)` : ""}
                 </Button>
               )}
 
@@ -231,30 +237,16 @@ export function BoothKiosk() {
                 <div className="mt-5 w-full animate-pop text-center">
                   {result.place ? (
                     <>
-                      <div className="relative mx-auto w-fit">
-                        {result.place <= 2 && (
-                          <>
-                            <span
-                              className="pointer-events-none absolute left-1/2 top-1/2 size-28 -translate-x-1/2 -translate-y-1/2 animate-flash rounded-full bg-amber/70 blur-lg"
-                              aria-hidden
-                            />
-                            <span
-                              className="pointer-events-none absolute left-1/2 top-1/2 size-32 -translate-x-1/2 -translate-y-1/2 animate-pulse-glow rounded-full border-2 border-amber/60"
-                              aria-hidden
-                            />
-                          </>
-                        )}
-                        <p className="relative text-6xl">{PLACE_EMOJI[result.place - 1]}</p>
-                      </div>
                       <p
                         className={cn(
-                          "mt-2 text-4xl font-black",
+                          "text-4xl font-black",
                           result.place <= 2 ? "text-neon text-glow" : "text-ink",
                         )}
                       >
                         {result.place}등 당첨!
                       </p>
                       <p className="mt-1 text-xl font-bold text-neon-soft">{result.prize_name}</p>
+                      <p className="mt-1 text-xs text-dim">※ 실제 상품은 그림과 다를 수 있습니다.</p>
                       {result.place <= 2 && (
                         <p className="mt-2 font-mono text-sm tracking-[0.3em] text-aqua">CONGRATULATIONS</p>
                       )}
@@ -271,8 +263,7 @@ export function BoothKiosk() {
                     </>
                   ) : (
                     <>
-                      <p className="text-6xl">🫥</p>
-                      <p className="mt-2 text-3xl font-black text-mute">꽝</p>
+                      <p className="text-3xl font-black text-mute">꽝</p>
                       <p className="mt-1 text-sm text-dim">다음 기회에! 아직 기회가 남아있다면 한 번 더</p>
                     </>
                   )}
@@ -284,7 +275,6 @@ export function BoothKiosk() {
                       onClick={() => {
                         setResult(null);
                         setClaimed(false);
-                        setGacha("idle");
                         setStep("user");
                       }}
                       disabled={!lookup || lookup.remaining <= 0 || !!blockReason(lookup)}

@@ -14,7 +14,11 @@ export type GameMeta = {
   /** 원점수 단위 */
   scoreUnit: string;
   accent: "amber" | "cyan" | "rose";
+  /** 체감 난이도 1(매우 쉬움) ~ 5(매우 어려움). 문구는 common.difficulty.<n>, 칩은 components/DifficultyChip.tsx (DECISIONS §5-46) */
+  difficulty: Difficulty;
 };
+
+export type Difficulty = 1 | 2 | 3 | 4 | 5;
 
 export const GAMES: Record<GameId, GameMeta> = {
   flight: {
@@ -31,6 +35,7 @@ export const GAMES: Record<GameId, GameMeta> = {
     durationLabel: "최대 180초",
     scoreUnit: "점",
     accent: "cyan",
+    difficulty: 5,
   },
   survive: {
     id: "survive",
@@ -46,6 +51,7 @@ export const GAMES: Record<GameId, GameMeta> = {
     durationLabel: "무한 생존",
     scoreUnit: "점",
     accent: "rose",
+    difficulty: 3,
   },
   owlis: {
     id: "owlis",
@@ -61,6 +67,7 @@ export const GAMES: Record<GameId, GameMeta> = {
     durationLabel: "무한 (패배할 때까지)",
     scoreUnit: "점",
     accent: "cyan",
+    difficulty: 2,
   },
   chef: {
     id: "chef",
@@ -76,6 +83,7 @@ export const GAMES: Record<GameId, GameMeta> = {
     durationLabel: "25단계 + 무한",
     scoreUnit: "점",
     accent: "amber",
+    difficulty: 1,
   },
 };
 

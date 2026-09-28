@@ -21,16 +21,20 @@ import { Cards } from "./ui/Cards";
 import { Guide } from "./ui/Guide";
 import { Hud, type HudState } from "./ui/Hud";
 import { Joystick } from "./ui/Joystick";
-import { primaryLabel, useKeymapState } from "@/lib/keybinds";
+import { actionOf, primaryLabel, useKeymap, useKeymapState } from "@/lib/keybinds";
 import { startFixedLoop } from "@/games/flight/engine/loop";
 import { text } from "@/games/core/i18n";
 import { fetchSurviveProgress } from "@/lib/client-queries";
 import { createDprGovernor } from "../core/quality";
+import { PauseButton, PauseMenu, usePause } from "../core/pause";
+import { CoachHand, useCoachSteps } from "../core/coach";
 import type { GameComponentProps } from "../core/types";
 
 const END_DELAY = 1.6;
 /** 카운트다운이 끝나고 GO! 를 보여 주는 시간 */
 const GO_SEC = 0.7;
+/** 첫 조작 안내 — 3·2·1 부터 조이스틱 끌기 손가락을 이만큼(ms) 보여 준다. GO! 뒤에 움직이면 바로 사라진다 */
+const COACH_MS = [7000] as const;
 
 export function SurviveGame({ onEnd }: GameComponentProps) {
   const [theme, setTheme] = useState<ThemeId>("dark");
@@ -177,6 +181,14 @@ function SurviveRun({ theme, onEnd }: { theme: ThemeId; onEnd: GameComponentProp
   const endedRef = useRef(false);
   const overAtRef = useRef(0);
   const portraitRef = useRef(false);
+  const loopRef = useRef<{ setPaused: (p: boolean) => void } | null>(null);
+  // 일시정지 — 공통 메뉴(games/core/pause.tsx), 한 판에 1분까지. 세로 안내 동안은 시간을 깎지 않는다
+  const pause = usePause(
+    (frozen) => loopRef.current?.setPaused(frozen),
+    () => portraitRef.current,
+  );
+  const { toggle: togglePause, autoPause } = pause;
+  const keysRef = useKeymap("survive");
 
   const [hud, setHud] = useState<HudState | null>(null);
   const [cards, setCards] = useState<Run["cards"]>([]);
@@ -187,6 +199,21 @@ function SurviveRun({ theme, onEnd }: { theme: ThemeId; onEnd: GameComponentProp
   const [count, setCount] = useState<number>(CFG.run.countdownSec);
 
   const t = THEMES[theme];
+
+  // 첫 조작 안내 손가락 — 카드 선택·일시정지·세로 안내 동안은 시간이 흐르지 않는다
+  const coachLive = !portrait && cards.length === 0 && !pause.open && !runRef.current?.world.over;
+  const coach = useCoachSteps(COACH_MS, coachLive);
+  const countRef = useRef(count);
+  countRef.current = count;
+  const { stop: stopCoach } = coach;
+  const onStick = useCallback(
+    (v: { x: number; y: number }) => {
+      inputRef.current = { mx: v.x, my: v.y };
+      // 카운트다운 중에 만져 본 것은 넘어가고, 실제로 움직이기 시작하면 안내를 거둔다
+      if ((v.x || v.y) && countRef.current < 0) stopCoach();
+    },
+    [stopCoach],
+  );
 
   const snapshot = useCallback((run: Run): HudState => {
     const w = run.world;
@@ -329,6 +356,20 @@ function SurviveRun({ theme, onEnd }: { theme: ThemeId; onEnd: GameComponentProp
       },
     );
 
+    loopRef.current = loop;
+
+    // ⏸ 키 · 탭이 가려지면 자동 일시정지 (남은 시간이 있을 때만)
+    const onKey = (e: KeyboardEvent) => {
+      if (actionOf(keysRef.current, e.code) !== "pause") return;
+      e.preventDefault();
+      if (!e.repeat && !run.world.over) togglePause();
+    };
+    const onVisibility = () => {
+      if (document.hidden && !run.world.over) autoPause();
+    };
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("visibilitychange", onVisibility);
+
     const hudTimer = setInterval(() => {
       setHud(snapshot(run));
       setCount(run.world.countdown > 0 ? Math.ceil(run.world.countdown) : run.world.t < GO_SEC ? 0 : -1);
@@ -340,7 +381,10 @@ function SurviveRun({ theme, onEnd }: { theme: ThemeId; onEnd: GameComponentProp
     return () => {
       endedRef.current = true;
       loop.stop();
+      loopRef.current = null;
       clearInterval(hudTimer);
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("resize", fit);
       window.removeEventListener("orientationchange", fit);
     };
@@ -356,8 +400,11 @@ function SurviveRun({ theme, onEnd }: { theme: ThemeId; onEnd: GameComponentProp
       style={{ background: t.bg }}
     >
       <canvas ref={canvasRef} className="absolute inset-0" aria-label={tr("ui.canvas")} />
-      {hud && <Hud hud={hud} theme={t} />}
-      <Joystick onChange={(v) => (inputRef.current = { mx: v.x, my: v.y })} />
+      {hud && <Hud hud={hud} theme={t} action={!run?.world.over && <PauseButton ctl={pause} className="-my-1 -mr-1.5 shrink-0" />} />}
+      <Joystick onChange={onStick} />
+      {coachLive && coach.step === 0 && (
+        <CoachHand at={{ x: "22%", y: "60%" }} gesture="joystick" label={tr("coach.move")} />
+      )}
 
       {run && cards.length > 0 && (
         <Cards
@@ -438,6 +485,7 @@ function SurviveRun({ theme, onEnd }: { theme: ThemeId; onEnd: GameComponentProp
       )}
 
       {run && isPaused(run) && <span className="sr-only">{tr("ui.paused")}</span>}
+      {!portrait && !run?.world.over && <PauseMenu ctl={pause} />}
 
       <p
         className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px]"

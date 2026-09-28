@@ -1,8 +1,10 @@
 import { JoinClubBanner } from "@/components/JoinClubBanner";
 import type { Metadata } from "next";
 import { BrandBanner } from "@/components/brand/BrandBanner";
+import { DifficultyChip } from "@/components/DifficultyChip";
 import { GameLogo } from "@/components/GameLogo";
 import { LobbyVideo } from "@/components/LobbyVideo";
+import { Countdown } from "@/components/Countdown";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRight, Sparkles, Ticket as TicketIcon, TriangleAlert } from "lucide-react";
@@ -17,7 +19,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { formatNumber } from "@/lib/format";
 import { GAMES } from "@/lib/games";
 import { getIsOpen, getLeaderboard, getMyPosition, getMyProfile, getOwlEnergy, getMyTickets, getAppConfig } from "@/lib/queries";
-import { rankInfo, rankLevelRange } from "@/lib/rank";
+import { challengerBonusAt, challengerBonusCount, nextRankAt, rankInfo, rankPointRange } from "@/lib/rank";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("nav");
@@ -57,6 +59,9 @@ export default async function LobbyPage({
   const unused = tickets.filter((t) => t.status === "unused").length;
   const reserved = tickets.filter((t) => t.status === "reserved").length;
   const r = rankInfo(profile.rank_idx);
+  // 다음 랭크까지 — 챌린저면 다음 보너스 티켓까지 (lib/rank.ts = 서버 rank_from_points · challenger_bonus_count)
+  const nextRank = nextRankAt(profile.total_points);
+  const nextBonus = challengerBonusCount(profile.total_points) + 1;
   const playable = open && energy.energy >= energy.cost;
 
   return (
@@ -70,9 +75,10 @@ export default async function LobbyPage({
         </div>
       )}
 
-      {/* 브랜드 배너 · 홍보 영상 */}
+      {/* 브랜드 배너 · 홍보 영상 · 행사 카운트다운 */}
       <BrandBanner priority className="mb-2 max-w-sm drop-shadow-[0_0_38px_rgb(167_139_250/0.28)]" />
-      <LobbyVideo className="mb-4" />
+      <LobbyVideo className="mb-3" />
+      <Countdown config={config.countdown} className="mb-4" />
 
       {/* 내 랭크 — 유리판 위로 랭크 색이 번진다 */}
       <Card neon className="relative overflow-hidden">
@@ -87,7 +93,15 @@ export default async function LobbyPage({
               {tr(String(profile.rank_idx))}
             </p>
             <p className="num mt-0.5 text-xs text-mute">
-              {t("tierRange", { range: rankLevelRange(profile.rank_idx), tier: r.tier })}
+              {t("tierRange", { range: rankPointRange(profile.rank_idx), tier: r.tier })}
+            </p>
+            <p className="num mt-0.5 text-xs text-dim">
+              {nextRank
+                ? t("nextRank", { name: tr(String(nextRank.idx)), left: formatNumber(nextRank.at - profile.total_points) })
+                : t("nextBonus", {
+                    n: nextBonus,
+                    left: formatNumber(challengerBonusAt(nextBonus) - profile.total_points),
+                  })}
             </p>
             <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
               <span className="text-mute">{t("total")}</span>
@@ -138,6 +152,7 @@ export default async function LobbyPage({
               </div>
 
               <div className="relative mt-3 flex flex-wrap items-center gap-1.5">
+                <DifficultyChip level={g.difficulty} />
                 <Chip className="num text-[10px]">{tg(`${g.id}.duration`)}</Chip>
                 <Chip className="num text-[10px]">{t("pointRange", { base: config.game_points.base, rate: config.game_points.per_min[g.id] ?? 0 })}</Chip>
                 <Chip tone="amber" className="num text-[10px]">

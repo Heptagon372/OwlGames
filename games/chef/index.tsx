@@ -44,7 +44,7 @@ import {
   type GameEvent,
 } from "./engine/game";
 import { buildMeta, rawScore } from "./engine/score";
-import { EditButtons, Hud, Kitchen, Pantry, TableColumn, Ticket, type BoardHandlers, type DragSrc, type KeyHints, type Popup } from "./ui/Board";
+import { COACH_TARGET, EditButtons, Hud, Kitchen, Pantry, TableColumn, Ticket, type BoardHandlers, type DragSrc, type KeyHints, type Popup } from "./ui/Board";
 import { BannerView, Glitch, Toast, type Banner } from "./ui/Overlays";
 import { ItemIcon } from "./ui/parts";
 import { ITEM_KEYS } from "./theme";
@@ -55,6 +55,8 @@ import { playMusic, playSfx, stopMusic } from "@/lib/sound";
 
 /** 영업 중 배경음악 (사용자 제공 "Diner Arcade Groove" — public/assets/CREDITS.md). 메뉴에서는 조용히 */
 const CHEF_BGM = "/assets/chef-bgm/diner-arcade-groove.mp3";
+import { PauseButton, PauseMenu, usePause } from "../core/pause";
+import { CoachHand, useTargetPoint } from "../core/coach";
 import type { GameComponentProps } from "../core/types";
 
 function isTouch(): boolean {
@@ -245,9 +247,11 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
   // 배너는 줄을 선다 — FULL STACK · CLEAN BUILD 뒤에 STAGE 카드가 같은 틱에 와도 덮어쓰지 않게
   const bannerQ = useRef<{ b: Banner; dur: number }[]>([]);
   const bannerNow = useRef<(Banner & { until: number }) | null>(null);
-  const [paused, setPaused] = useState(false);
-  const pausedRef = useRef(false);
   const loopRef = useRef<{ setPaused: (p: boolean) => void } | null>(null);
+  // 일시정지 — 공통 메뉴(games/core/pause.tsx), 한 판에 1분까지. 탭이 가려진 동안은 따로 멈춘다(시간 안 깎임)
+  const pause = usePause((frozen) => loopRef.current?.setPaused(frozen || document.hidden));
+  const pausedRef = pause.openRef;
+  const togglePause = pause.toggle;
   const [toast, setToast] = useState<{ text: string; until: number; icon?: UiName } | null>(null);
   const [flash, setFlash] = useState<{ item: ItemId; until: number } | null>(null);
   const [opening, setOpening] = useState(true);
@@ -364,7 +368,7 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
       },
     );
     loopRef.current = loop;
-    const onVis = () => loop.setPaused(document.hidden || pausedRef.current);
+    const onVis = () => loop.setPaused(document.hidden || pause.frozenRef.current);
     document.addEventListener("visibilitychange", onVis);
     const open = setTimeout(() => setOpening(false), 1100);
     return () => {
@@ -458,14 +462,7 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [g, keymap]);
-
-  function togglePause() {
-    const p = !pausedRef.current;
-    pausedRef.current = p;
-    setPaused(p);
-    loopRef.current?.setPaused(p || document.hidden);
-  }
+  }, [g, keymap, pausedRef, togglePause]);
 
   const guard = (fn: () => void) => () => {
     if (suppress.current || pausedRef.current) return;
@@ -504,6 +501,9 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
   // 선택된 접시의 "다음에 누를 곳" — 늘 표시한다 (튜토리얼 단계에서는 반짝임까지, ui/Board.tsx 의 guideCls)
   const hint = g.selected >= 0 && !g.over ? hintFor(g, g.selected) : null;
   const score = rawScore(g);
+  // 첫 조작 안내 손가락 — 튜토리얼 단계(CFG.run.tutorialUntil)까지 반짝이는 "다음에 누를 곳"을 탭해 보인다
+  const coachLive = !!hint && g.stage <= CFG.run.tutorialUntil && !opening && !pause.open && !ghost;
+  const coachAt = useTargetPoint(wrapRef, `.${COACH_TARGET}`, coachLive);
   // 재료 칸 — 폰도 7칸(360px 폭에서도 한 칸 ≥ 44px)으로 줄 수를 줄인다
   const cols = wide ? 8 : size.w >= 356 ? 7 : 6;
 
@@ -546,7 +546,7 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
       {wide ? (
         <div className="mx-auto grid h-full max-w-[1200px] grid-cols-[minmax(0,1fr)_320px] gap-3 p-3">
           <div className="flex min-h-0 flex-col gap-2.5">
-            <Hud g={g} score={score} />
+            <Hud g={g} score={score} action={!g.over && <PauseButton ctl={pause} className="-mr-1.5 shrink-0" />} />
             {tables}
             <Kitchen g={g} h={h} keys={keys} hint={hint} />
             <Pantry g={g} h={h} keys={keys} hint={hint} flash={liveFlash} cols={cols} />
@@ -573,7 +573,7 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
       ) : (
         // 폰 세로 — 위에서 아래로 한 화면: HUD → 테이블(손님 · 레시피 줄 · 접시) → 도구 → 재료(+되돌리기·비우기)
         <div className="mx-auto flex min-h-full max-w-[560px] flex-col gap-2 p-2">
-          <Hud g={g} score={score} />
+          <Hud g={g} score={score} action={!g.over && <PauseButton ctl={pause} className="-mr-1.5 shrink-0" />} />
           {tables}
           <Kitchen g={g} h={h} keys={keys} hint={hint} />
           <Pantry g={g} h={h} keys={keys} hint={hint} flash={liveFlash} cols={cols} edit />
@@ -587,6 +587,16 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
             <p className="animate-pop grad-text font-mono text-6xl font-black tracking-[0.2em]">OPEN!</p>
           </div>
         </div>
+      )}
+      {coachLive && hint && coachAt && (
+        <CoachHand
+          at={coachAt}
+          gesture="tap"
+          label={t(`coach.${hint.kind}`)}
+          labelAt={hint.kind === "item" || hint.kind === "undo" ? "above" : "below"}
+          labelAlign={coachAt.x < 90 ? "start" : coachAt.x > size.w - 90 ? "end" : "center"}
+          size={72}
+        />
       )}
       {liveBanner && !g.over && <BannerView b={liveBanner} />}
       {liveToast && !g.over && <Toast text={liveToast.text} icon={liveToast.icon} />}
@@ -602,31 +612,7 @@ function ChefRun({ onEnd, t0 }: { onEnd: GameComponentProps["onEnd"]; t0: number
           <GhostIcon g={g} src={ghost.src} />
         </div>
       )}
-      {paused && !g.over && (
-        <div className="absolute inset-0 z-40 grid place-items-center bg-night/70 backdrop-blur-sm">
-          <div className="card-solid w-full max-w-xs rounded-card p-6 text-center">
-            <p className="font-mono text-2xl font-black tracking-widest">{t("pause.title")}</p>
-            <p className="mt-2 text-xs text-mute">
-              {primaryLabel(km, "pause") ? (
-                <>
-                  <span className="pc:hidden">{t("pause.noteTouch")}</span>
-                  <span className="hidden pc:inline">{t("pause.noteKey", { key: primaryLabel(km, "pause") })}</span>
-                </>
-              ) : (
-                t("pause.noteTouch")
-              )}
-            </p>
-            <button
-              type="button"
-              onClick={togglePause}
-              className="grad-fill mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full font-black text-white active:scale-95"
-            >
-              <UiIcon name="play" size={24} fallback={<Play className="size-5" />} />
-              {t("pause.resume")}
-            </button>
-          </div>
-        </div>
-      )}
+      {!g.over && <PauseMenu ctl={pause} />}
       {over}
     </div>
   );

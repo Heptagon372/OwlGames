@@ -3,10 +3,10 @@
 // 아울러닝 HUD (기획서 §15 + 2.0) — 화면 면적 18% 이하, 플레이 영역 침범 금지
 import Image from "next/image";
 import { primaryLabel, type Keymap } from "@/lib/keybinds";
-import { Pause } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { CFG, COLOR_INFO, type Color, type SizeKey } from "../config";
 import { text } from "@/games/core/i18n";
+import { PAUSE_TOTAL_SEC, PauseButton, type PauseCtl } from "@/games/core/pause";
 import { cn } from "@/lib/cn";
 import { stageColor } from "@/lib/stages";
 import type { Banner, ChoiceId, GameStatus, SkillKind } from "../engine/game";
@@ -137,8 +137,7 @@ export function Hud({
   onCycleColor,
   onSkill,
   onPick,
-  onPause,
-  pauseLeft,
+  pause,
 }: {
   hud: HudState;
   /** PC 키 안내 (색 버튼 옆) — 설정에서 바꾼 키 */
@@ -146,8 +145,8 @@ export function Hud({
   onCycleColor: () => void;
   onSkill: () => void;
   onPick: (i: number) => void;
-  onPause: () => void;
-  pauseLeft: number;
+  /** 공통 일시정지 (games/core/pause.tsx) */
+  pause: PauseCtl;
 }) {
   const t = useTranslations("hud.flight");
   const tc = useTranslations("hud.common");
@@ -343,6 +342,7 @@ export function Hud({
               onCycleColor();
             }}
             aria-label={t("colorAria", { color: colorName })}
+            data-coach="color"
             className="grid size-[84px] place-items-center rounded-full border-4 bg-night/80 active:scale-95"
             style={{ borderColor: info.hex, boxShadow: `0 0 24px ${info.hex}66` }}
           >
@@ -372,21 +372,10 @@ export function Hud({
       </div>
 
       {/* 일시정지 */}
-      <button
-        type="button"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onPause();
-        }}
-        aria-label={tc("pause")}
-        className="pointer-events-auto absolute right-3 top-[4.6rem] grid size-11 place-items-center rounded-xl border border-line bg-night/70 text-mute"
-      >
-        <Pause className="size-4" />
-      </button>
-      {pauseLeft < CFG.pause.totalSec && (
+      <PauseButton ctl={pause} className="absolute right-3 top-[4.6rem]" />
+      {pause.left < PAUSE_TOTAL_SEC && (
         <p className="num absolute right-16 top-[5.4rem] text-[10px] text-dim">
-          {tc("pauseLeft", { sec: Math.ceil(pauseLeft) })}
+          {tc("pauseLeft", { sec: Math.ceil(pause.left) })}
         </p>
       )}
 

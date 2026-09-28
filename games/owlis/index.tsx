@@ -26,9 +26,18 @@ import { actionOf, primaryLabel, useKeymap, useKeymapState, type KeyAction } fro
 import { playSfx } from "@/lib/sound";
 import { sceneOf, setBgm } from "./audio";
 import { createDprGovernor } from "../core/quality";
+import { PauseMenu, usePause } from "../core/pause";
+import { CoachHand, useCoachSteps, type Gesture } from "../core/coach";
 import type { GameComponentProps } from "../core/types";
 
 const INTRO_SEC = 1.3;
+/** 첫 조작 안내 — OWLIS! 뒤에 [좌우로 끌기] [탭 = 회전] [아래로 튕기기] 를 두 번 돌려 보여 준다 */
+const COACH: { gesture: Gesture; label: "drag" | "rotate" | "drop" }[] = [
+  { gesture: "drag-x", label: "drag" },
+  { gesture: "tap", label: "rotate" },
+  { gesture: "flick-down", label: "drop" },
+];
+const COACH_MS = [2600, 1800, 2000] as const;
 
 function releaseHeld(g: Game): void {
   g.held.left = false;
@@ -212,13 +221,16 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
   const [hud, setHud] = useState<HudState | null>(null);
   const [intro, setIntro] = useState<"ready" | "go" | null>("ready");
   const [over, setOver] = useState<"topout" | "time" | null>(null);
+  /** 손가락을 놓을 곳 — 내 필드 가운데 조금 아래 */
+  const [coachAt, setCoachAt] = useState<{ x: number; y: number } | null>(null);
 
-  // 일시정지 — 한 판에 CFG.pause.totalSec 초까지, 멈춘 동안 필드를 가린다
+  // 일시정지 — 공통 메뉴(games/core/pause.tsx), 한 판에 1분까지. 멈춘 동안 필드를 가린다
   const loopRef = useRef<Loop | null>(null);
-  const pausedRef = useRef(false);
-  const pauseLeftRef = useRef<number>(CFG.pause.totalSec);
-  const [paused, setPaused] = useState(false);
-  const [pauseLeft, setPauseLeft] = useState<number>(CFG.pause.totalSec);
+  const pause = usePause((frozen) => {
+    loopRef.current?.setPaused(frozen);
+    if (gameRef.current) releaseHeld(gameRef.current);
+  });
+  const pausedRef = pause.openRef;
 
   labelsRef.current = {
     next: t("next"),
@@ -236,21 +248,17 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
   const onAction = useCallback((a: Action) => {
     const g = gameRef.current;
     if (g && !pausedRef.current) act(g, a);
-  }, []);
+  }, [pausedRef]);
   const onHeld = useCallback((k: keyof Held, on: boolean) => {
     const g = gameRef.current;
     if (g && !pausedRef.current) g.held[k] = on;
-  }, []);
+  }, [pausedRef]);
+  const { toggle: togglePauseMenu, autoPause } = pause;
   const togglePause = useCallback(() => {
     const g = gameRef.current;
     if (!g || g.over) return;
-    const next = !pausedRef.current;
-    if (next && pauseLeftRef.current <= 0) return;
-    pausedRef.current = next;
-    setPaused(next);
-    loopRef.current?.setPaused(next);
-    releaseHeld(g);
-  }, []);
+    togglePauseMenu();
+  }, [togglePauseMenu]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -278,7 +286,9 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
       canvas.style.height = `${h}px`;
       const portrait = h > w * 1.05;
       const padH = wrap.querySelector<HTMLElement>("[data-owlis-pad]")?.offsetHeight ?? 0;
-      layRef.current = layout(w, h, insetsOf(touch, portrait, padH));
+      const lay = layout(w, h, insetsOf(touch, portrait, padH));
+      layRef.current = lay;
+      setCoachAt({ x: lay.pf.x + (lay.pf.cell * CFG.field.cols) / 2, y: lay.pf.y + lay.pf.cell * CFG.field.rows * 0.55 });
       setPadMode(portrait ? "bar" : "sides");
       R.sprites.clear();
     };
@@ -333,14 +343,6 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
       if (g.over) setOver(g.end);
     }, 90);
 
-    // 일시정지 시간 — 다 쓰면 저절로 다시 시작
-    const pauseTimer = setInterval(() => {
-      if (!pausedRef.current) return;
-      pauseLeftRef.current = Math.max(0, pauseLeftRef.current - 0.25);
-      setPauseLeft(pauseLeftRef.current);
-      if (pauseLeftRef.current <= 0) togglePause();
-    }, 250);
-
     // 키보드 (PC) — 키는 설정의 키 설정에서 (keys.current 를 매번 읽으니 바꾸면 바로 적용)
     const onDown = (e: KeyboardEvent) => {
       const a = actionOf(keys.current, e.code);
@@ -362,6 +364,11 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
       if (a === "left" || a === "right" || a === "soft") g.held[a] = false;
     };
     const onBlur = () => releaseHeld(g);
+    // 탭이 가려지면 자동 일시정지 (남은 시간이 있을 때만)
+    const onVisibility = () => {
+      if (document.hidden && !g.over) autoPause();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("keydown", onDown);
     window.addEventListener("keyup", onUp);
     window.addEventListener("blur", onBlur);
@@ -371,13 +378,13 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
       loop.stop();
       loopRef.current = null;
       clearInterval(hudTimer);
-      clearInterval(pauseTimer);
       setBgm("off");
       window.removeEventListener("resize", fit);
       window.removeEventListener("orientationchange", fit);
       window.visualViewport?.removeEventListener("resize", fit);
       window.removeEventListener("keydown", onDown);
       window.removeEventListener("keyup", onUp);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("blur", onBlur);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -436,6 +443,11 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
     }
   };
 
+  // 첫 조작 안내 손가락 — 일시정지 동안은 시간이 흐르지 않는다
+  const coachLive = !intro && !over && !pause.open && coachAt !== null;
+  const coach = useCoachSteps(COACH_MS, coachLive, 2);
+  const coachStep = coach.step >= 0 ? COACH[coach.step] : null;
+
   return (
     <div ref={wrapRef} className="relative h-full w-full touch-none select-none overflow-hidden" style={{ background: OWLIS.bg }}>
       <canvas
@@ -449,14 +461,14 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
       />
       {hud && <Hud hud={hud} />}
       {touch ? (
-        <Controls mode={padMode} onAction={onAction} onHeld={onHeld} onPause={togglePause} canPause={pauseLeft > 0 && !over} />
+        <Controls mode={padMode} onAction={onAction} onHeld={onHeld} onPause={togglePause} canPause={!over} />
       ) : (
         <>
           <KeyHints />
           <button
             type="button"
             aria-label={tc("pause")}
-            disabled={pauseLeft <= 0 || !!over}
+            disabled={!!over}
             onClick={togglePause}
             className="absolute right-3 top-3 z-10 grid size-11 place-items-center rounded-full text-[#e9edfb] active:scale-95 disabled:opacity-35"
             style={glassStyle({ from: GRAD.violet, via: GRAD.aqua, to: GRAD.violet })}
@@ -466,26 +478,12 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
         </>
       )}
 
-      {paused && (
-        // 멈춘 동안은 필드를 가린다 — 생각할 시간을 벌지 못하게
-        <div className="absolute inset-0 z-40 grid place-items-center px-6" style={{ background: OWLIS.bg }}>
-          <div className="w-full max-w-xs rounded-[24px] p-6 text-center" style={glassStyle({ glow: GRAD.violet })}>
-            <p className="font-mono text-3xl font-black tracking-[0.15em]" style={NEON_TITLE}>
-              {tc("pause")}
-            </p>
-            <p className="num mt-2 text-sm text-[#98a3c6]">{tc("pauseNote", { sec: Math.ceil(pauseLeft) })}</p>
-            <button
-              type="button"
-              onClick={togglePause}
-              className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-base font-black text-[#060913] active:scale-95"
-              style={glassStyle({ fill: true, from: GRAD.cyan, via: GRAD.aqua, to: GRAD.violet, glow: GRAD.aqua })}
-            >
-              <Play className="size-5" />
-              {tc("resume")}
-            </button>
-          </div>
-        </div>
+      {coachLive && coachStep && coachAt && (
+        <CoachHand at={coachAt} gesture={coachStep.gesture} label={t(`coach.${coachStep.label}`)} />
       )}
+
+      {/* 멈춘 동안은 필드를 가린다 — 생각할 시간을 벌지 못하게 */}
+      <PauseMenu ctl={pause} backdrop={OWLIS.bg} />
 
       {intro && (
         <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center">

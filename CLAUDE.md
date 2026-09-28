@@ -30,7 +30,9 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
   **시간 포인트는 "진행으로 증명되는 시간"까지만**(`security_play_sec` ↔ TS 사본 `lib/anticheat.ts`) — 게임 메타 키(`duration_s`·`distance_m`·
   `served_total`·`pieces`·`stage`)를 바꾸면 양쪽을 같이. 한 판·1시간 포인트가 크면 **뽑기만 검토 보류**(`review_required`, 관리자 → 로그에서 확인 완료).
   **뽑기 티어는 티켓을 얻은 랭크 기준**(`tickets.earned_rank_idx`)이고, 부원은 본인 코드 뽑기·본인 에너지 지급을 못 한다 (§5-28).
-- `lib/rank.ts`는 DB 함수(`level_from_points` 등)와 **같은 수식**이어야 한다. 바꾸면 양쪽 + `tests/rank.test.ts`를 함께 고친다.
+- `lib/rank.ts`는 DB 함수(`level_from_points`·`rank_from_points`·`tier_from_rank`·`challenger_bonus_count`)와 **같은 수식**이어야 한다. 바꾸면 양쪽 + `tests/rank.test.ts`를 함께 고친다.
+  **랭크 30단계는 누적 포인트로 정하고**(레벨은 표시용, Lv 100 = 챌린저 49,500P), 챌린저 뒤에는 보너스 티켓(`earned_rank_idx` 30+, T11)이 간격 ×1.25 로 계속 나온다.
+  뽑기는 **11티어**이고 확률표는 한 줄 안에서 1등 ≤ … ≤ 6등 ≤ 꽝이어야 한다(`admin_set_config` 검사). 재고 0 → 꽝 표시 계산은 `lib/gacha.ts` (DECISIONS §5-47).
 - 게임은 Canvas 2D + rAF 직접 구현(엔진 금지). 공통 루프·캔버스 헬퍼는 `games/core/`.
   아울 레스토랑(주문·재료 탭 화면)만 한글 가독성·접근성 때문에 DOM/SVG로 그린다.
 - **모든 게임은 `lib/stages.ts`의 공통 15단계를 쓴다.** 점수는 무한히 쌓이되 난이도는 단계마다
@@ -88,12 +90,13 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
   엔진은 `world.cues`에 `CUE` 비트만 세우고, 소리 이름·파일·음량·간격은 `games/survive/audio.ts`(`SOUNDS`·`BGM`) 한 곳이다.
   샘플이 아직 없으면 합성음(`fallback`)으로 대신한다. 배경음악은 `lib/sound.ts`의 `playMusic`(크로스페이드, 음량은 설정의 "배경음악").
 - **게임 로고 4종은 사용자 그림**(`scripts/src/game-logos.webp` → `scripts/slice-game-logos.py` → `public/assets/logos/<game>.webp`)이고 `components/GameLogo.tsx`로 로비·첫 화면·게임 인트로에 그린다. 게임을 추가하면 로고도 같이 넣을 것.
-- 플랫폼 UI는 이미지 에셋 없이 SVG·도형으로 그린다 (`components/brand/Logo.tsx`, `GachaMachine.tsx`).
+- 플랫폼 UI는 이미지 에셋 없이 SVG·도형으로 그린다 (`components/brand/Logo.tsx`, 부스 뽑기 슬롯머신 `SlotMachine.tsx` — 릴 칸만 상품 그림).
 - **예외: 브랜드 그림은 사용자가 준 두 장**(`scripts/src/brand-frame.webp`·`brand-owl.png` → `scripts/slice-brand.py`)이다.
   스크립이 프레임 안에 이름을 얹어 `public/assets/brand/banner.webp`(+`-light`)·`owl.webp`(+`-light`) 와 `app/icon.png`·`apple-icon.png`·`opengraph-image.png` 를 만든다.
   화면에서는 `components/brand/BrandBanner.tsx`(랜딩 히어로·로비 맨 위)·`OwlMark.tsx`(헤더·티켓·에러 화면)를 쓰고,
   라이트 테마에서는 CSS 의 `.brand-night`/`.brand-day` 가 **진한 사본**으로 바꿔 끼운다 (DECISIONS §5-36).
-  **예외: 랭크 뱃지 17종은 사용자가 준 시트**(`scripts/src/rank-sheet.webp` → `scripts/slice-rank-badges.py` → `public/assets/ranks/rank-00~16.webp`)를 `RankBadge.tsx`가 `<img>`로 그린다. 순서는 `RANKS` 순서와 같다.
+  **예외: 상품 그림 6종도 사용자 그림**(`scripts/src/prizes.webp` → `scripts/slice-prizes.py` → `public/assets/prizes/prize-1~6.webp`)이고 `components/PrizeArt.tsx`로 그린다 — 상품을 보여 주는 플레이어 화면에는 `common.prizeArtNote`("실제 상품은 그림과 다를 수 있습니다")를 같이 띄운다 (DECISIONS §5-45).
+  **예외: 랭크 뱃지 30종은 사용자가 준 시트**(`scripts/src/rank-sheet.webp` → `scripts/slice-rank-badges.py` → `public/assets/ranks/rank-00~29.webp`)를 `RankBadge.tsx`가 `<img>`로 그린다. 순서는 `RANKS` 순서와 같다. **그림 픽셀은 시트 그대로** 두고 배경 안개만 뺀다(알파를 깎으면 얇아진다).
 - **아울러닝 2.0 그림은 사용자가 준 시트 두 장**이다 — 리소스 시트(`public/assets/owlrun/*.webp`, `scripts/slice-owlrun-sheet.py`)와
   캐릭터 시트(`public/assets/owlrun/char/*.webp`, `scripts/slice-owlrun-character.py`, 외곽선 스티커 스타일 · 2배로 키운 고해상도).
   부엉이는 큰 색별 그림에 **날갯짓을 코드로** 입히고, 피격·기절·부활·승리 같은 자세는 엔진의 `g.pose` 로 고른다. 혜성 꼬리·문구 그림(PERFECT/NEAR MISS/COMBO/FEVER)·돌벽·톱니·미사일·아이템·단계별 하늘·이벤트 카드.
@@ -138,7 +141,7 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 
 | 하고 싶은 일 | 파일 |
 |---|---|
-| 레벨 곡선·랭크 구간 | `lib/rank.ts` + `supabase/migrations/*.sql` + `tests/rank.test.ts` |
+| 레벨 곡선·랭크 구간·챌린저 보너스 | `lib/rank.ts` + 최신 `rank_from_points`·`challenger_bonus_count`(`20261020000000_rank_v2.sql`) + `tests/rank.test.ts` + `supabase/tests/level_curve.sql` |
 | 포인트 식(기본·분당·K) | `app_config.game_points`·`game_k` (관리자 화면에서 수정) — 식은 DB `public.game_points` 한 곳 + TS 사본 `lib/games.ts` 의 `estimatePoints` (`20261007000000_points_v2.sql`). **한 판 상한 없음** |
 | 게임 제한시간 | `app_config.game_limits` (DB), 표시는 `lib/config.ts` |
 | 아울러닝 물리·에너지·점수 튜닝 | `games/flight/config.ts`의 `CFG` 한 곳 (매직넘버 금지) |
@@ -159,6 +162,7 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 로그인·가입 입력 규칙·시도 제한 | `lib/validate.ts` + `profiles_validate` 트리거 · `lib/rate-limit.ts` |
 | 뽑기 확률·상품 | `app_config.gacha_table`, `prizes` 테이블 (관리자 화면에서 재고 수정) |
 | 부스 위치 안내 | `app_config.booth_location` |
+| 로비 카운트다운(행사 종료 시각) | `app_config.countdown` + `admin_set_countdown` RPC(`20261016000000_countdown.sql`) — 관리자 → 설정 카드 · 화면 `components/Countdown.tsx` · 문구 `messages/*.json` 의 `countdown.*` |
 | 아울 에너지(스태미나) | `app_config.owl_energy` (DB) · 표시 기본값은 `lib/config.ts` · 게임 내 드롭은 각 게임 `config.ts`의 `CFG.owlEnergy` (서버 조건과 같은 값이어야 한다) |
 | 실시간 등수·변동 표시 | `components/RankDelta.tsx` · `components/LiveRefresh.tsx` · `games/core/useGameSession.ts`의 `position` |
 | 플랫폼 색·유리 질감 | `app/globals.css`의 `@theme` + `.card`/`.grad-line` — 캔버스 쪽 복제본은 `games/core/canvas.ts`의 `COLORS`, 게임 테마는 `games/*/theme.ts` |
@@ -172,9 +176,11 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 | 서바이버즈 효과음·배경음악 | `games/survive/audio.ts`의 `SOUNDS`(효과음) · `BGM`(곡 경로, 파일은 `public/assets/survive-bgm/`) — 새 사건은 `world.ts`의 `CUE`에 비트를 추가하고 `CUE_SOUNDS`에 연결 |
 | 아울리스 배경음악 | `games/owlis/audio.ts` (`BGM`·`LATE_LEVEL` — 후반/위기 곡 전환, 파일은 `public/assets/owlis-bgm/`) |
 | 아울러닝 배경음악 | `games/flight/audio.ts` (`BGM`·`LATE_STAGE` — 후반 단계·OVERDRIVE 곡 전환, 파일은 `public/assets/flight-bgm/`) |
+| 첫 조작 안내 손가락 | 공통 `games/core/coach.tsx`(`CoachHand`·`useCoachSteps`·`useTargetPoint`, 반투명 · 입력 통과) + 움직임 `globals.css` 의 `coach-*` · 게임별 순서·시간은 각 `index.tsx` 의 `COACH_MS` · 문구 `hud.<게임>.coach.*` · 그림 `scripts/slice-coach-hand.py` (DECISIONS §5-43) |
 | 동아리 가입 배너·링크 | `components/JoinClubBanner.tsx` 의 `CLUB_APPLY_URL` + 문구 `messages/*.json` 의 `club.*` |
 | 제작진·개인정보·경품 고지 | `app/about/page.tsx` + 문구는 `messages/*.json` 의 `about.*` (배열은 `t.raw`). 들어가는 곳: 설정 하단·첫 화면 푸터·티켓 확률표 아래 |
 | 관리자 화면 | `components/admin/AdminPanel.tsx` (대시보드·승인·유저·재고·설정·로그) |
+| 관리자 티켓 지급 | `admin_grant_tickets` RPC(`20261015000000_admin_tickets.sql`) + `lib/rpc.ts` 의 `grantTickets` — 화면은 관리자 → 유저 탭의 🎫. 랭크 티켓은 `grant_seq = 0`, 지급 티켓은 시퀀스 값 (§5-41) |
 | 가입 자동 승인 | `app_config.auto_approve` + `admin_set_auto_approve` RPC(`20261013000000_balance_v4.sql`) — 스위치는 관리자 → 가입 승인 탭. 새 가입자는 `handle_new_user` 가 판단 |
 | PC 키 설정 | 기본 키 `lib/keybinds.ts` 의 `DEFAULT_KEYS` · 화면 `components/KeybindSettings.tsx` · 동작 이름 `messages/*.json` 의 `settings.keys.actions` |
 | 운영 값을 화면에서 바꾸기 | `admin_set_config` 화이트리스트(최신 본문은 `supabase/migrations/20261007000000_points_v2.sql`) + `lib/rpc.ts`의 `setConfigValue` |

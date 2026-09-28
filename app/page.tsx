@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Logo } from "@/components/brand/Logo";
 import { BrandBanner } from "@/components/brand/BrandBanner";
+import { DifficultyChip } from "@/components/DifficultyChip";
 import { GameLogo } from "@/components/GameLogo";
 import { JoinClubBanner } from "@/components/JoinClubBanner";
 import { SetupBanner } from "@/components/SetupBanner";
@@ -11,7 +12,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { RankBadge } from "@/components/RankBadge";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, Chip, TermLabel } from "@/components/ui/Card";
-import { PLACE_EMOJI } from "@/lib/config";
+import { PrizeArt } from "@/components/PrizeArt";
 import { GAME_IDS, GAMES } from "@/lib/games";
 import { getAppConfig, getIsOpen, getMyProfile, getPrizes } from "@/lib/queries";
 import { RANKS } from "@/lib/rank";
@@ -24,7 +25,7 @@ const STEPS = [
 ] as const;
 
 export default async function LandingPage() {
-  const [config, open, prizes, profile, t, tg, tAbout] = await Promise.all([
+  const [config, open, prizes, profile, t, tg, tAbout, tc] = await Promise.all([
     getAppConfig(),
     getIsOpen(),
     getPrizes(),
@@ -32,6 +33,7 @@ export default async function LandingPage() {
     getTranslations("landing"),
     getTranslations("games"),
     getTranslations("about"),
+    getTranslations("common"),
   ]);
 
   return (
@@ -100,6 +102,7 @@ export default async function LandingPage() {
             <Card key={g.id} neon className="flex flex-col items-center gap-2 p-3">
               <GameLogo game={g.id} alt={tg(`${g.id}.title`)} className="h-24 w-full" />
               <p className="line-clamp-2 text-center text-xs text-mute">{tg(`${g.id}.tagline`)}</p>
+              <DifficultyChip level={g.difficulty} />
             </Card>
           ))}
         </div>
@@ -147,12 +150,13 @@ export default async function LandingPage() {
       {/* 상품 */}
       <section className="mt-10">
         <TermLabel>{t("prizesLabel")}</TermLabel>
-        <h2 className="display mt-1 mb-4 text-[26px]">{t("prizesTitle")}</h2>
+        <h2 className="display mt-1 text-[26px]">{t("prizesTitle")}</h2>
+        <p className="mb-4 mt-1 text-xs text-dim">{tc("prizeArtNote")}</p>
         <div className="grid grid-cols-1 gap-2">
           {prizes.map((p) => (
             <Card key={p.place} className="flex items-center justify-between py-3">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{PLACE_EMOJI[p.place - 1]}</span>
+                <PrizeArt place={p.place} className="size-14" />
                 <div>
                   <p className="font-bold">
                     <span className="num mr-2 text-neon">{t("place", { place: p.place })}</span>

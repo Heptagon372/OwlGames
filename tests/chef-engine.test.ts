@@ -420,4 +420,12 @@ describe("마이그레이션과 같은 식인가 (20261005000000_chef.sql)", () 
     expect(CFG.run.sessionCap).toBeLessThanOrEqual(1210 - 25);
     expect(sql).toContain(`v_c_stage >= ${CFG.owlEnergy.minStage}`);
   });
+
+  // 운영 DB 의 헬퍼는 20261016 이 마지막으로 만든다 (20261005 를 push 뒤에 고쳐서 어긋났던 것 — §5-44)
+  it("20261016 의 헬퍼가 20261005 본문과 같다", () => {
+    const resync = readFileSync(join(process.cwd(), "supabase/migrations/20261016000100_chef_helpers_resync.sql"), "utf8");
+    const helpers = (s: string) => s.slice(s.indexOf("-- 2.1 끝낸 주문 수"), s.indexOf("revoke execute on function public.chef_raw"));
+    expect(helpers(resync).length).toBeGreaterThan(1000);
+    expect(helpers(resync)).toBe(helpers(sql));
+  });
 });

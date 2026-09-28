@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { fetchLeaderboard, fetchPrizes, fetchStats } from "@/lib/client-queries";
 import { formatNumber } from "@/lib/format";
 import { getBrowserSupabase } from "@/lib/supabase/client";
-import { PLACE_EMOJI } from "@/lib/config";
+import { PrizeArt } from "@/components/PrizeArt";
 import type { BoardEvent, BoardStats, LeaderboardRow, PrizeRow } from "@/lib/types";
 
 /** 부스 전광판 (§9) — 공개 읽기 전용, 가로 16:9 */
@@ -119,14 +119,15 @@ export function BoardScreen({
 
           {/* 재고 */}
           <Card className="flex min-h-0 flex-col p-4">
-            <h2 className="mb-3 text-[1.3vw] font-black">🎁 남은 상품</h2>
-            <ul className="grid min-h-0 flex-1 grid-rows-[repeat(5,minmax(0,1fr))] gap-[0.4vw]">
+            <h2 className="text-[1.3vw] font-black">🎁 남은 상품</h2>
+            <p className="mb-3 text-[0.8vw] text-dim">※ 실제 상품은 그림과 다를 수 있습니다.</p>
+            <ul className="grid min-h-0 flex-1 grid-rows-[repeat(6,minmax(0,1fr))] gap-[0.4vw]">
               {prizes.map((p) => (
                 <li
                   key={p.place}
                   className="flex min-h-0 items-center gap-3 overflow-hidden rounded-tile border border-line/60 bg-night/50 px-3"
                 >
-                  <span className="text-[1.6vw]">{PLACE_EMOJI[p.place - 1]}</span>
+                  <PrizeArt place={p.place} className="size-[3.2vw]" />
                   <span className="min-w-0 flex-1 truncate text-[1.2vw] font-bold">
                     <span className="num mr-2 text-neon">{p.place}등</span>
                     {p.name}

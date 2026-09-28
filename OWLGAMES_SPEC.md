@@ -429,7 +429,7 @@ owlgames/
 │  ├─ RankBadge.tsx               # 17종 랭크 뱃지 (색·아이콘 매핑)
 │  ├─ ExpBar.tsx
 │  ├─ LevelUpOverlay.tsx
-│  ├─ GachaMachine.tsx            # 부스 연출
+│  ├─ SlotMachine.tsx             # 부스 연출 (레버식 슬롯머신)
 │  └─ Ticker.tsx
 ├─ games/
 │  ├─ core/ (loop.ts, input.ts, useGameSession.ts)
