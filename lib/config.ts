@@ -57,8 +57,8 @@ export type AppConfig = {
 export const DEFAULT_CONFIG: AppConfig = {
   open_hours: { start: "09:00", end: "18:00", tz: "Asia/Seoul" },
   force_open: "auto",
-  // Lv 100 = 49,500P = 챌린저 (20261020_rank_v2 · lib/rank.ts 의 DEFAULT_CURVE)
-  level_curve: { base: 50, step: 9 },
+  // Lv 100 = 99,990P ≈ 챌린저 100,000P (20261021_rank_v3 · lib/rank.ts 의 DEFAULT_CURVE)
+  level_curve: { base: 60, step: 19 },
   game_k: { flight: 100, survive: 20, owlis: 40, chef: 200 },
   // 난이도: 아울리스 < 레스토랑 < 서바이버즈 ≤ 아울러닝 → 어려울수록 분당 포인트가 크다
   game_points: { base: 50, per_min: { owlis: 8, chef: 10, survive: 12, flight: 22 } },

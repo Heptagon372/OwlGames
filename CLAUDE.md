@@ -31,8 +31,8 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
   `served_total`·`pieces`·`stage`)를 바꾸면 양쪽을 같이. 한 판·1시간 포인트가 크면 **뽑기만 검토 보류**(`review_required`, 관리자 → 로그에서 확인 완료).
   **뽑기 티어는 티켓을 얻은 랭크 기준**(`tickets.earned_rank_idx`)이고, 부원은 본인 코드 뽑기·본인 에너지 지급을 못 한다 (§5-28).
 - `lib/rank.ts`는 DB 함수(`level_from_points`·`rank_from_points`·`tier_from_rank`·`challenger_bonus_count`)와 **같은 수식**이어야 한다. 바꾸면 양쪽 + `tests/rank.test.ts`를 함께 고친다.
-  **랭크 30단계는 누적 포인트로 정하고**(레벨은 표시용, Lv 100 = 챌린저 49,500P), 챌린저 뒤에는 보너스 티켓(`earned_rank_idx` 30+, T11)이 간격 ×1.25 로 계속 나온다.
-  뽑기는 **11티어**이고 확률표는 한 줄 안에서 1등 ≤ … ≤ 6등 ≤ 꽝이어야 한다(`admin_set_config` 검사). 재고 0 → 꽝 표시 계산은 `lib/gacha.ts` (DECISIONS §5-47).
+  **랭크 30단계는 누적 포인트로 정하고**(레벨은 표시용, 챌린저 100,000P ≈ Lv 100 · 19단계 불멸자까지는 완만하고 20단계 불멸부터 가파르다), 챌린저 뒤에는 보너스 티켓(`earned_rank_idx` 30+, T11)이 간격 ×1.25 로 계속 나온다.
+  뽑기는 **11티어**이고 확률표는 한 줄 안에서 1등 ≤ … ≤ 6등 ≤ 꽝이어야 한다(`admin_set_config` 검사). 재고 0 → 꽝 표시 계산은 `lib/gacha.ts` (DECISIONS §5-47 · §5-48).
 - 게임은 Canvas 2D + rAF 직접 구현(엔진 금지). 공통 루프·캔버스 헬퍼는 `games/core/`.
   아울 레스토랑(주문·재료 탭 화면)만 한글 가독성·접근성 때문에 DOM/SVG로 그린다.
 - **모든 게임은 `lib/stages.ts`의 공통 15단계를 쓴다.** 점수는 무한히 쌓이되 난이도는 단계마다
@@ -141,7 +141,7 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
 
 | 하고 싶은 일 | 파일 |
 |---|---|
-| 레벨 곡선·랭크 구간·챌린저 보너스 | `lib/rank.ts` + 최신 `rank_from_points`·`challenger_bonus_count`(`20261020000000_rank_v2.sql`) + `tests/rank.test.ts` + `supabase/tests/level_curve.sql` |
+| 레벨 곡선·랭크 구간·챌린저 보너스 | `lib/rank.ts` + 최신 `rank_from_points`·`challenger_bonus_count`(`20261021000000_rank_v3.sql`, 티어·확률표는 `20261020000000_rank_v2.sql`) + `tests/rank.test.ts` + `supabase/tests/level_curve.sql` |
 | 포인트 식(기본·분당·K) | `app_config.game_points`·`game_k` (관리자 화면에서 수정) — 식은 DB `public.game_points` 한 곳 + TS 사본 `lib/games.ts` 의 `estimatePoints` (`20261007000000_points_v2.sql`). **한 판 상한 없음** |
 | 게임 제한시간 | `app_config.game_limits` (DB), 표시는 `lib/config.ts` |
 | 아울러닝 물리·에너지·점수 튜닝 | `games/flight/config.ts`의 `CFG` 한 곳 (매직넘버 금지) |
