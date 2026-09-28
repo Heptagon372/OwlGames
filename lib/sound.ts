@@ -320,6 +320,24 @@ export function playClick(gain = 0.7): void {
   if (!playSample(UI_CLICK, { gain })) playSfx("tap");
 }
 
+/* ── 레벨업·랭크업 징글 ─────────────────────────────────────── */
+
+/** 레벨업·랭크업 연출(`LevelUpOverlay`)의 사용자 제공 샘플. 아직 안 받았으면 합성음으로 대신한다 */
+export const LEVEL_UP = "/assets/ui/level-up.mp3";
+export const RANK_UP = "/assets/ui/rank-up.mp3";
+
+export function preloadLevelUp(): void {
+  preloadSamples([LEVEL_UP, RANK_UP]);
+}
+
+export function playLevelUp(kind: "level" | "rank"): void {
+  if (typeof window === "undefined") return;
+  preloadLevelUp();
+  if (kind === "rank") {
+    if (!playSample(RANK_UP, { gain: 0.9 })) playSfx("legend");
+  } else if (!playSample(LEVEL_UP, { gain: 0.8 })) playSfx("level");
+}
+
 /* ── 배경음악 ───────────────────────────────────────────────── */
 
 /**

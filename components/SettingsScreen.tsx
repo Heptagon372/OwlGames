@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Check, ChevronRight, Info, Languages, Monitor, Volume2, VolumeX } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { KeybindSettings } from "./KeybindSettings";
 import { Card, TermLabel } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { cn } from "@/lib/cn";
@@ -163,6 +164,9 @@ export function SettingsScreen({ locale }: { locale: Locale }) {
           </div>
         </Card>
       </section>
+
+      {/* 키 설정 (PC 만) */}
+      <KeybindSettings />
 
       {/* 언어 */}
       <section>

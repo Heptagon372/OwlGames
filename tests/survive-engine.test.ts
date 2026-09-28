@@ -1322,7 +1322,9 @@ describe("🟥 십삼각형 — 술래잡기 (§11)", () => {
     w.boss.triLaserT = 999;
     w.boss.triHoleT = 999;
     const seen: number[] = [];
-    for (let k = 0; k < 60 * 50; k++) {
+    // 세 번째 돌진까지 = 첫 돌진 + 쿨타임 × 2 (+ 돌진 자체 시간 여유)
+    const sec = CFG.trideca.dashFirst + CFG.trideca.dashCd * 2 + 15;
+    for (let k = 0; k < 60 * sec; k++) {
       tick(w, DT);
       if (w.boss.triDashSeries && seen[seen.length - 1] !== w.boss.triDashSeries) seen.push(w.boss.triDashSeries);
     }

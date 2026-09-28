@@ -115,4 +115,5 @@ export type FlightStats = {
   build: string;
 };
 
-export type DeathCause = "wall" | "energy" | null;
+/** time = 한 판 상한(CFG.platform.maxSessionSec) — 서버 max_sec 전에 끝낸다 */
+export type DeathCause = "wall" | "energy" | "time" | null;

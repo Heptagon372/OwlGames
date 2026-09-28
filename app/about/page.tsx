@@ -88,7 +88,7 @@ export default async function AboutPage() {
         >
           <Card className="mt-3 border-ok/30 bg-ok/6">
             <p className="text-xs font-bold text-ok">{t("privacy.contactTitle")}</p>
-            <p className="mt-1 text-sm leading-relaxed text-mute">{t("privacy.contact")}</p>
+            <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-mute">{t("privacy.contact")}</p>
           </Card>
         </Section>
 

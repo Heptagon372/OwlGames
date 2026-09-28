@@ -51,13 +51,14 @@ describe("아울러닝 봇 시뮬레이션", () => {
 
   it("평범한 플레이 분포가 무너지지 않는다", () => {
     // 봇은 아이템을 적극적으로 줍지 않고 스치지도 않는 '보통 실력' 기준.
-    // 2.0 튜닝(초보 보호 · 체력 증가) 후 중앙값 ≈ 73초 · 9단계 · raw ≈ 9,400 · 120P 안팎 (K=100).
+    // 밸런스 v4(체력 S150 · M190 · L240, DECISIONS §5-39) 후 중앙값 ≈ 118초 · 14단계 · raw ≈ 27,000 (2.0 은 ≈ 73초 · 9단계).
+    // 보통 실력은 ∞ 앞에서 끝나고, 한 판이 부스 회전을 막을 만큼 길어지지는 않는다.
     expect(s.durationMedian).toBeGreaterThan(35);
-    expect(s.durationMedian).toBeLessThan(CFG.platform.maxSessionSec);
+    expect(s.durationMedian).toBeLessThan(240);
     expect(s.stageMedian).toBeGreaterThanOrEqual(5); // 보통 실력도 레이저(5단계)까지는 본다
+    expect(s.stageMedian).toBeLessThanOrEqual(CFG.stages.length);
     expect(s.rawMedian).toBeGreaterThan(1500);
     expect(s.pointsMedian).toBeGreaterThan(CFG.platform.basePoints + 20);
-    expect(s.pointsMedian).toBeLessThan(200);
   });
 
   it("죽는 이유가 한쪽으로만 쏠리지 않는다 (§5 설계 의도)", () => {

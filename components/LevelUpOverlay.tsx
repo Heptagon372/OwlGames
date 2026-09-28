@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { RankBadge } from "./RankBadge";
 import { rankInfo } from "@/lib/rank";
+import { playLevelUp, preloadLevelUp } from "@/lib/sound";
 
 type Props = {
   open: boolean;
@@ -19,8 +20,11 @@ type Props = {
 export function LevelUpOverlay({ open, kind, level, rankIdx, ticketsGained = 0, onDone }: Props) {
   const tl = useTranslations("levelUp");
   const tr = useTranslations("ranks");
+  // 결과 화면이 뜰 때 미리 받아 둬야 연출이 열리는 순간 샘플이 준비돼 있다
+  useEffect(() => preloadLevelUp(), []);
   useEffect(() => {
     if (!open) return;
+    playLevelUp(kind);
     const t = setTimeout(onDone, kind === "rank" ? 4200 : 2200);
     return () => clearTimeout(t);
   }, [open, kind, onDone]);

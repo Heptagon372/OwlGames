@@ -1,8 +1,9 @@
 // 🧩 아울리스 — 렌더 (VFXManager / 캔버스 쪽 UIManager) · 네온 (DECISIONS §5-21)
 //
-// 화면 배치는 두 가지 (§4, 모바일 우선):
-//   · 세로(폰): [내 필드(크게)] [오른쪽 레일: AI 필드(작게) · NEXT · HOLD · 게이지 · AI 부엉이]
-//   · 가로(PC·태블릿): [HOLD·게이지] [내 필드] [NEXT·AI 부엉이] [AI 필드]  — 1:1 에 가깝게
+// 화면 배치는 뿌요뿌요 온라인 대전 화면을 따른다 (§4, 모바일 우선 · DECISIONS "아울리스 UI 개편"):
+//   · 필드마다 위 = 받을 방해 블록 아이콘 줄, 아래 = 이름 + 점수(AI 는 LEVEL) 줄
+//   · 가로(PC·태블릿): [내 필드] [가운데: 내 NEXT | AI NEXT · HOLD · TIME · AI 부엉이 · 게이지] [AI 필드] — 두 필드 같은 크기
+//   · 세로(폰): [내 필드(크게)] [오른쪽 레일: TIME · NEXT · HOLD · AI 미니 필드 · 게이지] + 아래 터치 패드 (필드를 가리지 않는다)
 // 그림 파일 없이 전부 코드로 그린다 — 처음 버전의 네온: 어두운 몸통 + 밝은 네온 선 + 강한 발광.
 //   필드·NEXT·HOLD = 네온관 테두리(색 발광 + 흰 심지), 배경 = 흐르는 격자,
 //   블록 = 부엉이 블록(귀 · 색별 도형 눈 · 부리), AI = 네온 선 부엉이 (+ 천천히 도는 무지개 링).
@@ -15,6 +16,8 @@ import { CELLS, COLS, GARBAGE, HIDDEN, SPAWN_COL, dangerOf } from "./board";
 import { ghostCells, peek, type Field } from "./field";
 import { childC, childR } from "./piece";
 import type { Game } from "./game";
+import { levelLabel } from "./difficulty";
+import { rawScore } from "./score";
 import { GLYPH, GRAD, OWLIS, aiTone, type Glyph } from "../theme";
 
 const VIS = CFG.field.rows;
@@ -26,94 +29,222 @@ export type Labels = {
   fever: string;
   feverOn: string;
   you: string;
-  ai: string;
-  combo: (n: number) => string;
+  aiLevel: string;
+  time: string;
+  /** 연쇄 팝업 ("3연쇄!") */
+  chain: (n: number) => string;
   reboot: string;
 };
 
 type Rect = { x: number; y: number; cell: number };
+/** 필드 아래 이름 + 점수 줄 — y 는 글자 기준선, w 는 필드 너비 */
+type Info = { x: number; y: number; w: number; size: number };
 export type Layout = {
   portrait: boolean;
   pf: Rect;
   af: Rect;
+  /** 내 NEXT · NEXT-NEXT */
   next: Rect[];
+  /** AI 의 NEXT · NEXT-NEXT (가로만 — 세로는 null) */
+  aiNext: Rect[] | null;
+  /** HOLD 한 쌍의 왼쪽 위 (가로로 눕혀 그린다) */
   hold: Rect;
   gauge: { x: number; y: number; w: number };
   /** AI 부엉이 (§40) — size 0 이면 그리지 않는다. x·y 는 중심 */
   avatar: { x: number; y: number; size: number };
+  /** TIME — x 는 가운데, y 는 맨 위 */
+  time: { x: number; y: number };
+  pInfo: Info;
+  aInfo: Info;
   labelSize: number;
 };
 
-/** 게이지 두 줄(이름 + 막대)이 차지하는 높이 (drawRail 과 맞춘다) */
+/** 화면 가장자리에서 비워 둘 곳 (위 · 아래 터치 패드 · 좌우 터치 패드) */
+export type Insets = { top: number; bottom: number; left: number; right: number };
+
+/** 필드 네온 테두리 두께 */
+function framePad(s: number): number {
+  return Math.max(5, Math.round(s * 0.16));
+}
+/** 받을 방해 블록 아이콘 크기 */
+function garbageIcon(s: number): number {
+  return Math.max(10, Math.round(s * 0.56));
+}
+/** 필드 아래 점수 글자 크기 */
+function infoSize(s: number): number {
+  return Math.max(13, Math.round(s * 0.62));
+}
+/** 필드 위(방해 블록 줄) · 아래(점수 줄) 까지 친 필드 한 벌의 높이 */
+function aboveH(s: number): number {
+  return framePad(s) + 6 + garbageIcon(s);
+}
+function belowH(s: number): number {
+  return framePad(s) + 8 + infoSize(s) + 4;
+}
+function stackH(s: number): number {
+  return aboveH(s) + s * VIS + belowH(s);
+}
+/** TIME 두 줄(이름 + 시계) 높이 */
+function timeH(ls: number): number {
+  return Math.round(ls * 2.7 + 10);
+}
+/** 게이지 두 줄(이름 + 막대)이 차지하는 높이 (drawGauges 와 맞춘다) */
 function gaugeHeight(ls: number): number {
   const bh = Math.max(6, ls * 0.7);
   return 2 * (5 + bh + ls + 8);
 }
 
-/** 화면 크기 → 배치. `bottom` 은 아래쪽 터치 버튼 높이, `top` 은 위쪽 HUD 높이 */
-export function layout(w: number, h: number, top: number, bottom: number): Layout {
-  const availH = Math.max(120, h - top - bottom);
+/**
+ * NEXT 상자 안 두 칸 — 뿌요뿌요처럼 NEXT(크게)는 필드 쪽, NEXT-NEXT(작게)는 한 칸쯤 아래로 비껴 놓는다.
+ * `x` 는 상자 왼쪽, `mirror` 면 NEXT 가 오른쪽(AI 필드 쪽).
+ */
+function nextSlots(x: number, y: number, nc: number, mirror: boolean): { slots: Rect[]; w: number; h: number } {
+  const n2 = Math.max(MIN_CELL, Math.round(nc * 0.72));
+  const w = 8 + nc + 6 + n2 + 8;
+  const h = 16 + Math.max(nc * 2, Math.round(nc * 0.9) + n2 * 2);
+  const a = mirror ? x + w - 8 - nc : x + 8;
+  const b = mirror ? x + 8 : x + 8 + nc + 6;
+  return {
+    slots: [
+      { x: a, y: y + 8, cell: nc },
+      { x: b, y: y + 8 + Math.round(nc * 0.9), cell: n2 },
+    ],
+    w,
+    h,
+  };
+}
+/** 폭 `room` 안에 들어가는 NEXT 칸 크기 */
+function fitNext(room: number, want: number): number {
+  return Math.max(MIN_CELL, Math.min(want, Math.floor((room - 22) / 1.72)));
+}
+
+function infoOf(L: Rect): Info {
+  const size = infoSize(L.cell);
+  return { x: L.x, y: L.y + L.cell * VIS + framePad(L.cell) + 8 + size, w: L.cell * COLS, size };
+}
+
+/** 화면 크기 → 배치 */
+export function layout(w: number, h: number, inset: Insets): Layout {
+  const availH = Math.max(160, h - inset.top - inset.bottom);
+  const availW = Math.max(160, w - inset.left - inset.right);
   const portrait = h > w * 1.05;
+
   if (portrait) {
-    const railW = Math.max(104, Math.round(w * 0.33));
-    const cell = Math.floor(Math.min((w - 28 - railW) / COLS, (availH - 30) / (VIS + 0.4)));
+    // 내 필드가 화면을 차지하고, 오른쪽 좁은 레일에 NEXT · AI 미니 필드
+    const railW = Math.min(170, Math.max(96, Math.round(availW * 0.3)));
+    let cell = Math.floor(Math.min((availW - railW - 24) / (COLS + 0.4), (availH - 26) / 13.5));
+    while (cell > MIN_CELL && stackH(cell) > availH - 8) cell--;
+    const pad = framePad(cell);
     const pw = cell * COLS;
-    const px = Math.round((w - railW - 12 - pw) / 2);
-    const py = Math.round(top + 22 + (availH - 22 - cell * VIS) / 2);
-    const rx = px + pw + 14;
-    const rw = w - rx - 8;
-    const ac = Math.max(8, Math.floor(Math.min(rw / COLS, cell * 0.62)));
-    const ax = rx + Math.round((rw - ac * COLS) / 2);
-    const ay = py;
-    const nc = Math.max(10, Math.floor(ac * 0.95));
-    // 필드 이름("AI")이 필드 바로 아래에 붙으므로 NEXT 줄은 그 아래에서 시작한다
-    const ly = ay + ac * VIS + 36;
-    const gy = ly + 10 + nc * 2 + 18;
-    const ls = 10;
-    const gEnd = gy + gaugeHeight(ls);
-    const room = py + cell * VIS - gEnd;
-    const size = room >= 44 ? Math.min(rw * 0.7, room - 4) : 0;
+    const H = cell * VIS;
+    const px = inset.left + Math.max(pad + 4, Math.round((availW - railW - 8 - pw) / 2));
+    const top = inset.top + Math.round((availH - stackH(cell)) / 2);
+    const py = top + aboveH(cell);
+    const rx = px + pw + pad + 10;
+    const rw = w - inset.right - rx - 6;
+    const bottom = py + H + belowH(cell);
+    const ls = 11;
+    const mid = rx + rw / 2;
+
+    let y = top;
+    const time = { x: mid, y };
+    y += timeH(ls) + 4;
+
+    const nc = fitNext(rw, Math.round(cell * 0.8));
+    const nb = nextSlots(0, 0, nc, false);
+    const nx = rx + Math.round((rw - nb.w) / 2);
+    const next = nextSlots(nx, y + ls + 5, nc, false);
+    y += ls + 5 + next.h + 10;
+
+    // HOLD — 이름 + 눕힌 한 쌍 한 줄 (뿌요뿌요에 없는 규칙이라 작게)
+    const hc = Math.max(MIN_CELL, Math.round(nc * 0.5));
+    const hold = { x: rx + rw - 7 - hc * 2, y: y + 7, cell: hc };
+    y += hc + 14 + 12;
+
+    // 게이지는 레일 맨 아래 (내 필드 바닥 줄에 맞춘다)
+    const gTop = bottom - gaugeHeight(ls);
+    const gauge = { x: rx + 2, y: gTop + ls, w: rw - 4 };
+
+    // AI 미니 필드 — 남은 높이에 맞춘다
+    const room = gTop - 8 - y;
+    let ac = Math.max(MIN_CELL, Math.floor(Math.min((rw - 12) / COLS, cell * 0.62)));
+    while (ac > MIN_CELL && stackH(ac) > room) ac--;
+    const af = { x: rx + Math.round((rw - ac * COLS) / 2), y: y + aboveH(ac), cell: ac };
+    const aEnd = y + stackH(ac);
+    const left = gTop - 8 - aEnd;
+    const size = left >= 40 ? Math.min(rw * 0.6, left - 4) : 0;
+
+    const pf = { x: px, y: py, cell };
     return {
       portrait,
-      pf: { x: px, y: py, cell },
-      af: { x: ax, y: ay, cell: ac },
-      next: [
-        { x: rx + 8, y: ly + 10, cell: nc },
-        { x: rx + 8 + nc * 1.5, y: ly + 10 + nc * 0.3, cell: Math.round(nc * 0.8) },
-      ],
-      hold: { x: rx + rw - nc - 8, y: ly + 10, cell: nc },
-      gauge: { x: rx + 2, y: gy, w: rw - 4 },
-      avatar: { x: rx + rw / 2, y: gEnd + room / 2, size },
+      pf,
+      af,
+      next: next.slots,
+      aiNext: null,
+      hold,
+      gauge,
+      avatar: { x: mid, y: aEnd + left / 2 + 2, size },
+      time,
+      pInfo: infoOf(pf),
+      aInfo: infoOf(af),
       labelSize: ls,
     };
   }
-  // 가로
-  const cell = Math.floor(Math.min((availH - 30) / (VIS + 0.4), (w - 40) / 22));
-  const ac = Math.floor(cell * 0.86);
+
+  // 가로 — [내 필드] [가운데 칸] [AI 필드], 두 필드 같은 크기
+  const midC = 5.6;
+  const gapC = 0.45;
+  let cell = Math.floor(Math.min((availW - 16) / (COLS * 2 + midC + gapC * 2 + 0.7), (availH - 26) / 13.5));
+  while (cell > MIN_CELL && stackH(cell) > availH - 8) cell--;
+  const pad = framePad(cell);
   const pw = cell * COLS;
-  const aw = ac * COLS;
-  const side = cell * 3.3;
-  const mid = cell * 4.4;
-  const total = side + 12 + pw + 18 + mid + 18 + aw;
-  const x0 = Math.round((w - total) / 2);
-  const py = Math.round(top + 22 + (availH - 22 - cell * VIS) / 2);
-  const px = x0 + side + 12;
-  const mx = px + pw + 18;
-  const ax = mx + mid + 18;
-  const ay = py + (cell * VIS - ac * VIS);
-  const nc = Math.floor(cell * 0.9);
+  const H = cell * VIS;
+  const mid = Math.round(cell * midC);
+  const gap = Math.round(cell * gapC);
+  const total = pad * 4 + pw * 2 + gap * 2 + mid;
+  const x0 = inset.left + Math.round((availW - total) / 2);
+  const px = x0 + pad;
+  const mx = px + pw + pad + gap;
+  const ax = mx + mid + gap + pad;
+  const top = inset.top + Math.round((availH - stackH(cell)) / 2);
+  const py = top + aboveH(cell);
+  const ls = Math.max(11, Math.round(cell * 0.34));
+  const cx = mx + mid / 2;
+
+  // NEXT — 내 것은 내 필드 쪽, AI 것은 AI 필드 쪽 (가운데 칸을 반씩)
+  let y = py - pad;
+  const nc = fitNext(mid / 2 - 4, Math.round(cell * 0.86));
+  const pn = nextSlots(mx, y + ls + 5, nc, false);
+  const an = nextSlots(mx + mid - pn.w, y + ls + 5, nc, true);
+  y += ls + 5 + pn.h + 12;
+
+  const hc = Math.max(MIN_CELL, Math.round(nc * 0.55));
+  const hold = { x: mx + pn.w - 7 - hc * 2, y: y + 7, cell: hc };
+  y += hc + 14 + 14;
+
+  const time = { x: cx, y };
+  y += timeH(ls) + 8;
+
+  const gTop = py + H + pad - gaugeHeight(ls);
+  const gauge = { x: mx, y: gTop + ls, w: mid };
+  const room = gTop - 10 - y;
+  const size = room >= 40 ? Math.min(mid * 0.78, room) : 0;
+
+  const pf = { x: px, y: py, cell };
+  const af = { x: ax, y: py, cell };
   return {
     portrait,
-    pf: { x: px, y: py, cell },
-    af: { x: ax, y: ay, cell: ac },
-    next: [
-      { x: mx + mid / 2 - nc / 2, y: py + 16, cell: nc },
-      { x: mx + mid / 2 - nc * 0.4, y: py + 16 + nc * 2.4, cell: Math.round(nc * 0.8) },
-    ],
-    hold: { x: x0 + side / 2 - nc / 2, y: py + 16, cell: nc },
-    gauge: { x: x0, y: py + 16 + nc * 2 + 30, w: side },
-    avatar: { x: mx + mid / 2, y: py + cell * VIS - mid * 0.55, size: Math.min(mid * 0.86, cell * 3.6) },
-    labelSize: Math.max(10, Math.round(cell * 0.36)),
+    pf,
+    af,
+    next: pn.slots,
+    aiNext: an.slots,
+    hold,
+    gauge,
+    avatar: { x: cx, y: y + room / 2, size },
+    time,
+    pInfo: infoOf(pf),
+    aInfo: infoOf(af),
+    labelSize: ls,
   };
 }
 
@@ -331,7 +462,8 @@ function makeBlock(v: number, size0: number): Sprite {
 /* ── 연출 상태 ────────────────────────────────────────────────── */
 
 type Particle = { x: number; y: number; vx: number; vy: number; life: number; max: number; color: string };
-type Popup = { x: number; y: number; text: string; color: string; life: number; size: number };
+/** 글자 팝업 — x0·x1 = 글자가 벗어나지 않을 가로 범위(필드 안), big = 연쇄 팝업(외곽선 + 튀어나오는 크기) */
+type Popup = { x: number; y: number; x0: number; x1: number; text: string; color: string; life: number; max: number; size: number; big: boolean };
 type Beam = { x0: number; y0: number; x1: number; y1: number; t: number; color: string; big: boolean };
 
 const MAX_PARTICLES = 360;
@@ -574,52 +706,85 @@ function drawField(ctx: CanvasRenderingContext2D, R: Renderer, g: Game, f: Field
     ctx.restore();
   }
 
-  // 받을 방해 블록 예고 (필드 위) — 긴 알약 = 한 줄(6), 작은 점 = 1
-  if (f.incoming > 0) {
-    const rows = Math.floor(f.incoming / COLS);
-    const rem = f.incoming % COLS;
-    const hgt = Math.max(5, s * 0.22);
-    let x = L.x;
-    const y = L.y - pad - 7 - hgt;
-    ctx.save();
-    ctx.shadowColor = OWLIS.garbageCrack;
-    ctx.shadowBlur = 10;
-    ctx.fillStyle = OWLIS.garbageCrack;
-    for (let k = 0; k < Math.min(rows, 6); k++) {
-      roundRect(ctx, x, y, hgt * 2.6, hgt, hgt / 2);
-      ctx.fill();
-      x += hgt * 2.6 + 4;
+  drawIncoming(ctx, R, f, L);
+}
+
+/** 방해 블록 아이콘 한 개가 뜻하는 칸 수 — 큰 것부터 (5줄 · 한 줄 · 한 칸), 뿌요뿌요의 예고 아이콘처럼 */
+const GARBAGE_UNITS = [COLS * 5, COLS, 1] as const;
+const GARBAGE_ICONS_MAX = 6;
+
+/**
+ * 받을 방해 블록 예고 (필드 바로 위 한 줄) — 5줄 = 붉게 빛나는 큰 블록, 한 줄 = 큰 블록, 한 칸 = 작은 블록.
+ * 아이콘은 여섯 개까지, 오른쪽 끝에 정확한 칸 수.
+ */
+function drawIncoming(ctx: CanvasRenderingContext2D, R: Renderer, f: Field, L: Rect): void {
+  if (f.incoming <= 0) return;
+  const s = L.cell;
+  const gi = garbageIcon(s);
+  const small = Math.max(MIN_CELL, Math.round(gi * 0.62));
+  const y = L.y - framePad(s) - 5 - gi;
+  const W = s * COLS;
+  const txt = `${f.incoming}`;
+  ctx.font = font(900, Math.round(gi * 0.9));
+  const maxX = L.x + W - ctx.measureText(txt).width - 6;
+  const pulse = 0.6 + 0.4 * Math.sin(R.t * 10);
+
+  let left = f.incoming;
+  let x = L.x;
+  let n = 0;
+  for (const u of GARBAGE_UNITS) {
+    while (left >= u && n < GARBAGE_ICONS_MAX) {
+      const size = u === 1 ? small : gi;
+      if (x + size > maxX) break;
+      if (u > COLS) {
+        // 5줄짜리 — 붉은 네온 테두리가 맥동
+        ctx.save();
+        ctx.shadowColor = OWLIS.garbageCrack;
+        ctx.shadowBlur = 12 * pulse;
+        roundRect(ctx, x - 1, y - 1, size + 2, size + 2, size * 0.28);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = OWLIS.garbageCrack;
+        ctx.stroke();
+        ctx.restore();
+      }
+      drawCell(ctx, R, GARBAGE, x, y + (gi - size), size);
+      x += size + Math.max(2, Math.round(gi * 0.18));
+      left -= u;
+      n++;
     }
-    ctx.fillStyle = "#ff9fb3";
-    for (let k = 0; k < rem; k++) {
-      ctx.beginPath();
-      ctx.arc(x + hgt / 2, y + hgt / 2, hgt * 0.42, 0, Math.PI * 2);
-      ctx.fill();
-      x += hgt + 3;
-    }
-    ctx.restore();
-    ctx.font = font(800, Math.max(9, s * 0.34));
-    ctx.textAlign = "right";
-    ctx.textBaseline = "alphabetic";
-    ctx.fillStyle = OWLIS.garbageCrack;
-    ctx.fillText(`${f.incoming}`, L.x + W, y + hgt);
   }
+  ctx.save();
+  ctx.font = font(900, Math.round(gi * 0.9));
+  ctx.textAlign = "right";
+  ctx.textBaseline = "alphabetic";
+  ctx.shadowColor = OWLIS.garbageCrack;
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = OWLIS.garbageCrack;
+  ctx.fillText(txt, L.x + W, y + gi * 0.9);
+  ctx.restore();
 }
 
 /* ── NEXT · HOLD · 게이지 ─────────────────────────────────────── */
 
-function drawPair(ctx: CanvasRenderingContext2D, R: Renderer, a: number, b: number, x: number, y: number, s: number, dim = false): void {
+/** 한 쌍 — 세로(축 a 가 아래) 또는 눕혀서(HOLD, a 가 왼쪽) */
+function drawPair(ctx: CanvasRenderingContext2D, R: Renderer, a: number, b: number, x: number, y: number, s: number, dim = false, flat = false): void {
   ctx.globalAlpha = dim ? 0.4 : 1;
   ctx.strokeStyle = "rgba(255,255,255,0.4)";
   ctx.lineWidth = Math.max(1.5, s * 0.14);
   ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(x + s / 2, y + s / 2);
-  ctx.lineTo(x + s / 2, y + s * 1.5);
+  if (flat) ctx.lineTo(x + s * 1.5, y + s / 2);
+  else ctx.lineTo(x + s / 2, y + s * 1.5);
   ctx.stroke();
   ctx.lineCap = "butt";
-  drawCell(ctx, R, b, x, y, s);
-  drawCell(ctx, R, a, x, y + s, s);
+  if (flat) {
+    drawCell(ctx, R, a, x, y, s);
+    drawCell(ctx, R, b, x + s, y, s);
+  } else {
+    drawCell(ctx, R, b, x, y, s);
+    drawCell(ctx, R, a, x, y + s, s);
+  }
   ctx.globalAlpha = 1;
 }
 
@@ -639,28 +804,66 @@ function label(
   ctx.fillText(text, x, y);
 }
 
-function drawRail(ctx: CanvasRenderingContext2D, R: Renderer, g: Game, Lay: Layout, labels: Labels): void {
-  const f = g.player;
-  const ls = Lay.labelSize;
-  // NEXT — 유리 카드
-  const n0 = Lay.next[0];
-  const n1 = Lay.next[1];
-  const nx = Math.min(n0.x, n1.x) - 7;
-  const ny = n0.y - 7;
-  const nw = Math.max(n0.x + n0.cell, n1.x + n1.cell) - nx + 7;
-  const nh = Math.max(n0.y + n0.cell * 2, n1.y + n1.cell * 2) - ny + 7;
-  label(ctx, labels.next, nx + 2, ny - 6, ls, OWLIS.dim);
-  neonFrame(ctx, nx, ny, nw, nh, 12, `${OWLIS.player}aa`, 10);
-  for (let k = 0; k < CFG.preview; k++) {
-    const slot = Lay.next[k];
+/** NEXT 상자 — NEXT 는 또렷하게, NEXT-NEXT 는 작고 흐리게 */
+function drawNext(ctx: CanvasRenderingContext2D, R: Renderer, f: Field, slots: Rect[], text: string, color: string, ls: number, right: boolean): void {
+  const n0 = slots[0];
+  const n1 = slots[1];
+  const nx = Math.min(n0.x, n1.x) - 8;
+  const ny = n0.y - 8;
+  const nw = Math.max(n0.x + n0.cell, n1.x + n1.cell) - nx + 8;
+  const nh = Math.max(n0.y + n0.cell * 2, n1.y + n1.cell * 2) - ny + 8;
+  label(ctx, text, right ? nx + nw - 2 : nx + 2, ny - 5, ls, color, right ? "right" : "left");
+  neonFrame(ctx, nx, ny, nw, nh, 12, `${color}aa`, 10);
+  for (let k = 0; k < Math.min(CFG.preview, slots.length); k++) {
+    const slot = slots[k];
     const pr = peek(f, k);
     drawPair(ctx, R, pr.a, pr.b, slot.x, slot.y, slot.cell, k > 0);
   }
-  // HOLD — 유리 카드
+}
+
+/** TIME — 이름(작게) + 시계(크게), 가운데 정렬 */
+function drawTime(ctx: CanvasRenderingContext2D, g: Game, Lay: Layout, text: string): void {
+  const ls = Lay.labelSize;
+  const { x, y } = Lay.time;
+  label(ctx, text, x, y + ls, ls, OWLIS.dim, "center");
+  const s = Math.floor(g.t);
+  const clock = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  ctx.save();
+  ctx.shadowColor = GRAD.violet;
+  ctx.shadowBlur = 10;
+  label(ctx, clock, x, y + ls + 5 + Math.round(ls * 1.6), Math.round(ls * 1.6), OWLIS.text, "center");
+  ctx.restore();
+}
+
+/** 필드 아래 줄 — 왼쪽 이름(작게) + 오른쪽 값(크게, 발광) */
+function drawInfo(ctx: CanvasRenderingContext2D, I: Info, name: string, value: string, color: string): void {
+  label(ctx, name, I.x, I.y, Math.max(10, Math.round(I.size * 0.55)), color);
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
+  label(ctx, value, I.x + I.w, I.y, I.size, OWLIS.text, "right");
+  ctx.restore();
+}
+
+function drawRail(ctx: CanvasRenderingContext2D, R: Renderer, g: Game, Lay: Layout, labels: Labels): void {
+  const f = g.player;
+  const ls = Lay.labelSize;
+  drawNext(ctx, R, f, Lay.next, labels.next, OWLIS.player, ls, false);
+  if (Lay.aiNext) drawNext(ctx, R, g.ai, Lay.aiNext, labels.next, aiTone(g.diff.peak).line, ls, true);
+
+  // HOLD — 뿌요뿌요에는 없는 규칙이라 작게: 이름 + 눕힌 한 쌍
   const h = Lay.hold;
-  label(ctx, labels.hold, h.x + h.cell / 2, h.y - 13, ls, OWLIS.dim, "center");
-  neonFrame(ctx, h.x - 7, h.y - 7, h.cell + 14, h.cell * 2 + 14, 12, `${OWLIS.ai}aa`, 10);
-  if (f.hold) drawPair(ctx, R, f.hold.a, f.hold.b, h.x, h.y, h.cell, f.holdUsed);
+  neonFrame(ctx, h.x - 7, h.y - 7, h.cell * 2 + 14, h.cell + 14, 10, `${OWLIS.ai}88`, 6);
+  ctx.save();
+  ctx.textBaseline = "middle";
+  ctx.font = font(800, Math.max(10, Math.round(ls * 0.9)));
+  ctx.textAlign = "right";
+  ctx.fillStyle = OWLIS.dim;
+  ctx.fillText(labels.hold, h.x - 12, h.y + h.cell / 2);
+  ctx.restore();
+  if (f.hold) drawPair(ctx, R, f.hold.a, f.hold.b, h.x, h.y, h.cell, f.holdUsed, true);
+
+  drawTime(ctx, g, Lay, labels.time);
 
   // 게이지 — ATTACK (시안 → 바이올렛) · FEVER (바이올렛 → 마젠타)
   const G = Lay.gauge;
@@ -810,18 +1013,37 @@ function consumeFx(R: Renderer, g: Game, Lay: Layout, labels: Labels): void {
         burst(R, L.x + (c + 0.5) * L.cell, L.y + (r - HIDDEN + 0.5) * L.cell, color, e.side === 0 ? 4 : 2, L.cell * 4);
       }
       const at = fieldCenter(L, e.x, e.y);
+      const x0 = L.x;
+      const x1 = L.x + L.cell * COLS;
+      // 연쇄 팝업 — 터진 자리 위에 크게 ("3연쇄!"), 필드 밖으로 나가지 않게
       if (e.chain >= 2) {
+        const size = Math.max(14, L.cell * (0.8 + Math.min(0.5, e.chain * 0.07)));
         R.popups.push({
           x: at.x,
-          y: at.y - L.cell * 0.4,
-          text: labels.combo(e.chain),
+          y: Math.max(L.y + size, at.y - L.cell * 0.4),
+          x0,
+          x1,
+          text: labels.chain(e.chain),
           color: e.side === 0 ? OWLIS.player : aiTone(g.diff.peak).line,
-          life: 1,
-          size: L.cell * (0.5 + Math.min(0.5, e.chain * 0.06)),
+          life: 1.1,
+          max: 1.1,
+          size,
+          big: true,
         });
       }
       if (e.side === 0 && e.pts > 0) {
-        R.popups.push({ x: at.x, y: at.y + L.cell * 0.35, text: `+${e.pts.toLocaleString()}`, color: OWLIS.gold, life: 0.9, size: L.cell * 0.42 });
+        R.popups.push({
+          x: at.x,
+          y: at.y + L.cell * 0.45,
+          x0,
+          x1,
+          text: `+${e.pts.toLocaleString()}`,
+          color: OWLIS.gold,
+          life: 0.9,
+          max: 0.9,
+          size: L.cell * 0.42,
+          big: false,
+        });
       }
     } else if (e.k === "send") {
       const from = e.from === 0 ? Lay.pf : Lay.af;
@@ -830,7 +1052,7 @@ function consumeFx(R: Renderer, g: Game, Lay: Layout, labels: Labels): void {
         x0: from.x + (from.cell * COLS) / 2,
         y0: from.y + from.cell * 3,
         x1: to.x + to.cell * 1.2,
-        y1: to.y - 12,
+        y1: to.y - aboveH(to.cell) / 2,
         t: 0,
         color: e.from === 0 ? OWLIS.player : OWLIS.aiHot,
         big: e.cells >= COLS * 2,
@@ -908,12 +1130,9 @@ export function draw(
   drawField(ctx, R, g, g.ai, Lay.af, labels);
   drawRail(ctx, R, g, Lay, labels);
 
-  // 필드 이름
-  const ls = Lay.labelSize;
-  const pb = Lay.pf.y + Lay.pf.cell * VIS + ls + 12;
-  const ab = Lay.af.y + Lay.af.cell * VIS + ls + 12;
-  label(ctx, labels.you, Lay.pf.x, pb, ls, OWLIS.player);
-  label(ctx, labels.ai, Lay.af.x + Lay.af.cell * COLS, ab, ls, aiTone(g.diff.peak).line, "right");
+  // 필드 아래 — 나: 이름 + 점수 / AI: AI LEVEL (뿌요뿌요의 점수 줄 자리)
+  drawInfo(ctx, Lay.pInfo, labels.you, rawScore(g).toLocaleString(), OWLIS.player);
+  drawInfo(ctx, Lay.aInfo, labels.aiLevel, levelLabel(g.diff.peak), aiTone(g.diff.peak).line);
 
   // AI 부엉이
   if (Lay.avatar.size > 0) drawOwl(ctx, Lay.avatar.x, Lay.avatar.y, Lay.avatar.size, g.diff.peak, R.t);
@@ -975,17 +1194,29 @@ export function draw(
       R.popups.splice(k, 1);
       continue;
     }
-    p.y -= dt * 34;
+    p.y -= dt * (p.big ? 22 : 34);
     ctx.globalAlpha = Math.min(1, p.life * 2.5);
-    ctx.font = font(900, Math.max(10, p.size));
+    // 연쇄 팝업은 처음 0.14초 동안 크게 튀어나왔다가 제자리로
+    const popIn = p.big ? Math.max(0, 1 - (p.max - p.life) / 0.14) : 0;
+    const size = Math.max(10, Math.round(p.size * (1 + 0.4 * popIn)));
+    ctx.font = font(900, size);
+    const tw = ctx.measureText(p.text).width;
+    const x = p.x1 - p.x0 > tw ? Math.min(p.x1 - tw / 2, Math.max(p.x0 + tw / 2, p.x)) : (p.x0 + p.x1) / 2;
+    if (p.big) {
+      // 어두운 외곽선 — 블록 위에서도 읽히게
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(3, size * 0.16);
+      ctx.strokeStyle = `${OWLIS.bg}dd`;
+      ctx.strokeText(p.text, x, p.y);
+    }
     ctx.save();
     ctx.shadowColor = p.color;
-    ctx.shadowBlur = 14;
+    ctx.shadowBlur = p.big ? 20 : 14;
     ctx.fillStyle = p.color;
-    ctx.fillText(p.text, p.x, p.y);
+    ctx.fillText(p.text, x, p.y);
     ctx.restore();
     ctx.fillStyle = "rgba(255,255,255,0.8)";
-    ctx.fillText(p.text, p.x, p.y - 0.5);
+    ctx.fillText(p.text, x, p.y - 0.5);
   }
   ctx.globalAlpha = 1;
   ctx.restore();

@@ -2,32 +2,47 @@
 
 // 🧩 아울리스 (OWLIS) — 메뉴 → READY → 대전 → GAME OVER (기획서 §32~§34)
 //
-// 폰(세로·터치)과 PC(가로·키보드) 둘 다 한 화면 코드로 돈다:
-//   · 배치는 render.ts 의 layout() 이 화면 비율로 고른다
-//   · 터치: 필드 위 드래그(좌우 이동) · 탭(회전) · 아래로 끌기(소프트) · 튕기기(↓ 하드 / ↑ 홀드) + 아래 버튼 줄
-//   · 키보드: ← → 이동 · ↓ 소프트 · ↑/X 회전 · Z 반대 회전 · Space 하드 · C/Shift 홀드
+// 폰(세로·터치)과 PC(가로·키보드) 둘 다 한 화면 코드로 돈다 — 화면 문법은 뿌요뿌요 온라인 대전 화면:
+//   · 배치는 render.ts 의 layout() 이 화면 비율로 고른다 (점수·TIME·AI LEVEL·NEXT 는 캔버스에)
+//   · 터치: 아래(세로) / 좌우 구석(가로) 게임패드 + 필드 위 드래그(좌우) · 탭(회전) · 아래로 끌기(소프트) · 튕기기(↓ 하드 / ↑ 홀드)
+//   · 키보드: 설정의 키 설정(lib/keybinds.ts, 기본 ← → ↓ · X/↑ · Z · Space · C · Esc)
 
 import { GameLogo } from "@/components/GameLogo";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BarChart3, BookOpen, Play } from "lucide-react";
+import { BarChart3, BookOpen, Pause, Play } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { CFG } from "./config";
-import { CUE, act, createGame, update, type Action, type Game, type Held } from "./engine/game";
+import { CUE, act, createGame, update, type Game, type Held, type Action } from "./engine/game";
 import { levelLabel } from "./engine/difficulty";
-import { createRenderer, draw, layout, type Labels, type Layout } from "./engine/render";
+import { createRenderer, draw, layout, type Insets, type Labels, type Layout } from "./engine/render";
 import { buildMeta, rawScore, rollOwlEnergy } from "./engine/score";
-import { Controls, CONTROLS_H } from "./ui/Controls";
+import { Controls, CONTROLS_H, CONTROLS_SIDE_W } from "./ui/Controls";
 import { Hud, type HudState } from "./ui/Hud";
+import { KeyHints, KEY_HINTS_H } from "./ui/KeyHints";
 import { GRAD, OWLIS, glassStyle } from "./theme";
-import { startFixedLoop } from "@/games/flight/engine/loop";
+import { startFixedLoop, type Loop } from "@/games/flight/engine/loop";
 import { fetchOwlisRecord, type OwlisRecord } from "@/lib/client-queries";
+import { actionOf, primaryLabel, useKeymap, useKeymapState, type KeyAction } from "@/lib/keybinds";
 import { playSfx } from "@/lib/sound";
 import { sceneOf, setBgm } from "./audio";
 import { createDprGovernor } from "../core/quality";
 import type { GameComponentProps } from "../core/types";
 
-const HUD_H = 56;
 const INTRO_SEC = 1.3;
+
+function releaseHeld(g: Game): void {
+  g.held.left = false;
+  g.held.right = false;
+  g.held.soft = false;
+}
+
+/** 화면 가장자리에서 비워 둘 곳 — 터치 패드·키 안내가 필드를 가리지 않게 */
+function insetsOf(touch: boolean, portrait: boolean, padH: number): Insets {
+  if (!touch) return { top: 12, bottom: KEY_HINTS_H + 4, left: 8, right: 8 };
+  // 아래 패드는 안전 영역(홈 막대)만큼 더 높아질 수 있어 실제 높이를 잰다
+  if (portrait) return { top: 6, bottom: Math.max(CONTROLS_H, padH) + 6, left: 0, right: 0 };
+  return { top: 6, bottom: 6, left: CONTROLS_SIDE_W, right: CONTROLS_SIDE_W };
+}
 
 function isTouch(): boolean {
   if (typeof window === "undefined") return false;
@@ -57,6 +72,8 @@ function Menu({ onStart }: { onStart: () => void }) {
   const t = useTranslations("hud.owlis.menu");
   const [panel, setPanel] = useState<"none" | "record" | "how">("none");
   const [rec, setRec] = useState<OwlisRecord | null>(null);
+  const keys = useKeymapState("owlis");
+  const key = (a: KeyAction<"owlis">) => primaryLabel(keys, a) || "—";
 
   useEffect(() => {
     fetchOwlisRecord()
@@ -158,7 +175,18 @@ function Menu({ onStart }: { onStart: () => void }) {
             ))}
             <p className="mt-1 font-bold text-[#e9edfb]">{t("controlsTitle")}</p>
             <p className="text-[#98a3c6]">{t("controlsTouch")}</p>
-            <p className="text-[#98a3c6]">{t("controlsKeys")}</p>
+            <p className="hidden text-[#98a3c6] pc:block">
+              {t("controlsKeys", {
+                left: key("left"),
+                right: key("right"),
+                soft: key("soft"),
+                rotR: key("rotR"),
+                rotL: key("rotL"),
+                hard: key("hard"),
+                hold: key("hold"),
+                pause: key("pause"),
+              })}
+            </p>
           </div>
         )}
 
@@ -172,15 +200,25 @@ function Menu({ onStart }: { onStart: () => void }) {
 
 function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
   const t = useTranslations("hud.owlis");
+  const tc = useTranslations("hud.common");
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<Game | null>(null);
   const layRef = useRef<Layout | null>(null);
   const labelsRef = useRef<Labels | null>(null);
+  const keys = useKeymap("owlis");
   const [touch] = useState(isTouch);
+  const [padMode, setPadMode] = useState<"bar" | "sides">("bar");
   const [hud, setHud] = useState<HudState | null>(null);
   const [intro, setIntro] = useState<"ready" | "go" | null>("ready");
   const [over, setOver] = useState<"topout" | "time" | null>(null);
+
+  // 일시정지 — 한 판에 CFG.pause.totalSec 초까지, 멈춘 동안 필드를 가린다
+  const loopRef = useRef<Loop | null>(null);
+  const pausedRef = useRef(false);
+  const pauseLeftRef = useRef<number>(CFG.pause.totalSec);
+  const [paused, setPaused] = useState(false);
+  const [pauseLeft, setPauseLeft] = useState<number>(CFG.pause.totalSec);
 
   labelsRef.current = {
     next: t("next"),
@@ -189,18 +227,29 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
     fever: t("feverGauge"),
     feverOn: t("feverOn"),
     you: t("you"),
-    ai: t("ai"),
-    combo: (n: number) => t("comboPop", { n }),
+    aiLevel: t("aiLevel"),
+    time: t("time"),
+    chain: (n: number) => t("chainPop", { n }),
     reboot: t("rebootField"),
   };
 
   const onAction = useCallback((a: Action) => {
     const g = gameRef.current;
-    if (g) act(g, a);
+    if (g && !pausedRef.current) act(g, a);
   }, []);
   const onHeld = useCallback((k: keyof Held, on: boolean) => {
     const g = gameRef.current;
-    if (g) g.held[k] = on;
+    if (g && !pausedRef.current) g.held[k] = on;
+  }, []);
+  const togglePause = useCallback(() => {
+    const g = gameRef.current;
+    if (!g || g.over) return;
+    const next = !pausedRef.current;
+    if (next && pauseLeftRef.current <= 0) return;
+    pausedRef.current = next;
+    setPaused(next);
+    loopRef.current?.setPaused(next);
+    releaseHeld(g);
   }, []);
 
   useEffect(() => {
@@ -227,7 +276,10 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
       canvas.height = Math.round(h * dpr);
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
-      layRef.current = layout(w, h, HUD_H, touch ? CONTROLS_H + 6 : 14);
+      const portrait = h > w * 1.05;
+      const padH = wrap.querySelector<HTMLElement>("[data-owlis-pad]")?.offsetHeight ?? 0;
+      layRef.current = layout(w, h, insetsOf(touch, portrait, padH));
+      setPadMode(portrait ? "bar" : "sides");
       R.sprites.clear();
     };
     fit();
@@ -271,57 +323,45 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
         draw(ctx, R, g, lay, w, h, dt, labels, reduced);
       },
     );
+    loopRef.current = loop;
 
     const hudTimer = setInterval(() => {
-      setHud({
-        score: rawScore(g),
-        t: g.t,
-        level: levelLabel(g.diff.peak),
-        d: g.diff.d,
-        combo: g.player.chain,
-        banner: g.banner ? { ...g.banner } : null,
-        critical: g.critical,
-        fever: g.fever.t > 0,
-      });
+      setHud({ banner: g.banner ? { ...g.banner } : null });
       setIntro(introT < INTRO_SEC * 0.55 ? "ready" : introT < INTRO_SEC ? "go" : null);
       // 배경음악 — 후반(높은 AI LEVEL)·위기에서 긴장감 있는 곡으로 (같은 곡이면 아무 일도 안 한다)
       setBgm(g.over ? "off" : sceneOf(g.diff.peak, g.critical));
       if (g.over) setOver(g.end);
     }, 90);
 
-    // 키보드 (PC)
-    const keyAction: Record<string, Action> = {
-      ArrowUp: "rotR",
-      KeyX: "rotR",
-      KeyZ: "rotL",
-      ControlLeft: "rotL",
-      Space: "hard",
-      KeyC: "hold",
-      ShiftLeft: "hold",
-      ShiftRight: "hold",
-    };
+    // 일시정지 시간 — 다 쓰면 저절로 다시 시작
+    const pauseTimer = setInterval(() => {
+      if (!pausedRef.current) return;
+      pauseLeftRef.current = Math.max(0, pauseLeftRef.current - 0.25);
+      setPauseLeft(pauseLeftRef.current);
+      if (pauseLeftRef.current <= 0) togglePause();
+    }, 250);
+
+    // 키보드 (PC) — 키는 설정의 키 설정에서 (keys.current 를 매번 읽으니 바꾸면 바로 적용)
     const onDown = (e: KeyboardEvent) => {
-      if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
-        const left = e.code === "ArrowLeft";
-        if (!e.repeat) act(g, left ? "left" : "right");
-        if (left) g.held.left = true;
-        else g.held.right = true;
-      } else if (e.code === "ArrowDown") g.held.soft = true;
-      else if (keyAction[e.code]) {
-        if (!e.repeat) act(g, keyAction[e.code]);
-      } else return;
+      const a = actionOf(keys.current, e.code);
+      if (!a) return;
       e.preventDefault();
+      if (a === "pause") {
+        if (!e.repeat) togglePause();
+        return;
+      }
+      if (pausedRef.current) return;
+      if (a === "left" || a === "right") {
+        if (!e.repeat) act(g, a);
+        g.held[a] = true;
+      } else if (a === "soft") g.held.soft = true;
+      else if (!e.repeat) act(g, a);
     };
     const onUp = (e: KeyboardEvent) => {
-      if (e.code === "ArrowLeft") g.held.left = false;
-      else if (e.code === "ArrowRight") g.held.right = false;
-      else if (e.code === "ArrowDown") g.held.soft = false;
+      const a = actionOf(keys.current, e.code);
+      if (a === "left" || a === "right" || a === "soft") g.held[a] = false;
     };
-    const onBlur = () => {
-      g.held.left = false;
-      g.held.right = false;
-      g.held.soft = false;
-    };
+    const onBlur = () => releaseHeld(g);
     window.addEventListener("keydown", onDown);
     window.addEventListener("keyup", onUp);
     window.addEventListener("blur", onBlur);
@@ -329,7 +369,9 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
     return () => {
       ended = true;
       loop.stop();
+      loopRef.current = null;
       clearInterval(hudTimer);
+      clearInterval(pauseTimer);
       setBgm("off");
       window.removeEventListener("resize", fit);
       window.removeEventListener("orientationchange", fit);
@@ -340,6 +382,11 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onEnd]);
+
+  // 패드 모양이 바뀌면(세로 ↔ 가로) 새 패드 높이로 한 번 더 배치한다
+  useEffect(() => {
+    if (touch) window.dispatchEvent(new Event("resize"));
+  }, [padMode, touch]);
 
   /* 터치 제스처 — 필드 위 어디서든 */
   const gs = useRef({ id: -1, x0: 0, y0: 0, ax: 0, t0: 0, moved: false, soft: false });
@@ -401,7 +448,44 @@ function OwlisRun({ onEnd }: { onEnd: GameComponentProps["onEnd"] }) {
         onPointerCancel={onPointerUp}
       />
       {hud && <Hud hud={hud} />}
-      {touch && <Controls onAction={onAction} onHeld={onHeld} />}
+      {touch ? (
+        <Controls mode={padMode} onAction={onAction} onHeld={onHeld} onPause={togglePause} canPause={pauseLeft > 0 && !over} />
+      ) : (
+        <>
+          <KeyHints />
+          <button
+            type="button"
+            aria-label={tc("pause")}
+            disabled={pauseLeft <= 0 || !!over}
+            onClick={togglePause}
+            className="absolute right-3 top-3 z-10 grid size-11 place-items-center rounded-full text-[#e9edfb] active:scale-95 disabled:opacity-35"
+            style={glassStyle({ from: GRAD.violet, via: GRAD.aqua, to: GRAD.violet })}
+          >
+            <Pause className="size-5" />
+          </button>
+        </>
+      )}
+
+      {paused && (
+        // 멈춘 동안은 필드를 가린다 — 생각할 시간을 벌지 못하게
+        <div className="absolute inset-0 z-40 grid place-items-center px-6" style={{ background: OWLIS.bg }}>
+          <div className="w-full max-w-xs rounded-[24px] p-6 text-center" style={glassStyle({ glow: GRAD.violet })}>
+            <p className="font-mono text-3xl font-black tracking-[0.15em]" style={NEON_TITLE}>
+              {tc("pause")}
+            </p>
+            <p className="num mt-2 text-sm text-[#98a3c6]">{tc("pauseNote", { sec: Math.ceil(pauseLeft) })}</p>
+            <button
+              type="button"
+              onClick={togglePause}
+              className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-base font-black text-[#060913] active:scale-95"
+              style={glassStyle({ fill: true, from: GRAD.cyan, via: GRAD.aqua, to: GRAD.violet, glow: GRAD.aqua })}
+            >
+              <Play className="size-5" />
+              {tc("resume")}
+            </button>
+          </div>
+        </div>
+      )}
 
       {intro && (
         <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center">

@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 import { Undo2 } from "lucide-react";
 import { CFG, INF_STAGE, STAGE_MAX, TOOL_IDS, planOf, type ToolId } from "../config";
 import { ITEM, ITEMS, type ItemId } from "../data/items";
-import { RECIPE, type RecipeId, type Step, type Token } from "../data/recipes";
+import { RECIPE, tokenOf, type RecipeId, type Step, type Token } from "../data/recipes";
 import {
   TABLES,
   dishOf,
@@ -20,9 +20,28 @@ import {
   type Game,
   type Hint,
 } from "../engine/game";
-import { ITEM_KEYS, TOOL_KEY, keyLabel, patienceColor } from "../theme";
+import { keyLabel } from "@/lib/keybinds";
+import { ITEM_KEYS, patienceColor } from "../theme";
 import { Art, Badge, BugArt, Decor, DishIcon, PropIcon, ToolIcon, UiIcon, artUrl, type BadgeName, type BugLook, type UiName } from "./art";
 import { BugSprite, CustomerSprite, ItemIcon, Ring } from "./parts";
+
+/**
+ * 키 안내 — 값은 `lib/keybinds.ts` 의 chef 키맵 첫 키 이름 (설정에서 키를 바꾸면 index.tsx 가 다시 만들어 넘긴다).
+ * 그리는 쪽은 `hidden pc:inline` 이라 마우스·키보드 기기(PC)에서만 보인다. 재료 키는 고정(`ITEM_KEYS`)이라 여기 없다.
+ */
+export type KeyHints = {
+  plate: readonly [string, string, string];
+  tool: Record<ToolId, string>;
+  next: string;
+  undo: string;
+  trash: string;
+};
+
+/** 다음에 누를 곳 표시 — 튜토리얼 단계에서는 반짝이고, 그 뒤에도 테두리로 늘 알려 준다 */
+function guideCls(on: boolean, g: Game): string {
+  if (!on) return "";
+  return g.stage <= CFG.run.tutorialUntil ? "ring-2 ring-aqua animate-pulse-glow" : "ring-2 ring-aqua";
+}
 
 export type DragSrc = { kind: "item"; item: ItemId } | { kind: "slot"; tool: ToolId; slot: number } | { kind: "plate"; i: number };
 
@@ -72,15 +91,18 @@ export function TableColumn({
   keys,
   hint,
   big,
+  ticket,
 }: {
   g: Game;
   i: number;
   h: BoardHandlers;
   popups: Popup[];
-  keys: boolean;
+  keys: KeyHints;
   hint: Hint;
   /** 화면이 넉넉하면 손님을 크게 */
   big: boolean;
+  /** 테이블 아래에 레시피 줄(아이콘)을 늘 펼쳐 둔다 — 폰 세로 배치 (PC 는 오른쪽 티켓 세 장) */
+  ticket: boolean;
 }) {
   const t = useTranslations("hud.chef");
   const c = g.tables[i];
@@ -90,17 +112,18 @@ export function TableColumn({
   const culprit = g.over && g.culprit === i;
   const mood = !c ? 0 : c.leaving > 0 && c.happy ? 4 : culprit ? 3 : ratio < 0.1 ? 3 : ratio < 0.3 ? 2 : ratio < 0.55 ? 1 : 0;
   const dish = c ? RECIPE[dishOf(c)] : null;
+  const sel = g.selected === i && !!c && c.leaving <= 0;
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
       <button
         type="button"
         data-drop={`table:${i}`}
         onClick={() => h.tapTable(i)}
         aria-label={c && dish ? t("tableAria", { n: i + 1, dish: t(`recipes.${dish.id}`) }) : t("tableEmpty")}
-        style={{ height: "clamp(116px, 19vh, 176px)" }}
-        className={`glass relative flex flex-col items-center justify-end overflow-hidden rounded-tile px-1 pb-3 pt-1 transition-shadow ${
-          landed ? "ring-2 ring-alert" : culprit ? "ring-2 ring-alert" : ""
+        style={{ height: ticket ? "clamp(104px, 16vh, 160px)" : "clamp(116px, 19vh, 176px)" }}
+        className={`glass relative flex shrink-0 flex-col items-center justify-end overflow-hidden rounded-tile px-1 pb-3 pt-1 transition-shadow ${
+          landed ? "ring-2 ring-alert" : culprit ? "ring-2 ring-alert" : sel ? "ring-1 ring-neon" : ""
         } ${c && c.leaving > 0 ? "opacity-60" : ""}`}
       >
         <span className="absolute left-1.5 top-1 font-mono text-[10px] text-dim">T{i + 1}</span>
@@ -195,7 +218,68 @@ export function TableColumn({
         ))}
       </button>
 
+      {ticket && <StepChips g={g} i={i} />}
       <PlateButton g={g} i={i} h={h} keys={keys} hint={hint} />
+    </div>
+  );
+}
+
+/** 레시피 k 번째 줄의 상태 — 티켓과 레시피 줄이 같이 쓴다 */
+type LineState = "done" | "now" | "wrong" | "todo";
+function lineState(g: Game, i: number, k: number): LineState {
+  const p = g.plates[i];
+  const cur = p.tokens.length;
+  if (p.wrongAt >= 0 && k === p.wrongAt) return "wrong";
+  if (k < cur && (p.wrongAt < 0 || k < p.wrongAt)) return "done";
+  if (k === cur && p.wrongAt < 0) return "now";
+  return "todo";
+}
+
+/**
+ * 폰 세로 — 테이블 바로 아래에 그 주문의 레시피 전체를 아이콘 줄로 펼쳐 둔다 (넘기기·가로 스크롤 없이 줄바꿈).
+ * 끝난 줄은 흐리게 ✓, 지금 올릴 줄은 바이올렛 테두리, 틀린 줄은 빨강. 이름은 접시의 "다음" 칩이 글자로 알려 준다.
+ * 칸이 남으면 늘어나서(flex-1) 세 열의 접시 높이가 맞는다.
+ */
+function StepChips({ g, i }: { g: Game; i: number }) {
+  const t = useTranslations("hud.chef");
+  const c = g.tables[i];
+  const sel = g.selected === i && !!c && c.leaving <= 0;
+  if (!c) return <div className="min-h-8 flex-1 rounded-tile border border-dashed border-line/60" aria-hidden />;
+  const r = RECIPE[dishOf(c)];
+  const p = g.plates[i];
+  const cur = Math.min(p.tokens.length, r.steps.length);
+  return (
+    <div
+      role="group"
+      aria-label={`${t(`recipes.${r.id}`)} ${cur}/${r.steps.length}`}
+      className={`flex min-h-8 flex-1 flex-col rounded-tile border px-1 py-1 ${sel ? "border-neon/70 bg-neon/5" : "border-line bg-panel/30"}`}
+    >
+      <ol className="flex flex-wrap content-start justify-center gap-[3px]">
+        {r.steps.map((s, k) => {
+          const st = lineState(g, i, k);
+          return (
+            <li
+              key={k}
+              title={`${k + 1}. ${stepLabel(t, s)}`}
+              className={`relative grid size-[26px] place-items-center rounded-md ${
+                st === "now"
+                  ? "bg-neon/20 ring-2 ring-neon"
+                  : st === "done"
+                    ? "opacity-35"
+                    : st === "wrong"
+                      ? "bg-alert/20 ring-2 ring-alert"
+                      : "bg-panel/50"
+              }`}
+            >
+              <TokenIcon token={tokenOf(s)} size={20} />
+              {st === "done" && <span className="absolute -bottom-0.5 -right-0.5 text-[9px] font-black text-ok">✓</span>}
+            </li>
+          );
+        })}
+      </ol>
+      <p className="mt-auto pt-0.5 text-center font-mono text-[9px] text-dim">
+        {cur}/{r.steps.length}
+      </p>
     </div>
   );
 }
@@ -244,7 +328,7 @@ function TokenIcon({ token, size = 18 }: { token: Token; size?: number }) {
   return <ItemIcon item={token as ItemId} size={size} />;
 }
 
-function PlateButton({ g, i, h, keys, hint }: { g: Game; i: number; h: BoardHandlers; keys: boolean; hint: Hint }) {
+function PlateButton({ g, i, h, keys, hint }: { g: Game; i: number; h: BoardHandlers; keys: KeyHints; hint: Hint }) {
   const t = useTranslations("hud.chef");
   const c = g.tables[i];
   const p = g.plates[i];
@@ -269,11 +353,23 @@ function PlateButton({ g, i, h, keys, hint }: { g: Game; i: number; h: BoardHand
     );
   else if (step?.kind === "fin")
     chip = (
-      <span className="inline-flex items-center gap-0.5 font-bold text-neon-soft">
-        ▶ <ToolIcon tool={step.tool} size={14} /> {t(`verbs.${step.verb}`)}
+      <span className={`inline-flex items-center gap-0.5 font-bold ${sel ? "text-neon-soft" : "text-mute"}`}>
+        ▶ <ToolIcon tool={step.tool} size={15} /> {t(`verbs.${step.verb}`)}
       </span>
     );
-  else if (!p.tokens.length) chip = <span className="text-dim">{sel ? t("plateEmpty") : t("plateSelect")}</span>;
+  else if (step?.kind === "add") {
+    // 다음에 올릴 재료를 글자로 — 손질이 필요하면 거칠 도구도 작게
+    const chain = ITEM[step.item].chain;
+    chip = (
+      <span className={`inline-flex max-w-full items-center gap-0.5 font-bold ${sel ? "text-ink" : "text-mute"}`}>
+        ▶ <ItemIcon item={step.item} size={15} className="shrink-0" />
+        <span className="truncate">{stepLabel(t, step)}</span>
+        {chain.map((x, n) => (
+          <ToolIcon key={n} tool={x} size={12} className="shrink-0 opacity-80" />
+        ))}
+      </span>
+    );
+  }
 
   return (
     <button
@@ -287,9 +383,12 @@ function PlateButton({ g, i, h, keys, hint }: { g: Game; i: number; h: BoardHand
       style={{ minHeight: "clamp(68px, 11vh, 110px)" }}
       className={`relative flex touch-none flex-col items-center justify-between rounded-tile border px-1 py-1 transition-all ${
         sel ? "border-neon bg-neon/10 shadow-[0_0_14px_var(--color-neon)]" : "border-line bg-panel/40"
-      } ${wrong ? "border-alert!" : done ? "border-aqua!" : ""} ${glow ? "animate-pulse-glow" : ""} disabled:opacity-40`}
+      } ${wrong ? "border-alert!" : done ? "border-aqua!" : ""} ${guideCls(glow, g)} disabled:opacity-40`}
     >
-      {keys && <span className="absolute left-1 top-0.5 font-mono text-[9px] text-dim">{i + 1}</span>}
+      {keys.plate[i] && <span className="absolute hidden pc:inline left-1 top-0.5 font-mono text-[10px] text-dim">{keys.plate[i]}</span>}
+      {sel && active && !done && (
+        <span className="absolute right-1 top-0.5 rounded bg-neon px-1 font-mono text-[9px] font-black leading-tight text-white">{t("plateSelected")}</span>
+      )}
       {done && <Badge name="done" h={24} className="animate-pop absolute -right-1 -top-2 z-10" />}
       {/* 접시 그림 위에 재료가 쌓인다 — 만드는 동안 완성 요리가 옅게 비치고, 다 되면 재료가 합쳐져 완성 요리 그림이 된다 */}
       <span className="relative grid w-full flex-1 place-items-center">
@@ -322,7 +421,7 @@ function PlateButton({ g, i, h, keys, hint }: { g: Game; i: number; h: BoardHand
           </span>
         )}
       </span>
-      <span className="w-full truncate text-center text-[10px] leading-tight">{chip}</span>
+      <span className="flex w-full justify-center truncate text-center text-[11px] leading-tight">{chip}</span>
     </button>
   );
 }
@@ -334,13 +433,12 @@ export function stepLabel(t: ReturnType<typeof useTranslations>, s: Step): strin
   return s.label ? t(`labels.${s.label}`) : t(`items.${s.item}`);
 }
 
-export function Ticket({ g, i, compact }: { g: Game; i: number; compact: boolean }) {
+/** PC 가로 — 오른쪽에 주문마다 한 장씩, 레시피 전체 줄을 이름과 함께 줄바꿈으로 펼친다 */
+export function Ticket({ g, i }: { g: Game; i: number }) {
   const t = useTranslations("hud.chef");
   const c = g.tables[i];
   if (!c) {
-    return compact ? (
-      <p className="px-2 font-mono text-[11px] text-dim">{t("ticketNone")}</p>
-    ) : (
+    return (
       <div className="glass rounded-tile p-2.5 font-mono text-[11px] text-dim">
         T{i + 1} · {t("ticketNone")}
       </div>
@@ -348,11 +446,10 @@ export function Ticket({ g, i, compact }: { g: Game; i: number; compact: boolean
   }
   const r = RECIPE[dishOf(c)];
   const p = g.plates[i];
-  const cur = p.tokens.length;
   const sel = g.selected === i;
 
   const lines = r.steps.map((s, k) => {
-    const state = p.wrongAt >= 0 && k === p.wrongAt ? "wrong" : k < cur && (p.wrongAt < 0 || k < p.wrongAt) ? "done" : k === cur && p.wrongAt < 0 ? "now" : "todo";
+    const state = lineState(g, i, k);
     const chain = s.kind === "add" ? ITEM[s.item].chain : [];
     return (
       <li
@@ -387,17 +484,8 @@ export function Ticket({ g, i, compact }: { g: Game; i: number; compact: boolean
     </div>
   );
 
-  if (compact) {
-    return (
-      <div className="min-w-0 flex-1">
-        {head}
-        <ol className="no-scrollbar mt-1 flex gap-1 overflow-x-auto">{lines}</ol>
-        {p.wrongAt >= 0 && <p className="mt-0.5 font-mono text-[10px] text-alert">{t("wrongLine", { n: p.wrongAt + 1 })}</p>}
-      </div>
-    );
-  }
   return (
-    <div className={`glass rounded-tile p-2.5 ${sel ? "ring-1 ring-neon" : ""}`}>
+    <div className={`glass rounded-tile p-2.5 ${sel ? "ring-2 ring-neon" : ""}`}>
       {head}
       <ol className="mt-1.5 flex flex-wrap gap-1">{lines}</ol>
       {p.wrongAt >= 0 && <p className="mt-1 font-mono text-[10px] text-alert">{t("wrongLine", { n: p.wrongAt + 1 })}</p>}
@@ -407,7 +495,7 @@ export function Ticket({ g, i, compact }: { g: Game; i: number; compact: boolean
 
 /* ── 주방 도구 ──────────────────────────────────────────────── */
 
-export function Kitchen({ g, h, keys, hint }: { g: Game; h: BoardHandlers; keys: boolean; hint: Hint }) {
+export function Kitchen({ g, h, keys, hint }: { g: Game; h: BoardHandlers; keys: KeyHints; hint: Hint }) {
   const t = useTranslations("hud.chef");
   const tools = TOOL_IDS.filter((tool) => g.tools[tool].length > 0);
   return (
@@ -430,13 +518,14 @@ export function Kitchen({ g, h, keys, hint }: { g: Game; h: BoardHandlers; keys:
             >
               <ToolIcon tool={tool} size={16} className="shrink-0" />
               <span className="truncate">{t(`tools.${tool}`)}</span>
-              {keys && <span className="font-mono text-[9px] text-dim">[{TOOL_KEY[tool]}]</span>}
+              {keys.tool[tool] && <span className="hidden pc:inline font-mono text-[9px] text-dim">[{keys.tool[tool]}]</span>}
             </button>
             <div className="mt-0.5 flex w-full gap-0.5">
               {g.tools[tool].map((s, k) => {
                 const done = !!s && s.t >= s.dur;
                 const takeable = done && s!.kind === "item";
-                const glow = hint?.kind === "tool" && hint.tool === tool && hint.slot === k && done;
+                // 다음에 쓸 재료가 이 칸에 있다 — 익는 중이면 테두리만, 다 되면 반짝이며 "여기를 누르세요"
+                const next = hint?.kind === "tool" && hint.tool === tool && hint.slot === k;
                 return (
                   <button
                     key={k}
@@ -447,7 +536,7 @@ export function Kitchen({ g, h, keys, hint }: { g: Game; h: BoardHandlers; keys:
                     style={{ height: "clamp(46px, 6.4vh, 58px)" }}
                     className={`relative grid min-w-0 flex-1 touch-none place-items-center rounded-[12px] border ${
                       takeable ? "border-aqua bg-aqua/15 shadow-[0_0_12px_var(--color-aqua)]" : "border-line bg-panel/50"
-                    } ${glow ? "animate-pulse-glow" : ""}`}
+                    } ${next ? (done ? guideCls(true, g) : "ring-1 ring-aqua/60") : ""}`}
                   >
                     {/* 칸 바탕 = 그 도구 그림 (비어 있으면 진하게, 무언가 올라가 있으면 옅게) */}
                     <ToolIcon tool={tool} size={36} className={`absolute ${s ? "opacity-30" : "opacity-60"}`} />
@@ -491,65 +580,112 @@ export function Pantry({
   hint,
   flash,
   cols,
+  edit,
 }: {
   g: Game;
   h: BoardHandlers;
-  keys: boolean;
+  keys: KeyHints;
   hint: Hint;
   flash: ItemId | null;
   cols: number;
+  /** 되돌리기·비우기 칸을 재료 칸 끝에 붙인다 (폰 세로 — PC 는 오른쪽 열) */
+  edit?: boolean;
 }) {
   const t = useTranslations("hud.chef");
   const open = new Set(unlockedItems(g));
   const list = ITEMS.map((d, k) => ({ d, key: ITEM_KEYS[k] })).filter((x) => open.has(x.d.id));
+  // 두 무리로 고정 — "바로 접시로" 가는 재료 / "도구에서 손질부터" 하는 재료. 안에서는 ITEMS 순서(해금돼도 자리가 크게 안 흔들린다)
+  const groups = [
+    { id: "direct", label: t("pantryDirect"), items: list.filter((x) => x.d.chain.length === 0) },
+    { id: "prep", label: t("pantryPrep"), items: list.filter((x) => x.d.chain.length > 0) },
+  ].filter((gr) => gr.items.length > 0);
+  const tile = "relative flex touch-none flex-col items-center justify-center rounded-tile border px-0.5 py-0.5 transition-transform active:scale-95";
+  const tileH = { minHeight: "clamp(48px, 7vh, 66px)" };
+
   return (
     <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-      {list.map(({ d, key }) => {
-        const glow = (hint?.kind === "item" && hint.item === d.id) || flash === d.id;
-        return (
+      {groups.map((gr) => [
+        <p key={`h-${gr.id}`} className="col-span-full flex items-center gap-1 px-1 pt-0.5 text-[10px] font-bold leading-none text-dim">
+          {gr.id === "prep" && <ToolIcon tool="board" size={12} />}
+          {gr.label}
+        </p>,
+        ...gr.items.map(({ d, key }) => {
+          const next = hint?.kind === "item" && hint.item === d.id;
+          const glow = next || flash === d.id;
+          return (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => h.tapItem(d.id)}
+              onPointerDown={h.drag({ kind: "item", item: d.id })}
+              aria-label={t(`items.${d.id}`)}
+              className={`${tile} ${d.chain.length ? "border-dashed border-line-strong" : "border-line"} ${
+                flash === d.id ? "border-aqua shadow-[0_0_14px_var(--color-aqua)] animate-pulse-glow" : guideCls(glow, g)
+              }`}
+              style={{ ...tileH, background: `linear-gradient(180deg, ${d.tint}26, ${d.tint}0d)` }}
+            >
+              <ItemIcon item={d.id} size={28} />
+              <span className="w-full truncate text-center text-[10px] font-bold leading-tight text-mute">{t(`items.${d.id}`)}</span>
+              {d.chain.length > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex">
+                  {d.chain.map((x) => (
+                    <ToolIcon key={x} tool={x} size={12} />
+                  ))}
+                </span>
+              )}
+              <span className="absolute left-1 top-0 hidden pc:inline font-mono text-[9px] text-dim">{keyLabel(key)}</span>
+            </button>
+          );
+        }),
+      ])}
+      {edit && (
+        <>
           <button
-            key={d.id}
             type="button"
-            onClick={() => h.tapItem(d.id)}
-            onPointerDown={h.drag({ kind: "item", item: d.id })}
-            aria-label={t(`items.${d.id}`)}
-            className={`relative flex touch-none flex-col items-center justify-center rounded-tile border border-line px-0.5 py-0.5 transition-transform active:scale-95 ${
-              glow ? "border-aqua shadow-[0_0_14px_var(--color-aqua)] animate-pulse-glow" : ""
-            }`}
-            style={{ minHeight: "clamp(48px, 7.4vh, 70px)", background: `linear-gradient(180deg, ${d.tint}26, ${d.tint}0d)` }}
+            onClick={h.undo}
+            aria-label={t("undo")}
+            className={`${tile} border-line bg-panel/50 text-mute ${guideCls(hint?.kind === "undo", g)}`}
+            style={tileH}
           >
-            <ItemIcon item={d.id} size={28} />
-            <span className="w-full truncate text-center text-[9px] font-bold leading-tight text-mute">{t(`items.${d.id}`)}</span>
-            {d.chain.length > 0 && (
-              <span className="absolute right-0.5 top-0.5 flex">
-                {d.chain.map((x) => (
-                  <ToolIcon key={x} tool={x} size={12} />
-                ))}
-              </span>
-            )}
-            {keys && <span className="absolute left-1 top-0 font-mono text-[8px] text-dim">{keyLabel(key)}</span>}
+            <Undo2 className="size-5" />
+            <span className="text-[10px] font-bold leading-tight">{t("undo")}</span>
+            {keys.undo && <span className="absolute hidden pc:inline left-1 top-0 font-mono text-[9px] text-dim">{keys.undo}</span>}
           </button>
-        );
-      })}
+          <button
+            type="button"
+            data-drop="trash"
+            onClick={h.trash}
+            aria-label={t("trash")}
+            title={t("trashHint")}
+            className={`${tile} border-line bg-panel/50 text-mute`}
+            style={tileH}
+          >
+            <PropIcon prop="trash" size={24} />
+            <span className="text-[10px] font-bold leading-tight">{t("trash")}</span>
+            {keys.trash && <span className="absolute hidden pc:inline left-1 top-0 font-mono text-[9px] text-dim">{keys.trash}</span>}
+          </button>
+        </>
+      )}
     </div>
   );
 }
 
-export function EditButtons({ h, keys, vertical }: { h: BoardHandlers; keys: boolean; vertical?: boolean }) {
+/** PC 오른쪽 열의 되돌리기 · 비우기 */
+export function EditButtons({ g, h, keys, hint }: { g: Game; h: BoardHandlers; keys: KeyHints; hint: Hint }) {
   const t = useTranslations("hud.chef");
   const cls =
-    "inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-tile border border-line bg-panel/50 px-2 text-xs font-bold text-mute active:scale-95";
+    "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-tile border border-line bg-panel/50 px-2 text-xs font-bold text-mute active:scale-95";
   return (
-    <div className={`flex shrink-0 gap-1 ${vertical ? "flex-col" : ""}`}>
-      <button type="button" onClick={h.undo} className={cls} aria-label={t("undo")}>
+    <div className="flex shrink-0 gap-1.5">
+      <button type="button" onClick={h.undo} className={`${cls} ${guideCls(hint?.kind === "undo", g)}`} aria-label={t("undo")}>
         <Undo2 className="size-4" />
-        {(vertical || keys) && <span>{t("undo")}</span>}
-        {keys && <span className="font-mono text-[9px] text-dim">⌫</span>}
+        <span>{t("undo")}</span>
+        {keys.undo && <span className="hidden pc:inline font-mono text-[10px] text-dim">{keys.undo}</span>}
       </button>
       <button type="button" data-drop="trash" onClick={h.trash} className={cls} aria-label={t("trash")} title={t("trashHint")}>
         <PropIcon prop="trash" size={20} />
-        {(vertical || keys) && <span>{t("trash")}</span>}
-        {keys && <span className="font-mono text-[9px] text-dim">Del</span>}
+        <span>{t("trash")}</span>
+        {keys.trash && <span className="hidden pc:inline font-mono text-[10px] text-dim">{keys.trash}</span>}
       </button>
     </div>
   );

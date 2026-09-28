@@ -93,13 +93,14 @@ export const CFG = {
   version: "chef-2",
   dt: 1 / 60,
 
+  /** 조리 시간(초). 도구 키는 `lib/keybinds.ts` 의 `DEFAULT_KEYS.chef` (설정에서 바꾼다) */
   tools: {
-    board: { cook: 1.5, key: "KeyQ" },
-    pan: { cook: 3.0, key: "KeyW" },
-    pot: { cook: 4.0, key: "KeyE" },
-    oven: { cook: 5.0, key: "KeyR" },
-    mixer: { cook: 2.0, key: "KeyT" },
-  } satisfies Record<ToolId, { cook: number; key: string }>,
+    board: { cook: 1.5 },
+    pan: { cook: 3.0 },
+    pot: { cook: 4.0 },
+    oven: { cook: 5.0 },
+    mixer: { cook: 2.0 },
+  } satisfies Record<ToolId, { cook: number }>,
 
   /** 인내도 = W × slack + base + (동시 손님 상한 − 1) × par  (GDD §25) — slack = slack0 ÷ curveOf(S, strength) */
   patience: {

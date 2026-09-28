@@ -98,6 +98,11 @@ export async function verifyUser(userId: string): Promise<void> {
   await call<null>("admin_verify_user", { p_user_id: userId });
 }
 
+/** 가입 자동 승인 켜기/끄기 (admin) — 켤 때 대기 중인 사람도 승인하고 그 수를 돌려준다 */
+export async function setAutoApprove(on: boolean): Promise<number> {
+  return Number((await call<number>("admin_set_auto_approve", { p_on: on })) ?? 0);
+}
+
 export async function deleteUser(userId: string): Promise<void> {
   await call<null>("admin_delete_user", { p_user_id: userId });
 }

@@ -2,6 +2,7 @@
 
 // 가상 조이스틱 (기획서 §2) — 화면 왼쪽 절반 어디를 눌러도 그 지점이 원점.
 import { useEffect, useRef, useState } from "react";
+import { actionOf, useKeymap } from "@/lib/keybinds";
 
 const RADIUS = 60;
 
@@ -14,33 +15,50 @@ export function Joystick({ onChange }: { onChange: (v: Vec) => void }) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
-  // 키보드 (PC)
+  // 키보드 (PC) — 키는 설정에서 바꾼다 (lib/keybinds.ts 의 DEFAULT_KEYS.survive)
+  const keysRef = useKeymap("survive");
   useEffect(() => {
-    const keys = new Set<string>();
+    const held = new Set<string>();
     const emit = () => {
-      const x = (keys.has("d") || keys.has("ArrowRight") ? 1 : 0) - (keys.has("a") || keys.has("ArrowLeft") ? 1 : 0);
-      const y = (keys.has("s") || keys.has("ArrowDown") ? 1 : 0) - (keys.has("w") || keys.has("ArrowUp") ? 1 : 0);
+      const x = (held.has("right") ? 1 : 0) - (held.has("left") ? 1 : 0);
+      const y = (held.has("down") ? 1 : 0) - (held.has("up") ? 1 : 0);
       onChangeRef.current({ x, y });
     };
+    const dirOf = (code: string) => {
+      const a = actionOf(keysRef.current, code);
+      return a === "up" || a === "down" || a === "left" || a === "right" ? a : null;
+    };
+    // 같은 방향에 키가 두 개(W·↑)일 수 있어서 누른 키를 따로 센다
+    const pressed = new Map<string, string>();
     const down = (e: KeyboardEvent) => {
-      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      if (["w", "a", "s", "d", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(k)) {
-        e.preventDefault();
-        keys.add(k);
-        emit();
-      }
+      const dir = dirOf(e.code);
+      if (!dir) return;
+      e.preventDefault();
+      pressed.set(e.code, dir);
+      held.add(dir);
+      emit();
     };
     const up = (e: KeyboardEvent) => {
-      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      if (keys.delete(k)) emit();
+      const dir = pressed.get(e.code);
+      if (!dir) return;
+      pressed.delete(e.code);
+      if (![...pressed.values()].includes(dir)) held.delete(dir);
+      emit();
+    };
+    const blur = () => {
+      pressed.clear();
+      held.clear();
+      emit();
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
     };
-  }, []);
+  }, [keysRef]);
 
   return (
     <div
