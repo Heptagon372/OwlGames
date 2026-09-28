@@ -148,7 +148,7 @@ export function BoothKiosk() {
       ) : tab === "energy" ? (
         <EnergyGrantPanel />
       ) : (
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           {/* 좌: 코드 입력 / 유저 카드 */}
           <div>
             {step === "input" && (
@@ -224,7 +224,7 @@ export function BoothKiosk() {
                 canPull={canDraw}
                 onPull={draw}
                 onLanded={landed}
-                className="w-full max-w-[380px]"
+                className="w-full max-w-[680px]"
               />
 
               {step === "user" && (
