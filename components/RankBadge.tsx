@@ -1,7 +1,11 @@
 import { cn } from "@/lib/cn";
 import { rankInfo } from "@/lib/rank";
 
-/** public/assets/ranks/*.webp 한 칸(정사각) 크기 = scripts/slice-rank-badges.py 의 CELL.
+/** 뱃지 그림 폴더. 배포에서 /assets 는 1년 immutable 캐시라(next.config.ts) 같은 이름으로 덮어쓰면
+ *  옛 그림이 계속 보인다 — 그림을 새로 자르면 폴더 이름(v3 → v4)을 올릴 것 (DECISIONS §5-49) */
+const ART_DIR = "/assets/ranks/v3";
+
+/** public/assets/ranks/v3/*.webp 한 칸(정사각) 크기 = scripts/slice-rank-badges.py 의 CELL.
  *  뱃지 몸통은 칸의 약 70% — 칸을 ART_SCALE 배로 그려야 몸통이 px 크기가 된다 */
 const ART_SCALE = 1.45;
 
@@ -43,7 +47,7 @@ export function RankBadge({ rankIdx, size = "md", withLabel, className }: Props)
       {/* 사용자 제공 뱃지 그림 (scripts/slice-rank-badges.py). 발광 여백이 있어서 칸보다 크게 그린다 */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`/assets/ranks/rank-${String(r.idx).padStart(2, "0")}.webp`}
+        src={`${ART_DIR}/rank-${String(r.idx).padStart(2, "0")}.webp`}
         alt=""
         draggable={false}
         className="pointer-events-none absolute max-w-none select-none"
