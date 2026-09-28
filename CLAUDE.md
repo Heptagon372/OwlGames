@@ -96,7 +96,7 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
   화면에서는 `components/brand/BrandBanner.tsx`(랜딩 히어로·로비 맨 위)·`OwlMark.tsx`(헤더·티켓·에러 화면)를 쓰고,
   라이트 테마에서는 CSS 의 `.brand-night`/`.brand-day` 가 **진한 사본**으로 바꿔 끼운다 (DECISIONS §5-36).
   **예외: 상품 그림 6종도 사용자 그림**(`scripts/src/prizes.webp` → `scripts/slice-prizes.py` → `public/assets/prizes/prize-1~6.webp`)이고 `components/PrizeArt.tsx`로 그린다 — 상품을 보여 주는 플레이어 화면에는 `common.prizeArtNote`("실제 상품은 그림과 다를 수 있습니다")를 같이 띄운다 (DECISIONS §5-45).
-  **예외: 랭크 뱃지 30종은 사용자가 준 시트**(`scripts/src/rank-sheet.webp` → `scripts/slice-rank-badges.py` → `public/assets/ranks/rank-00~29.webp`)를 `RankBadge.tsx`가 `<img>`로 그린다. 순서는 `RANKS` 순서와 같다. **그림 픽셀은 시트 그대로** 두고 배경 안개만 뺀다(알파를 깎으면 얇아진다).
+  **예외: 랭크 뱃지 30종은 사용자가 준 시트**(`scripts/src/rank-sheet.webp` → `scripts/slice-rank-badges.py` → `public/assets/ranks/v3/rank-00~29.webp`)를 `RankBadge.tsx`가 `<img>`로 그린다. **`/assets` 는 배포에서 1년 immutable 캐시**라 그림을 다시 자르면 폴더(`v3`)와 `RankBadge.tsx` 의 `ART_DIR` 을 같이 올릴 것 — 같은 이름으로 덮어쓰면 옛 그림이 계속 보인다. 순서는 `RANKS` 순서와 같다. **그림 픽셀은 시트 그대로** 두고 배경 안개만 뺀다(알파를 깎으면 얇아진다).
 - **아울러닝 2.0 그림은 사용자가 준 시트 두 장**이다 — 리소스 시트(`public/assets/owlrun/*.webp`, `scripts/slice-owlrun-sheet.py`)와
   캐릭터 시트(`public/assets/owlrun/char/*.webp`, `scripts/slice-owlrun-character.py`, 외곽선 스티커 스타일 · 2배로 키운 고해상도).
   부엉이는 큰 색별 그림에 **날갯짓을 코드로** 입히고, 피격·기절·부활·승리 같은 자세는 엔진의 `g.pose` 로 고른다. 혜성 꼬리·문구 그림(PERFECT/NEAR MISS/COMBO/FEVER)·돌벽·톱니·미사일·아이템·단계별 하늘·이벤트 카드.
@@ -135,7 +135,7 @@ S.OWL 부스 행사용 웹 미니게임 플랫폼. 플랫폼 설계는 [`OWLGAME
   `.scanlines`(필름 그레인). 페이지에서 따로 배경을 칠하지 말 것 (§5-12).
 - 폰트: 한글 Pretendard(`next/font/local`, `node_modules/pretendard`), 숫자·코드 JetBrains Mono(`next/font/google`).
   **canvas에서는 CSS 변수를 못 쓰므로 `games/core/canvas.ts`의 `font(weight, size)`를 사용한다.**
-- 랭크 뱃지 그림은 `public/assets/ranks/`(사용자 제공), 이름·글자색은 `lib/rank.ts`의 `RANKS`에서 나온다 (챌린저는 파티클 유지).
+- 랭크 뱃지 그림은 `public/assets/ranks/v3/`(사용자 제공), 이름·글자색은 `lib/rank.ts`의 `RANKS`에서 나온다 (챌린저는 파티클 유지).
 
 ## 자주 건드리는 곳
 

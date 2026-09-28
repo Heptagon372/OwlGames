@@ -1,4 +1,7 @@
-"""랭크 뱃지 시트(사용자 제공, 30종) → public/assets/ranks/rank-00.webp … rank-29.webp
+"""랭크 뱃지 시트(사용자 제공, 30종) → public/assets/ranks/v3/rank-00.webp … rank-29.webp
+
+배포에서 /assets 는 1년 immutable 캐시다. 그림을 바꿔 다시 자를 때는 OUT 폴더(v3)와 RankBadge.tsx 의 ART_DIR 을
+같이 v4 로 올려야 사용자에게 새 그림이 보인다 (DECISIONS §5-49).
 
 시트는 1500×500 투명 PNG(webp)이고 3줄 × 10칸, 칸마다 뱃지 + 아래 이름표("1. 나무")가 있다.
 이름표는 화면이 글자로 그리므로 **뱃지만** 자른다 — 이름표 윗변(줄마다 BOTTOM)에서 끊는다.
@@ -20,7 +23,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "scripts/src/rank-sheet.webp"
-OUT = ROOT / "public/assets/ranks"
+OUT = ROOT / "public/assets/ranks/v3"
 
 COLS, ROWS = 10, 3
 COL_W = 150
