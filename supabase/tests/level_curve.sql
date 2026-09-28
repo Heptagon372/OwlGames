@@ -1,5 +1,5 @@
 -- =====================================================================
--- OWL GAMES — 레벨/랭크/티켓 수학 검증 (rank_v2 · rank_v3 — 20261020 · 20261021)
+-- OWL GAMES — 레벨/랭크/티켓 수학 검증 (rank_v2 · v3 · v4 — 20261020 · 20261021 · 20261022)
 --   실행: psql "<connection-string>" -f supabase/tests/level_curve.sql
 --         또는 Supabase SQL 편집기에 전체 붙여넣기
 --   결과: 오류 없이 끝나면 통과 (마지막에 NOTICE 로 요약 출력)
@@ -25,9 +25,9 @@ declare
   v_gap     int;
   v_gap_b   int;
   v_bounds  int[] := array[
-    0, 100, 220, 360, 520, 700, 900, 1120, 1360, 1620,
-    1900, 2200, 2520, 2860, 3560, 4300, 5080, 5900, 6760, 8560,
-    12360, 16360, 20560, 24960, 33360, 42160, 51360, 60960, 79360, 100000];
+    0, 350, 945, 1785, 2700, 3795, 5070, 6525, 8160, 9975,
+    11970, 14145, 16500, 19035, 21750, 24645, 27720, 30870, 34070, 38570,
+    43670, 48870, 54170, 59570, 65720, 71970, 78370, 84920, 92370, 100000];
   v_tiers   int[] := array[1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 7,
                            8, 8, 8, 8, 9, 9, 9, 9, 10, 11];  -- idx 0..29
 begin
@@ -70,13 +70,13 @@ begin
   end loop;
   assert public.tier_from_rank(30) = 11 and public.tier_from_rank(99) = 11, '보너스 티켓은 T11';
 
-  -- ===== 4. 챌린저 보너스 (20,640 × 1.25ⁿ, 100P 올림) ====================
+  -- ===== 4. 챌린저 보너스 (7,630 × 1.25ⁿ, 100P 올림) =====================
   assert public.challenger_bonus_count(100000) = 0, '챌린저 도달 = 보너스 0';
-  assert public.challenger_bonus_count(125799) = 0, '125799P = 0';
-  assert public.challenger_bonus_count(125800) = 1, '125800P = 1';
-  assert public.challenger_bonus_count(158100) = 2, '158100P = 2';
-  assert public.challenger_bonus_count(198500) = 3, '198500P = 3';
-  assert public.challenger_bonus_count(249000) = 4, '249000P = 4';
+  assert public.challenger_bonus_count(109599) = 0, '109599P = 0';
+  assert public.challenger_bonus_count(109600) = 1, '109600P = 1';
+  assert public.challenger_bonus_count(121600) = 2, '121600P = 2';
+  assert public.challenger_bonus_count(136600) = 3, '136600P = 3';
+  assert public.challenger_bonus_count(155400) = 4, '155400P = 4';
   assert public.challenger_bonus_count(2147483647) > 20, 'int 끝까지 가도 멈춘다';
 
   -- ===== 5. 랭크 티켓 29장 — submit 과 같은 방식으로 쌓아도 =================
@@ -117,7 +117,7 @@ begin
   assert public.mask_name('김')      = '김',     format('김 → %s', public.mask_name('김'));
   assert public.mask_name(null) is null, 'null 은 null';
 
-  raise notice '✅ rank_v2·v3: 레벨 곡선 / rank_from_points / tier_from_rank / 챌린저 보너스 / 티켓 29장 / 확률표 / 마스킹 모두 통과';
+  raise notice '✅ rank_v2·v3·v4: 레벨 곡선 / rank_from_points / tier_from_rank / 챌린저 보너스 / 티켓 29장 / 확률표 / 마스킹 모두 통과';
 end $$;
 
 rollback;
