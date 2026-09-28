@@ -1,16 +1,16 @@
 -- =====================================================================
--- OWL GAMES — 레벨/랭크/티켓 수학 검증 (rank_v2 — 20261020000000_rank_v2.sql)
+-- OWL GAMES — 레벨/랭크/티켓 수학 검증 (rank_v2 · rank_v3 — 20261020 · 20261021)
 --   실행: psql "<connection-string>" -f supabase/tests/level_curve.sql
 --         또는 Supabase SQL 편집기에 전체 붙여넣기
 --   결과: 오류 없이 끝나면 통과 (마지막에 NOTICE 로 요약 출력)
---   주의: 기본 곡선(base 50 / step 9)을 가정하므로 트랜잭션 안에서 잠시 기본값으로
+--   주의: 기본 곡선(base 60 / step 19)을 가정하므로 트랜잭션 안에서 잠시 기본값으로
 --         되돌린 뒤 rollback 한다. 영구 변경 없음.
 -- =====================================================================
 
 begin;
 set local plpgsql.check_asserts = on;
 
-insert into public.app_config (key, value) values ('level_curve', '{"base":50,"step":9}'::jsonb)
+insert into public.app_config (key, value) values ('level_curve', '{"base":60,"step":19}'::jsonb)
 on conflict (key) do update set value = excluded.value;
 
 do $$
@@ -26,20 +26,20 @@ declare
   v_gap_b   int;
   v_bounds  int[] := array[
     0, 100, 220, 360, 520, 700, 900, 1120, 1360, 1620,
-    1900, 2200, 2520, 2860, 3560, 4300, 5080, 5900, 6760, 7660,
-    9500, 11420, 13420, 15500, 19500, 23600, 27800, 32100, 40700, 49500];
+    1900, 2200, 2520, 2860, 3560, 4300, 5080, 5900, 6760, 8560,
+    12360, 16360, 20560, 24960, 33360, 42160, 51360, 60960, 79360, 100000];
   v_tiers   int[] := array[1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 7,
                            8, 8, 8, 8, 9, 9, 9, 9, 10, 11];  -- idx 0..29
 begin
-  -- ===== 1. 누적 포인트 곡선 (Lv L → L+1 = 50 + 9L) =====================
+  -- ===== 1. 누적 포인트 곡선 (Lv L → L+1 = 60 + 19L) =====================
   assert public.level_cum_points(1) = 0, 'Lv1 누적은 0';
-  assert public.level_cum_points(2) = 59, format('Lv2 누적은 59: %s', public.level_cum_points(2));
-  assert public.level_cum_points(100) = 49500,
-         format('Lv100 누적은 49500 (= 챌린저): %s', public.level_cum_points(100));
+  assert public.level_cum_points(2) = 79, format('Lv2 누적은 79: %s', public.level_cum_points(2));
+  assert public.level_cum_points(100) = 99990,
+         format('Lv100 누적은 99990 (≈ 챌린저 100,000): %s', public.level_cum_points(100));
   v_prev := 0;
   for l in 2..100 loop
     v_cum := public.level_cum_points(l);
-    assert v_cum - v_prev = 50 + 9 * (l - 1), format('Lv%s→Lv%s 필요 포인트 %s', l - 1, l, v_cum - v_prev);
+    assert v_cum - v_prev = 60 + 19 * (l - 1), format('Lv%s→Lv%s 필요 포인트 %s', l - 1, l, v_cum - v_prev);
     assert public.level_from_points(v_cum) = l, format('%sP 는 Lv%s', v_cum, l);
     assert public.level_from_points(v_cum - 1) = l - 1, format('%sP 는 Lv%s', v_cum - 1, l - 1);
     v_prev := v_cum;
@@ -70,19 +70,19 @@ begin
   end loop;
   assert public.tier_from_rank(30) = 11 and public.tier_from_rank(99) = 11, '보너스 티켓은 T11';
 
-  -- ===== 4. 챌린저 보너스 (8,800 × 1.25ⁿ, 100P 올림) =====================
-  assert public.challenger_bonus_count(49500) = 0, '챌린저 도달 = 보너스 0';
-  assert public.challenger_bonus_count(60499) = 0, '60499P = 0';
-  assert public.challenger_bonus_count(60500) = 1, '60500P = 1';
-  assert public.challenger_bonus_count(74300) = 2, '74300P = 2';
-  assert public.challenger_bonus_count(91600) = 3, '91600P = 3';
-  assert public.challenger_bonus_count(113300) = 4, '113300P = 4';
+  -- ===== 4. 챌린저 보너스 (20,640 × 1.25ⁿ, 100P 올림) ====================
+  assert public.challenger_bonus_count(100000) = 0, '챌린저 도달 = 보너스 0';
+  assert public.challenger_bonus_count(125799) = 0, '125799P = 0';
+  assert public.challenger_bonus_count(125800) = 1, '125800P = 1';
+  assert public.challenger_bonus_count(158100) = 2, '158100P = 2';
+  assert public.challenger_bonus_count(198500) = 3, '198500P = 3';
+  assert public.challenger_bonus_count(249000) = 4, '249000P = 4';
   assert public.challenger_bonus_count(2147483647) > 20, 'int 끝까지 가도 멈춘다';
 
   -- ===== 5. 랭크 티켓 29장 — submit 과 같은 방식으로 쌓아도 =================
-  foreach v_step in array array[50, 170, 900, 49500] loop
+  foreach v_step in array array[50, 170, 900, 100000] loop
     v_points := 0; v_rank := 0; v_tickets := 0;
-    while v_points < 49500 loop
+    while v_points < 100000 loop
       v_points := v_points + v_step;
       v_rank_b := greatest(v_rank, public.rank_from_points(v_points));
       v_tickets := v_tickets + (v_rank_b - v_rank);
@@ -117,7 +117,7 @@ begin
   assert public.mask_name('김')      = '김',     format('김 → %s', public.mask_name('김'));
   assert public.mask_name(null) is null, 'null 은 null';
 
-  raise notice '✅ rank_v2: 레벨 곡선 / rank_from_points / tier_from_rank / 챌린저 보너스 / 티켓 29장 / 확률표 / 마스킹 모두 통과';
+  raise notice '✅ rank_v2·v3: 레벨 곡선 / rank_from_points / tier_from_rank / 챌린저 보너스 / 티켓 29장 / 확률표 / 마스킹 모두 통과';
 end $$;
 
 rollback;

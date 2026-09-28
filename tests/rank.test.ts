@@ -22,36 +22,40 @@ import {
 } from "@/lib/rank";
 
 // DECISIONS §5-47 — 랭크 v2 (서버 식은 20261020000000_rank_v2.sql)
+// 티어·확률표는 rank_v2, 랭크 표·레벨 곡선·보너스는 rank_v3 (§5-48) 가 최신 정의다
 const RANK_SQL = readFileSync(join(process.cwd(), "supabase/migrations/20261020000000_rank_v2.sql"), "utf8");
+const RANK3_SQL = readFileSync(join(process.cwd(), "supabase/migrations/20261021000000_rank_v3.sql"), "utf8");
+const sqlRankTable = (sql: string) =>
+  sql.match(/unnest\(array\[([\s\S]*?)\]\) with ordinality as t\(min_points/)![1].split(",").map((x) => Number(x.trim()));
 
-describe("레벨 곡선 (rank_v2: base 50 · step 9)", () => {
-  it("Lv100 누적은 49,500P = 챌린저", () => {
-    expect(cumPoints(100)).toBe(49500);
-    expect(cumPoints(100)).toBe(CHALLENGER_POINTS);
+describe("레벨 곡선 (rank_v3: base 60 · step 19)", () => {
+  it("Lv100 누적은 99,990P ≈ 챌린저 100,000P", () => {
+    expect(cumPoints(100)).toBe(99990);
+    expect(CHALLENGER_POINTS).toBe(100000);
   });
 
-  it("L → L+1 필요 포인트 = 50 + 9L", () => {
-    expect(pointsToNext(1)).toBe(59);
-    expect(pointsToNext(50)).toBe(500);
+  it("L → L+1 필요 포인트 = 60 + 19L", () => {
+    expect(pointsToNext(1)).toBe(79);
+    expect(pointsToNext(50)).toBe(1010);
     expect(cumPoints(3) - cumPoints(2)).toBe(pointsToNext(2));
   });
 
   it("포인트 → 레벨 경계", () => {
     expect(levelFromPoints(0)).toBe(1);
-    expect(levelFromPoints(58)).toBe(1);
-    expect(levelFromPoints(59)).toBe(2);
-    expect(levelFromPoints(49499)).toBe(99);
-    expect(levelFromPoints(49500)).toBe(100);
+    expect(levelFromPoints(78)).toBe(1);
+    expect(levelFromPoints(79)).toBe(2);
+    expect(levelFromPoints(99989)).toBe(99);
+    expect(levelFromPoints(99990)).toBe(100);
     expect(levelFromPoints(999999)).toBe(MAX_LEVEL);
   });
 
   it("만렙 진행도는 100%", () => {
-    expect(levelProgress(49500).ratio).toBe(1);
-    expect(levelProgress(49500).need).toBe(0);
+    expect(levelProgress(99990).ratio).toBe(1);
+    expect(levelProgress(99990).need).toBe(0);
   });
 
   it("DB 기본값과 같다", () => {
-    expect(RANK_SQL).toContain(`'{"base":${DEFAULT_CONFIG.level_curve.base},"step":${DEFAULT_CONFIG.level_curve.step}}'`);
+    expect(RANK3_SQL).toContain(`'{"base":${DEFAULT_CONFIG.level_curve.base},"step":${DEFAULT_CONFIG.level_curve.step}}'`);
   });
 });
 
@@ -61,16 +65,20 @@ describe("랭크 30단계 (누적 포인트)", () => {
   it("30단계이고 SQL rank_from_points 표와 같다", () => {
     expect(RANKS).toHaveLength(30);
     expect(MAX_RANK).toBe(29);
-    const arr = RANK_SQL.match(/unnest\(array\[([\s\S]*?)\]\) with ordinality as t\(min_points/)![1];
-    expect(arr.split(",").map((x) => Number(x.trim()))).toEqual(RANKS.map((r) => r.minPoints));
+    expect(sqlRankTable(RANK3_SQL)).toEqual(RANKS.map((r) => r.minPoints));
+  });
+
+  it("19단계(불멸자)까지는 rank_v2 그대로, 20단계(불멸)부터 가파르다", () => {
+    expect(RANKS.slice(0, 19).map((r) => r.minPoints)).toEqual(sqlRankTable(RANK_SQL).slice(0, 19));
+    expect(RANKS[19].minPoints).toBeGreaterThan(sqlRankTable(RANK_SQL)[19]);
   });
 
   it("간격은 올라갈수록 길어진다", () => {
     for (let i = 1; i < gaps.length; i++) expect(gaps[i], `${RANKS[i + 1].name}`).toBeGreaterThan(gaps[i - 1]);
   });
 
-  it("마스터 · 영겁 · 태초 · 정점에서 확 멀어진다 (앞 간격의 1.8배 이상, 나머지는 1.2배 이하)", () => {
-    const jumps = new Set(["마스터", "영겁", "태초", "정점"]);
+  it("마스터 · 불멸 · 영겁 · 태초 · 정점에서 확 멀어진다 (앞 간격의 1.8배 이상, 나머지는 1.2배 이하)", () => {
+    const jumps = new Set(["마스터", "불멸", "영겁", "태초", "정점"]);
     for (let i = 1; i < gaps.length; i++) {
       const r = RANKS[i + 1];
       const ratio = gaps[i] / gaps[i - 1];
@@ -110,9 +118,9 @@ describe("랭크 30단계 (누적 포인트)", () => {
 });
 
 describe("챌린저 보너스 티켓 (challenger_bonus_count 와 같은 정수 계산)", () => {
-  it("간격 = 정점 → 챌린저(8,800) × 1.25ⁿ, 100P 단위 올림", () => {
-    expect(RANKS[29].minPoints - RANKS[28].minPoints).toBe(8800);
-    expect([1, 2, 3, 4, 5].map(challengerBonusAt)).toEqual([60500, 74300, 91600, 113300, 140500]);
+  it("간격 = 정점 → 챌린저(20,640) × 1.25ⁿ, 100P 단위 올림", () => {
+    expect(RANKS[29].minPoints - RANKS[28].minPoints).toBe(20640);
+    expect([1, 2, 3, 4].map(challengerBonusAt)).toEqual([125800, 158100, 198500, 249000]);
     // 간격이 매번 늘어난다
     for (let n = 2; n < 30; n++)
       expect(challengerBonusAt(n + 1) - challengerBonusAt(n)).toBeGreaterThan(challengerBonusAt(n) - challengerBonusAt(n - 1));
@@ -121,9 +129,9 @@ describe("챌린저 보너스 티켓 (challenger_bonus_count 와 같은 정수 �
   it("누적 포인트 → 보너스 장수", () => {
     expect(challengerBonusCount(0)).toBe(0);
     expect(challengerBonusCount(CHALLENGER_POINTS)).toBe(0);
-    expect(challengerBonusCount(60499)).toBe(0);
-    expect(challengerBonusCount(60500)).toBe(1);
-    expect(challengerBonusCount(74300)).toBe(2);
+    expect(challengerBonusCount(125799)).toBe(0);
+    expect(challengerBonusCount(125800)).toBe(1);
+    expect(challengerBonusCount(158100)).toBe(2);
     expect(challengerBonusCount(2_147_483_647)).toBeGreaterThan(20); // int 끝까지 가도 멈춘다
     for (let n = 1; n <= 12; n++) {
       expect(challengerBonusCount(challengerBonusAt(n))).toBe(n);
@@ -132,8 +140,8 @@ describe("챌린저 보너스 티켓 (challenger_bonus_count 와 같은 정수 �
   });
 
   it("SQL 과 상수·식이 같다", () => {
-    const fn = RANK_SQL.match(/function public\.challenger_bonus_count[\s\S]*?\$\$([\s\S]*?)\$\$/)![1];
-    expect(fn).toContain("v_iv  bigint := 8800;");
+    const fn = RANK3_SQL.match(/function public\.challenger_bonus_count[\s\S]*?\$\$([\s\S]*?)\$\$/)![1];
+    expect(fn).toContain("v_iv  bigint := 20640;");
     expect(fn).toContain(`v_thr bigint := ${CHALLENGER_POINTS};`);
     expect(fn).toContain("v_iv  := (v_iv * 5 / 4 + 99) / 100 * 100;");
   });

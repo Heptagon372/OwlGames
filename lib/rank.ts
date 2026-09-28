@@ -6,8 +6,8 @@
 export const MAX_LEVEL = 100;
 
 export type LevelCurve = { base: number; step: number };
-/** Lv 100 = 49,500P = 챌린저 (rank_v2) */
-export const DEFAULT_CURVE: LevelCurve = { base: 50, step: 9 };
+/** Lv 100 = 99,990P ≈ 챌린저 100,000P (rank_v3 — 정수 base·step 로는 10만이 딱 안 떨어진다) */
+export const DEFAULT_CURVE: LevelCurve = { base: 60, step: 19 };
 
 /** 레벨 L 도달 누적 포인트: base(L−1) + step(L−1)L/2 */
 export function cumPoints(level: number, curve: LevelCurve = DEFAULT_CURVE): number {
@@ -61,9 +61,10 @@ export type RankInfo = {
   effect?: "glow" | "rainbow" | "challenger";
 };
 
-// 랭크 30단계 (DECISIONS §5-47). 간격(P):
-//   나무→미스릴 100 부터 +20 · 마스터 700(×2.1) → 불멸 +40 · 영겁 1,840(×2.0) → 신화 +80
-//   태초 4,000(×1.9) → 극점 +100 · 정점 8,600(×2.0) · 챌린저 8,800  → 챌린저 = 49,500P = Lv 100
+// 랭크 30단계 (DECISIONS §5-47 · §5-48). 간격(P):
+//   나무→미스릴 100 부터 +20 · 마스터 700(×2.1) → 불멸자까지 +40   (여기까지 rank_v2 그대로)
+//   rank_v3 — 20단계(불멸)부터 가파르게: 불멸 1,800(×2.1) · 영겁 3,800(×2.1) → 신화 +200
+//   태초 8,400(×1.9) → 극점 +400 · 정점 18,400(×1.9) · 챌린저 20,640  → 챌린저 = 100,000P
 export const RANKS: readonly RankInfo[] = [
   { idx: 0, name: "나무", minPoints: 0, tier: 1, colors: ["#8CF07A", "#1E6B1A"] },
   { idx: 1, name: "돌", minPoints: 100, tier: 1, colors: ["#C9D2DE", "#4B5563"] },
@@ -84,17 +85,17 @@ export const RANKS: readonly RankInfo[] = [
   { idx: 16, name: "엘리트", minPoints: 5080, tier: 6, colors: ["#C79BFF", "#4B2AC0"] },
   { idx: 17, name: "초월자", minPoints: 5900, tier: 7, colors: ["#8AF7E8", "#0E8C88"], effect: "glow" },
   { idx: 18, name: "불멸자", minPoints: 6760, tier: 7, colors: ["#FF8AB0", "#A0124A"] },
-  { idx: 19, name: "불멸", minPoints: 7660, tier: 7, colors: ["#B4CFFF", "#2A55C8"] },
-  { idx: 20, name: "영겁", minPoints: 9500, tier: 8, colors: ["#FFBE5C", "#C24A00"] },
-  { idx: 21, name: "전설", minPoints: 11420, tier: 8, colors: ["#FF7A5C", "#B01010"] },
-  { idx: 22, name: "신성", minPoints: 13420, tier: 8, colors: ["#FFF0C8", "#A08850"], effect: "glow" },
-  { idx: 23, name: "신화", minPoints: 15500, tier: 8, colors: ["#FF6FD8", "#3DD9EB"], effect: "rainbow" },
-  { idx: 24, name: "태초", minPoints: 19500, tier: 9, colors: ["#9DAEFF", "#2A2FA8"] },
-  { idx: 25, name: "성좌", minPoints: 23600, tier: 9, colors: ["#8AE4FF", "#1478C8"] },
-  { idx: 26, name: "전상", minPoints: 27800, tier: 9, colors: ["#F28CFF", "#8A1AB0"] },
-  { idx: 27, name: "극점", minPoints: 32100, tier: 9, colors: ["#9CC2FF", "#2440B8"] },
-  { idx: 28, name: "정점", minPoints: 40700, tier: 10, colors: ["#EBC985", "#6A3AA0"], effect: "glow" },
-  { idx: 29, name: "챌린저", minPoints: 49500, tier: 11, colors: ["#FFE08A", "#FF8A00"], effect: "challenger" },
+  { idx: 19, name: "불멸", minPoints: 8560, tier: 7, colors: ["#B4CFFF", "#2A55C8"] },
+  { idx: 20, name: "영겁", minPoints: 12360, tier: 8, colors: ["#FFBE5C", "#C24A00"] },
+  { idx: 21, name: "전설", minPoints: 16360, tier: 8, colors: ["#FF7A5C", "#B01010"] },
+  { idx: 22, name: "신성", minPoints: 20560, tier: 8, colors: ["#FFF0C8", "#A08850"], effect: "glow" },
+  { idx: 23, name: "신화", minPoints: 24960, tier: 8, colors: ["#FF6FD8", "#3DD9EB"], effect: "rainbow" },
+  { idx: 24, name: "태초", minPoints: 33360, tier: 9, colors: ["#9DAEFF", "#2A2FA8"] },
+  { idx: 25, name: "성좌", minPoints: 42160, tier: 9, colors: ["#8AE4FF", "#1478C8"] },
+  { idx: 26, name: "전상", minPoints: 51360, tier: 9, colors: ["#F28CFF", "#8A1AB0"] },
+  { idx: 27, name: "극점", minPoints: 60960, tier: 9, colors: ["#9CC2FF", "#2440B8"] },
+  { idx: 28, name: "정점", minPoints: 79360, tier: 10, colors: ["#EBC985", "#6A3AA0"], effect: "glow" },
+  { idx: 29, name: "챌린저", minPoints: 100000, tier: 11, colors: ["#FFE08A", "#FF8A00"], effect: "challenger" },
 ];
 
 export const MAX_RANK = RANKS.length - 1;
@@ -116,7 +117,7 @@ export function rankInfo(rankIdx: number): RankInfo {
   return RANKS[clampRank(rankIdx)];
 }
 
-/** 랭크 구간 표시용 "3,560P~4,299P" (챌린저는 "49,500P~") */
+/** 랭크 구간 표시용 "3,560P~4,299P" (챌린저는 "100,000P~") */
 export function rankPointRange(rankIdx: number): string {
   const r = rankInfo(rankIdx);
   const next = RANKS[r.idx + 1];
@@ -131,8 +132,8 @@ export function nextRankAt(points: number): { idx: number; at: number } | null {
 }
 
 // ---- 챌린저 이후 보너스 티켓 (SQL challenger_bonus_count 와 같은 정수 계산) ----
-//   n번째 간격 = 앞 간격 × 1.25 를 100P 단위로 올림, 첫 앞 간격 = 정점 → 챌린저 (8,800)
-//   → 60,500 · 74,300 · 91,600 · 113,300 · …
+//   n번째 간격 = 앞 간격 × 1.25 를 100P 단위로 올림, 첫 앞 간격 = 정점 → 챌린저 (20,640)
+//   → 125,800 · 158,100 · 198,500 · 249,000 · …
 const BONUS_FIRST_GAP = CHALLENGER_POINTS - RANKS[MAX_RANK - 1].minPoints;
 
 function nextGap(gap: number): number {
