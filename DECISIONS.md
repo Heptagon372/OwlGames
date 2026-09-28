@@ -996,6 +996,5 @@ TS 사본 `lib/anticheat.ts`, 테스트 `tests/security.test.ts`.
 - `delete from auth.users`(계정 삭제)와 `auth.users` 트리거는 Supabase 기본 권한에 기대므로, 실제 프로젝트에
   `db push` 후 한 번 스모크 테스트할 것.
 - **브랜드 그림(`public/assets/brand/`·`app/icon.png`)도 CC0 가 아니다** — 부엉이·몬스터 그림처럼 공개 레포 재배포가 괜찮은지 확인할 것.
-- **밸런스 v4 마이그레이션(`20261013000000_balance_v4.sql`)은 아직 `db push` 하지 않았다.** 적용 전에는 서버 `flight_raw` 가 에너지를 180 에서 자르고(점수가 조금 낮게 나온다),
-  185초를 넘긴 아울러닝 판이 거부되며, 관리자 자동 승인 스위치가 동작하지 않는다.
+- ~~밸런스 v4 마이그레이션 미적용~~ → `20261012`(상품 이름)·`20261013`(밸런스 v4) 둘 다 `db push` 했다.
 - 아울리스 일시정지(한 판 10초) 시간도 서버 경과시간에 들어간다 — `CFG.pause.totalSec` 을 늘리면 `hardCapSec` 과 합이 max_sec(1800) 을 넘지 않게.
